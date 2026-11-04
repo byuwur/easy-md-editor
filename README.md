@@ -167,6 +167,23 @@ Install Playwright outside the source tree or make it available through `NODE_PA
 
 ```sh
 node --test tests/rendering.cjs
+node tests/performance.cjs
 ```
 
-Tests default to installed Chrome; `BROWSER_CHANNEL` and `CHROMIUM_EXECUTABLE_PATH` override the browser. Tests exercise actual companion files, not parser mocks. Browser tests also read the sibling `spa.js` styles and Bootstrap script as offline playground fixtures.
+Tests default to installed Chrome; `BROWSER_CHANNEL` and `CHROMIUM_EXECUTABLE_PATH` override the browser. Tests exercise actual companion files, not parser mocks. Browser tests also read the sibling `spa.js` styles and Bootstrap script as offline playground fixtures. Benchmarks cover 1,000/5,000/10,000 lines, large tables, nested lists, and fences at normal and 6× CPU slowdown. They report parse, edit, DOM patch, selection, preview, long-task, and heap measurements. `BENCHMARK_OUTPUT` optionally writes JSON outside the repository. Targets are measured engineering goals, not timing guarantees.
+
+Ordinary input patches the affected line or row. Native word input preserves text nodes; Markdown punctuation and structure go through the shared parser. Offscreen groups use `content-visibility: auto` while retaining their DOM. Source mode builds no hidden visual document until needed. A full editor-line scan is reserved for initialization, source replacement, and returning from changed Source mode. Full document rendering belongs to Preview. Code highlighting runs separately, caches unchanged fences, and cancels obsolete work on edits or teardown.
+
+Measured in local Chrome with CODE loaded, a 1,500-row table, 5,000 code lines, and up to 10,000 prose lines: edit-handler p95 stayed below 1 ms normally, with no typing long tasks. At 6× CPU slowdown, most fixtures stayed below 2.5 ms; the 10,000-line document reached 8.3 ms. Selection p95 stayed below 0.5 ms. Browser layout still produced long tasks on large tables, nested lists, and code at that slowdown. Source mode remains the practical option for heavy documents on slower devices. These observations are machine-specific, not guarantees.
+
+## The easy viewers
+
+Need another format, or a Markdown editor? Explore the family:
+
+[Markdown](https://github.com/byuwur/easy-md-viewer) · [JSON](https://github.com/byuwur/easy-json-viewer) · [CSV & TSV](https://github.com/byuwur/easy-csv-viewer) · [Logs](https://github.com/byuwur/easy-log-viewer) · [Diff](https://github.com/byuwur/easy-diff-viewer) · [XML](https://github.com/byuwur/easy-xml-viewer) · [YAML](https://github.com/byuwur/easy-yaml-viewer) · [Source code](https://github.com/byuwur/easy-code-viewer)
+
+[Write Markdown with easy-md-editor](https://github.com/byuwur/easy-md-editor).
+
+## License
+
+MIT (c) Andres Trujillo [Mateus] byUwUr
