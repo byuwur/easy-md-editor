@@ -23,7 +23,7 @@ Save `md.edit.js` and `md.edit.css` beside your HTML. Use the CDN for the compan
 <script src="md.edit.js" defer></script>
 ```
 
-Visual editing requires the MD viewer's `parseInline()` and `scanLine()` APIs; live code colors use CODE's `tokenize()` API. The playground temporarily imports sibling files until those updates are published; its CDN examples are ready for the releases. In your own page, load the companions before creating an editor. An older or missing MD viewer leaves Source editing available until reinitialization; missing CODE leaves fenced code editable as plain text.
+Visual editing requires the MD viewer's `parseInline()` and `scanLine()` APIs; live code colors use CODE's `tokenize()` API. The playground pins its companions to numbered releases; documentation and exported examples use `@latest`. Use explicit release tags in deployed pages. In your own page, load the companions before creating an editor. An older or missing MD viewer leaves Source editing available until reinitialization; missing CODE leaves fenced code editable as plain text.
 
 `md.edit.css` imports Font Awesome for the toolbar icons. Buttons keep readable labels when icons are unavailable; no extra HTML import is needed.
 
@@ -155,13 +155,13 @@ Keyboard access, labeled controls, native dialogs, focus indicators, reduced mot
 
 ## Playground and checks
 
-With `easy-md-viewer` and `easy-code-viewer` checked out beside this repository:
+To serve the playground locally:
 
 ```sh
 node tests/serve.cjs
 ```
 
-Open [the local playground](http://127.0.0.1:4173), or use WAMP at `http://localhost/easy-md-editor/`. The playground currently loads sibling sources directly; restore `@latest` imports after publishing the viewer changes. Open/download Markdown and Print / PDF belong to the demo, not the editor API. Printing uses the read-only viewer preview and the browser's print dialog.
+Open [the local playground](http://127.0.0.1:4173), or use WAMP at `http://localhost/easy-md-editor/`. The playground loads its pinned companions from jsDelivr and requires those releases to be published. Open/download Markdown and Print / PDF belong to the demo, not the editor API. Printing uses the read-only viewer preview and the browser's print dialog.
 
 The Get started section exports a complete HTML starter with CDN selected by default, or local files for offline use. Copy and Download use the displayed starter and default editor settings, independently of playground edits. CDN starters need published editor and viewer releases; local starters need `md.edit.js`, `md.edit.css`, `md.js`, `md.css`, `code.js`, and `code.css` beside the HTML.
 

@@ -692,6 +692,8 @@ test("playground edits documents and exports exact Markdown", async () => {
         const file = process.env.BOOTSTRAP_CSS_PATH || path.join(process.env.TEMP, "viewer-ecosystem-tests/bootstrap-v20.6.css");
         return route.fulfill({ body: await fs.readFile(file), contentType: "text/css" });
       }
+      const companion = new URL(route.request().url()).pathname.match(/^\/gh\/byuwur\/(easy-(?:md|code)-viewer)@v\d+(?:\.\d+)*\/((?:md|code)\.(?:css|js))$/);
+      if (companion) return route.fulfill({ path: path.join(root, "..", companion[1], companion[2]), contentType: companion[2].endsWith("css") ? "text/css" : "text/javascript" });
       const asset = new URL(route.request().url()).pathname.match(/\/spa\.js@v20\.6\/(css\/(?:shards|fontawesome\.min)\.css|js\/bootstrap\.min\.js)$/)?.[1];
       if (asset) return route.fulfill({ body: await fs.readFile(path.join(root, "../spa.js", asset)), contentType: asset.endsWith("css") ? "text/css" : "text/javascript" });
       return route.abort();
@@ -699,6 +701,13 @@ test("playground edits documents and exports exact Markdown", async () => {
     await page.goto(`http://127.0.0.1:${server.address().port}`);
     await page.locator(".byEDsurface").waitFor();
     assert.equal(await page.locator(".byEDsurface").isVisible(), true);
+    const releases = await page.evaluate(() => ({ md: byMDviewer.VERSION, code: byCODEviewer.VERSION }));
+    assert.deepEqual(await page.locator('head [href*="easy-md-viewer"], head [href*="easy-code-viewer"], head [src*="easy-md-viewer"], head [src*="easy-code-viewer"]').evaluateAll((assets) => assets.map((asset) => asset.href || asset.src).sort()), [
+      `https://cdn.jsdelivr.net/gh/byuwur/easy-code-viewer@v${releases.code}/code.css`,
+      `https://cdn.jsdelivr.net/gh/byuwur/easy-code-viewer@v${releases.code}/code.js`,
+      `https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@v${releases.md}/md.css`,
+      `https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@v${releases.md}/md.js`
+    ]);
     assert.equal(await page.locator(".navbar-brand").innerText(), "md↑easy-md-editor");
     assert.equal(await page.locator(".viewer-suite a").count(), 8);
     assert.equal(await page.locator("#integration-cdn").isChecked(), true);

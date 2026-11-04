@@ -2,7 +2,7 @@ const http = require("node:http");
 const fs = require("node:fs/promises");
 const path = require("node:path");
 
-// Both the localhost playground and exported local starters use sibling sources.
+// Exported local starters resolve companion files from sibling checkouts.
 const files = {
   "/": "index.html",
   "/index.html": "index.html",
