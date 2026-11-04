@@ -689,6 +689,8 @@ test("playground edits documents and exports exact Markdown", async () => {
   try {
     const page = await browser.newPage({ acceptDownloads: true, viewport: { width: 1100, height: 800 } });
     await page.route("https://cdn.jsdelivr.net/**", async (route) => {
+      const pickerAsset = new URL(route.request().url()).pathname.match(/\/spa\.js@v20\.6\/((?:css|js)\/pickr\.min\.(?:css|js))$/)?.[1];
+      if (pickerAsset) return route.fulfill({ path: path.join(__dirname, "../../spa.js", pickerAsset), contentType: pickerAsset.endsWith("css") ? "text/css" : "text/javascript" });
       if (route.request().url().endsWith("bootstrap.min.css")) {
         const file = process.env.BOOTSTRAP_CSS_PATH || path.join(process.env.TEMP, "viewer-ecosystem-tests/bootstrap-v20.6.css");
         return route.fulfill({ body: await fs.readFile(file), contentType: "text/css" });
@@ -714,6 +716,29 @@ test("playground edits documents and exports exact Markdown", async () => {
     assert.equal(await page.locator(".viewer-suite").getByRole("link", { name: "MD.edit", exact: true }).getAttribute("href"), "https://byuwur.github.io/easy-md-editor/");
     assert.equal(await page.locator(".viewer-suite").getByRole("link", { name: "MD.edit", exact: true }).getAttribute("aria-current"), "page");
     assert.equal(await page.locator("#integration-cdn").isChecked(), true);
+    await page.locator("#preview-bg").evaluate((field) => field.closest("details").open = true);
+    await page.locator("#preview-bg").fill("transparent");
+    await page.locator("#preview-bg").dispatchEvent("change");
+    await page.locator('[data-color-picker="preview-container-bg"]').click();
+    const picker = page.locator(".pcr-app.visible");
+    await picker.locator('.pcr-type[data-type="HEXA"]').waitFor();
+    assert.deepEqual(await picker.locator(".pcr-type:visible").evaluateAll((formats) => formats.map((format) => format.dataset.type)), ["HEXA"]);
+    assert.match(await picker.locator(".pcr-result").inputValue(), /^#[0-9a-f]{6}(?:[0-9a-f]{2})?$/i);
+    assert.equal(await page.locator("#preview-container-bg").inputValue(), "", "Opening the picker retains the theme default");
+    await picker.locator(".pcr-result").fill("#345678cc");
+    await picker.locator(".pcr-result").press("Enter");
+    await picker.locator(".pcr-save").click();
+    assert.equal((await page.locator("#preview-container-bg").inputValue()).toLowerCase(), "#345678cc");
+    await page.waitForFunction(() => {
+      const document = window.document;
+      return getComputedStyle(document.querySelector(".byEDcontrols .byEDbutton")).backgroundColor === "rgba(52, 86, 120, 0.8)";
+    });
+    assert.equal(await page.locator("#editor").evaluate((element) => getComputedStyle(element).backgroundColor), "rgba(0, 0, 0, 0)");
+    await page.locator("#preview-bg").fill("not a color");
+    await page.locator("#preview-bg").dispatchEvent("change");
+    assert.equal(await page.locator("#preview-bg").evaluate((field) => field.checkValidity()), false);
+    await page.locator("#reset-appearance").click();
+    assert.equal(await page.locator("#preview-bg").evaluate((field) => field.checkValidity()), true);
     const cdnHTML = await page.locator("#integration-code").inputValue();
     assert.match(cdnHTML, /easy-md-editor@latest\/md\.edit\.js/);
     assert.match(cdnHTML, /easy-md-editor@latest\/md\.edit\.css/);
@@ -875,9 +900,7 @@ test("document and content backgrounds stay independent through theme and toolba
   const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_EXECUTABLE_PATH || undefined, channel: process.env.BROWSER_CHANNEL || "chrome" });
   try {
     const page = await browser.newPage();
-    await page.route("https://cdn.jsdelivr.net/**", (route) =>
-      route.request().url().endsWith("fontawesome.min.css") ? route.fulfill({ path: path.join(__dirname, "../../spa.js/css/fontawesome.min.css"), contentType: "text/css" }) : route.abort()
-    );
+    await page.route("https://cdn.jsdelivr.net/**", (route) => route.request().url().endsWith("fontawesome.min.css") ? route.fulfill({ path: path.join(__dirname, "../../spa.js/css/fontawesome.min.css"), contentType: "text/css" }) : route.abort());
     await page.setContent('<div id="viewer" data-theme="light"></div><div id="neighbor" data-theme="light"></div>');
     await page.addStyleTag({ path: path.join(__dirname, "../../easy-md-viewer/md.css") });
     await page.addScriptTag({ path: path.join(__dirname, "../../easy-md-viewer/md.js") });
@@ -900,25 +923,13 @@ test("document and content backgrounds stay independent through theme and toolba
       if (changeMode) await root.locator(".byVIEWthemeToggle").click();
       assert.equal(await root.evaluate((element) => getComputedStyle(element).backgroundColor), "rgba(0, 0, 0, 0)");
       assert.equal(await root.locator(".byEDsurface").evaluate((element) => getComputedStyle(element).backgroundColor), "rgb(18, 52, 86)");
-      assert.equal(
-        await root
-          .locator(".byEDcontrols .byEDbutton")
-          .first()
-          .evaluate((element) => getComputedStyle(element).backgroundColor),
-        "rgb(18, 52, 86)"
-      );
+      assert.equal(await root.locator(".byEDcontrols .byEDbutton").first().evaluate((element) => getComputedStyle(element).backgroundColor), "rgb(18, 52, 86)");
       assert.equal(await root.locator(".byEDbar").evaluate((element) => getComputedStyle(element).backgroundColor), "rgba(0, 0, 0, 0)");
     }
     assert.equal(await page.locator("#neighbor").evaluate((element) => getComputedStyle(element).backgroundColor), neighbor);
     await root.evaluate((element) => element.style.removeProperty("--by-view-container-bg"));
     await page.waitForFunction(() => getComputedStyle(document.querySelector("#viewer .byEDcontrols .byEDbutton")).backgroundColor === "rgb(39, 40, 34)");
-    assert.notEqual(
-      await root
-        .locator(".byEDcontrols .byEDbutton")
-        .first()
-        .evaluate((element) => getComputedStyle(element).backgroundColor),
-      "rgba(0, 0, 0, 0)"
-    );
+    assert.notEqual(await root.locator(".byEDcontrols .byEDbutton").first().evaluate((element) => getComputedStyle(element).backgroundColor), "rgba(0, 0, 0, 0)");
   } finally {
     await browser.close();
   }

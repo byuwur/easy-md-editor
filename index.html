@@ -10,9 +10,11 @@
     <link rel="icon" href="https://byuwur.github.io/img/logo.png" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/byuwur/spa.js@v20.6/css/shards.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/byuwur/spa.js@v20.6/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/byuwur/spa.js@v20.6/css/pickr.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@v2.3/md.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/byuwur/easy-code-viewer@v1.2/code.css" />
     <link rel="stylesheet" href="md.edit.css" />
+    <script src="https://cdn.jsdelivr.net/gh/byuwur/spa.js@v20.6/js/pickr.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/gh/byuwur/spa.js@v20.6/js/bootstrap.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/gh/byuwur/easy-code-viewer@v1.2/code.js" defer></script>
     <script src="https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@v2.3/md.js" defer></script>
@@ -198,6 +200,16 @@
           overflow: visible;
         }
       }
+
+      /* --- COLOR PICKERS --- */
+      .pcr-app {
+        background: var(--bs-body-bg);
+        border: 0.0625rem solid var(--bs-border-color);
+      }
+      .pcr-app .pcr-interaction .pcr-result {
+        background: var(--bs-tertiary-bg);
+        color: var(--bs-body-color);
+      }
     </style>
   </head>
   <body>
@@ -235,6 +247,23 @@
               </select>
             </div>
           </div>
+          <details class="border-top px-3 py-2">
+            <summary class="small fw-semibold">Appearance</summary>
+            <label class="d-block form-label" for="preview-bg">Document background</label>
+            <div class="input-group mb-2">
+              <input id="preview-bg" class="form-control" type="text" placeholder="Theme default" title="CSS color, including transparent, hex, or rgba" maxlength="80" />
+              <button class="btn btn-outline-secondary" type="button" data-color-picker="preview-bg" aria-label="Choose document background color"><i class="fa-solid fa-palette" aria-hidden="true"></i></button>
+            </div>
+            <label class="d-block form-label" for="preview-container-bg">Content &amp; controls background</label>
+            <div class="input-group mb-2">
+              <input id="preview-container-bg" class="form-control" type="text" placeholder="Theme default" title="CSS color, including transparent, hex, or rgba" maxlength="80" />
+              <button class="btn btn-outline-secondary" type="button" data-color-picker="preview-container-bg" aria-label="Choose content and controls background color"><i class="fa-solid fa-palette" aria-hidden="true"></i></button>
+            </div>
+            <p class="form-text">Use opacity or transparent for a seamless background. Blank fields follow the theme.</p>
+            <button id="copy-appearance" class="btn btn-sm btn-outline-secondary" type="button">Copy CSS</button>
+            <button id="reset-appearance" class="btn btn-sm btn-outline-secondary" type="button">Theme defaults</button>
+            <p id="appearance-status" class="form-text" role="status"></p>
+          </details>
           <div id="editor" data-theme="light"></div>
           <div class="metrics row g-0 bg-body-tertiary border-top" aria-label="Markdown source statistics">
             <div class="metric col-4 p-3"><span class="small font-monospace text-body-secondary d-block mb-2">Source size</span><span id="source-size" class="font-monospace"></span></div>
@@ -632,6 +661,76 @@ Edit any example above. Clean, Assisted, Source, and Preview all use this same M
         });
         document.getElementById("year-txt").textContent = new Date().getFullYear();
         generateIntegration();
+      });
+    </script>
+    <script>
+      (function initColorPickers() {
+        document.addEventListener("DOMContentLoaded", () => {
+          const pickers = [];
+          for (const button of document.querySelectorAll("[data-color-picker]")) {
+            const field = document.getElementById(button.dataset.colorPicker);
+            const validate = () => field.setCustomValidity(!field.value || CSS.supports("color", field.value) ? "" : "Enter a CSS color or transparent.");
+            field.addEventListener("input", validate);
+            field.addEventListener("change", validate);
+            if (!window.Pickr) {
+              button.hidden = true;
+              continue;
+            }
+            const picker = Pickr.create({
+              el: button, useAsButton: true, position: "bottom-start", theme: "classic", default: "#fafaf5", defaultRepresentation: "HEX",
+              components: { preview: true, opacity: true, hue: true, interaction: { hex: true, rgba: false, hsla: false, hsva: false, cmyk: false, input: true, save: true, clear: true } },
+              i18n: { "btn:clear": "Theme default", "aria:btn:clear": "Use the theme background" }
+            });
+            let syncing = false;
+            const change = (value) => {
+              field.value = value;
+              validate();
+              field.dispatchEvent(new Event("change", { bubbles: true }));
+            };
+            picker.on("show", () => {
+              // Opening must not replace a theme default with a fixed color.
+              syncing = true;
+              const frame = document.getElementById("preview-frame");
+              const viewer = frame?.contentDocument?.querySelector("#viewer, #document, #byJSONrenderer") || document.getElementById("editor");
+              const style = viewer?.ownerDocument.defaultView.getComputedStyle(viewer);
+              const themed = style?.getPropertyValue("--by-view-bg") || style?.getPropertyValue("--by-md-bg");
+              picker.setColor(field.value || (field.id === "preview-bg" ? style?.backgroundColor : themed) || "#fafaf5", true);
+              picker.setColorRepresentation("HEX");
+              syncing = false;
+            });
+            picker.on("change", (color) => {
+              if (!syncing) change(color.toHEXA().toString());
+            });
+            picker.on("clear", () => change(""));
+            picker.on("save", () => picker.hide());
+            pickers.push(picker);
+          }
+          window.addEventListener("pagehide", (event) => { if (!event.persisted) pickers.forEach((picker) => picker.destroyAndRemove()); });
+        });
+      })();
+    </script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const target = document.getElementById("editor");
+        const fields = [document.getElementById("preview-bg"), document.getElementById("preview-container-bg")];
+        const properties = ["--by-view-document-bg", "--by-view-container-bg"];
+        const apply = () => {
+          fields.forEach((field, index) => {
+            if (field.checkValidity() && field.value) target.style.setProperty(properties[index], field.value);
+            else target.style.removeProperty(properties[index]);
+          });
+          document.getElementById("appearance-status").textContent = fields.some((field) => !field.checkValidity()) ? "Enter a CSS color or transparent." : "";
+        };
+        fields.forEach((field) => field.addEventListener("change", apply));
+        document.getElementById("reset-appearance").addEventListener("click", () => { fields.forEach((field) => { field.value = ""; field.setCustomValidity(""); }); apply(); });
+        document.getElementById("copy-appearance").addEventListener("click", async () => {
+          if (fields.some((field) => !field.checkValidity())) return apply();
+          const rules = fields.map((field, index) => field.value ? `  ${properties[index]}: ${field.value};` : "").filter(Boolean).join("\n");
+          try {
+            await navigator.clipboard.writeText(`.byMDeditor {\n${rules}\n}`);
+            document.getElementById("appearance-status").textContent = "CSS copied.";
+          } catch { document.getElementById("appearance-status").textContent = "Copy failed. Check clipboard access."; }
+        });
       });
     </script>
   </body>
