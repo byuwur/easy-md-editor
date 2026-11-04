@@ -359,7 +359,7 @@
   font: inherit;
 }
 .byEDdialog::backdrop {
-  background: rgb(0 0 0 / 45%);
+  background: #00000073;
 }
 .byEDdialog h2 {
   margin: 0 0 1rem;
