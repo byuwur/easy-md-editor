@@ -709,7 +709,9 @@ test("playground edits documents and exports exact Markdown", async () => {
       `https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@v${releases.md}/md.js`
     ]);
     assert.equal(await page.locator(".navbar-brand").innerText(), "md↑easy-md-editor");
-    assert.equal(await page.locator(".viewer-suite a").count(), 8);
+    assert.equal(await page.locator(".viewer-suite a").count(), 9);
+    assert.equal(await page.locator(".viewer-suite").getByRole("link", { name: "MD.edit", exact: true }).getAttribute("href"), "https://byuwur.github.io/easy-md-editor/");
+    assert.equal(await page.locator(".viewer-suite").getByRole("link", { name: "MD.edit", exact: true }).getAttribute("aria-current"), "page");
     assert.equal(await page.locator("#integration-cdn").isChecked(), true);
     const cdnHTML = await page.locator("#integration-code").inputValue();
     assert.match(cdnHTML, /easy-md-editor@latest\/md\.edit\.js/);
