@@ -6,15 +6,13 @@
  * MIT License (see LICENSE).
  */
 (function (global) {
-  /* --- SETUP --- */
+  /* --- INITIALIZATION --- */
   if (global.byMDeditor?.initialized) return;
-  const instances = new WeakMap();
-  const node = (tag, className = "", text) => {
-    const element = document.createElement(tag);
-    element.className = className;
-    if (text !== undefined) element.textContent = text;
-    return element;
-  };
+
+  /* --- METADATA --- */
+  byMDeditor.VERSION = "1"; // 2026-11-04
+
+  /* --- CONSTANTS --- */
   const tools = [
     ["undo", "Undo", "rotate-left"],
     ["redo", "Redo", "rotate-right"],
@@ -36,6 +34,17 @@
   const modes = ["clean", "assisted", "source"];
   const modeDescriptions = { clean: "Hide Markdown syntax outside the active line or code block.", assisted: "Keep Markdown syntax visible beside formatted text.", source: "Edit the complete Markdown source as plain text." };
   const palettes = { monokai: "Monokai", github: "GitHub", solarized: "Solarized", "high-contrast": "High Contrast" };
+
+  /* --- STATE --- */
+  const instances = new WeakMap();
+
+  /* --- HELPERS --- */
+  const node = (tag, className = "", text) => {
+    const element = document.createElement(tag);
+    element.className = className;
+    if (text !== undefined) element.textContent = text;
+    return element;
+  };
   let segmenter;
   const stateKey = (state) => `${state?.fence?.marker || ""}${state?.fence?.length || 0}:${state?.table || 0}`;
   const groupKind = (type) => {
@@ -1405,6 +1414,7 @@
         }
       }
     };
+    /* --- MOUNT --- */
     instances.set(element, api);
     syncRawBreaks();
     if (rich && syntax !== "source") build();
@@ -1428,7 +1438,7 @@
     updateToolbar();
     return api;
   }
-  byMDeditor.VERSION = "1";
-  byMDeditor.initialized = true;
+  /* --- EXPORT --- */
   global.byMDeditor = byMDeditor;
+  byMDeditor.initialized = true;
 })(typeof window !== "undefined" ? window : this);
