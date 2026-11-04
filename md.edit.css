@@ -1,0 +1,439 @@
+/* byuwur was here */
+
+/* --- ICONS --- */
+@import url("https://cdn.jsdelivr.net/gh/byuwur/spa.js@v20.6/css/fontawesome.min.css");
+
+/* --- LIGHT --- */
+.byMDeditor {
+  --by-view-toggle-position: 25%;
+  --by-ed-bg: var(--by-md-bg, #fafaf5);
+  --by-ed-text: var(--by-md-text, #272822);
+  --by-ed-muted: var(--by-md-muted, #686856);
+  --by-ed-border: var(--by-md-border, #d8d8c8);
+  --by-ed-alt: var(--by-md-code-bg, #eeeee4);
+  --by-ed-accent: var(--by-md-link, #087f8c);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0.0625rem solid var(--by-ed-border);
+  border-radius: 0.75rem;
+  background: var(--by-ed-bg);
+  color: var(--by-ed-text);
+  font:
+    1rem/1.5 system-ui,
+    sans-serif;
+  overflow-wrap: anywhere;
+}
+.byMDeditor *,
+.byMDeditor *::before,
+.byMDeditor *::after {
+  box-sizing: border-box;
+}
+
+/* --- DARK --- */
+.byMDeditor.dark:not([data-theme="light"]),
+.byMDeditor[data-theme="dark"] {
+  --by-view-toggle-position: 75%;
+  --by-ed-bg: var(--by-md-bg, #272822);
+  --by-ed-text: var(--by-md-text, #f8f8f2);
+  --by-ed-muted: var(--by-md-muted, #a6a28c);
+  --by-ed-border: var(--by-md-border, #49483e);
+  --by-ed-alt: var(--by-md-code-bg, #20211c);
+  --by-ed-accent: var(--by-md-link, #66d9ef);
+  color-scheme: dark;
+}
+
+/* --- CONTROLS --- */
+.byMDeditor [hidden] {
+  display: none !important;
+}
+.byMDeditor :is(button, select, input, textarea) {
+  font: inherit;
+  color: inherit;
+}
+.byMDeditor :is(button, select) {
+  min-height: 2.25em;
+  border: 0.0625rem solid var(--by-ed-border);
+  border-radius: 0.5em;
+  padding: 0.3em 0.55em;
+  background: var(--by-ed-bg);
+}
+.byMDeditor button {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.byMDeditor button:hover {
+  background: var(--by-ed-alt);
+}
+.byMDeditor button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.byMDeditor button[aria-pressed="true"],
+.byMDeditor button[aria-expanded="true"] {
+  background: var(--by-ed-alt);
+  box-shadow: inset 0 -0.125em var(--by-ed-accent);
+}
+.byMDeditor :is(button, input, select, textarea, [contenteditable]):focus-visible {
+  outline: 0.125rem solid var(--by-ed-accent);
+  outline-offset: 0.125rem;
+}
+.byEDbar,
+.byEDtoolbar,
+.byEDcontrols {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+.byEDbar {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 0.0625rem solid var(--by-ed-border);
+  font-size: 0.875em;
+}
+.byEDcontrols {
+  margin-left: auto;
+}
+.byEDbutton {
+  display: inline-flex;
+  gap: 0.4em;
+  align-items: center;
+  justify-content: center;
+}
+.byEDcontrols > .byVIEWthemeToggle {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  place-items: center;
+  flex-shrink: 0;
+  width: calc(3.5em - 0.125rem);
+  height: 1.75em;
+  min-height: 0;
+  padding: 0;
+  border-radius: 2em;
+  font-family: ui-monospace, monospace;
+}
+.byEDcontrols > .byVIEWthemeToggle svg {
+  width: 1.25em;
+  height: 1.25em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.byEDcontrols > .byVIEWthemeToggle::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: var(--by-view-toggle-position);
+  width: calc(1.5em - 0.125rem);
+  height: calc(1.5em - 0.125rem);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  border-radius: 50%;
+  background: currentColor;
+  transition: left 0.2s;
+}
+.byEDtoolbar {
+  padding: 0.5rem 0.75rem;
+  background: var(--by-ed-alt);
+  border-bottom: 0.0625rem solid var(--by-ed-border);
+  font-size: 0.8125em;
+}
+.byEDtoolbar .byEDselect {
+  max-width: 11em;
+}
+.byEDstatus {
+  margin: 0;
+  padding: 0 1rem;
+  font-size: 0.8125em;
+  color: var(--by-ed-muted);
+}
+.byEDstatus:not(:empty) {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-top: 0.0625rem solid var(--by-ed-border);
+}
+
+/* --- DOCUMENT --- */
+.byEDsurface {
+  position: relative;
+  padding: 1.5rem;
+  min-height: 18rem;
+  outline: none;
+  white-space: pre-wrap;
+  caret-color: var(--by-ed-text);
+}
+.byEDsurface[data-empty="true"]::before {
+  content: attr(data-placeholder);
+  position: absolute;
+  color: var(--by-ed-muted);
+  pointer-events: none;
+}
+.byEDsurface:focus-visible {
+  outline-offset: -0.1875rem !important;
+  border-radius: 0 0 0.65rem 0.65rem;
+}
+.byEDgroup {
+  margin: 0;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 1.5rem;
+}
+.byEDline {
+  margin: 0;
+  min-height: 1.5em;
+}
+.byEDline[data-type="blank"] {
+  min-height: 0.75em;
+  line-height: 0.75;
+}
+.byEDline[data-type="heading"] {
+  margin: 0.6em 0 0.35em;
+}
+.byEDline[data-type="heading"]:first-child {
+  margin-top: 0;
+}
+.byEDline[data-type="quote"] {
+  border-left: 0.1875rem solid var(--by-ed-border);
+  padding-left: 1em;
+  color: var(--by-ed-muted);
+}
+.byEDgroup-bullet,
+.byEDgroup-ordered {
+  padding-left: 1.75em;
+}
+.byEDline[data-type="task"] {
+  position: relative;
+  list-style: none;
+}
+/* Revealing task syntax must not move the checkbox out of the list gutter. */
+.byEDtask {
+  position: absolute;
+  inset-inline-start: -1.6em;
+  inset-block-start: calc((1lh - 1em) / 2);
+  width: 1em;
+  height: 1em;
+  margin: 0;
+  accent-color: var(--by-ed-accent);
+}
+.byEDgroup-fence {
+  background: var(--by-ed-alt);
+  color: var(--by-ed-text);
+  border-radius: 0.5rem;
+  padding: 0.625rem;
+  overflow: auto;
+  max-width: 100%;
+}
+.byEDgroup-fence code {
+  display: block;
+  padding: 0;
+  color: inherit;
+  font:
+    0.875em/1.5 ui-monospace,
+    monospace;
+}
+.byEDline:is([data-type="code"], [data-type="fenceOpen"], [data-type="fenceClose"]) {
+  display: block;
+  white-space: pre-wrap;
+}
+.byEDline[data-type="source"] {
+  font:
+    0.875em/1.5 ui-monospace,
+    monospace;
+  background: var(--by-ed-alt);
+  border-left: 0.125rem solid var(--by-ed-border);
+  padding: 0.25em 0.5em;
+}
+.byEDline[data-type="rule"] hr {
+  border: 0;
+  border-top: 0.0625rem solid var(--by-ed-border);
+  margin: 0.75em 0;
+}
+.byEDimage {
+  display: block;
+  max-width: 100%;
+  max-height: 25rem;
+  object-fit: contain;
+  margin: 0.5em 0;
+  border-radius: 0.375rem;
+}
+.byEDtableScroll,
+.byEDgroup-table {
+  overflow: auto;
+  max-width: 100%;
+}
+.byEDgroup-table table {
+  display: table;
+  width: 100%;
+  border: 0.0625rem solid var(--by-ed-border);
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  margin: 0;
+}
+.byEDgroup-table :is(th, td) {
+  border: 0;
+  border-inline-end: 0.0625rem solid var(--by-ed-border);
+  padding: 0.375em 0.625em;
+  min-width: 5em;
+  vertical-align: top;
+  white-space: pre-wrap;
+}
+.byEDgroup-table :is(th, td):last-child {
+  border-inline-end: 0;
+}
+.byEDgroup-table tr + tr > :is(th, td) {
+  border-top: 0.0625rem solid var(--by-ed-border);
+}
+.byEDgroup-table th {
+  background: var(--by-ed-alt);
+  text-align: left;
+}
+.byEDgroup-table .byEDsyntax {
+  white-space: pre-wrap;
+}
+
+/* --- SYNTAX --- */
+.byEDsyntax {
+  display: none;
+}
+.byMDeditor[data-syntax="assisted"] .byEDsyntax,
+.byMDeditor[data-syntax="clean"] .byEDgroup-fence.is-active .byEDsyntax,
+.byMDeditor[data-syntax="clean"] .byEDline.is-active .byEDsyntax {
+  display: inline;
+  color: var(--by-ed-muted);
+  font-weight: 400;
+  font-style: normal;
+  text-decoration: none;
+}
+.byMDeditor[data-syntax="assisted"] .byEDline.is-active .byEDsyntax {
+  color: var(--by-ed-text);
+}
+.byMDeditor[data-syntax="clean"] .byEDline:is([data-type="fenceOpen"], [data-type="fenceClose"], [data-type="tableDelimiter"]):not(.is-active) {
+  display: none;
+}
+.byMDeditor[data-syntax="clean"] .byEDgroup-fence.is-active .byEDline:is([data-type="fenceOpen"], [data-type="fenceClose"]) {
+  display: block;
+}
+.byMDeditor[data-syntax="clean"] .byEDimageSource:not(:focus-within) > :not(.byEDimage) {
+  color: var(--by-ed-muted);
+}
+
+/* --- SOURCE AND PREVIEW --- */
+.byEDsource {
+  display: block;
+  width: 100%;
+  min-height: 24rem;
+  resize: vertical;
+  margin: 0;
+  border: 0;
+  background: var(--by-ed-bg);
+  padding: 1.5rem;
+  font:
+    0.875em/1.6 ui-monospace,
+    monospace !important;
+  tab-size: 2;
+}
+.byEDpreview.byMDdocument {
+  margin: 0;
+  padding: 0 1rem 1.5rem;
+  border: 0;
+  border-radius: 0;
+}
+
+/* --- DIALOGS --- */
+.byEDdialog {
+  width: min(26rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+  overflow: auto;
+  border: 0.0625rem solid var(--by-ed-border);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  background: var(--by-ed-bg);
+  color: var(--by-ed-text);
+  font: inherit;
+}
+.byEDdialog::backdrop {
+  background: rgb(0 0 0 / 45%);
+}
+.byEDdialog h2 {
+  margin: 0 0 1rem;
+  font-size: 1.25em;
+}
+.byEDfield {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.75rem 0;
+}
+.byEDfield input {
+  width: 100%;
+  min-height: 2.5em;
+  border: 0.0625rem solid var(--by-ed-border);
+  border-radius: 0.375rem;
+  padding: 0.35em 0.5em;
+  background: var(--by-ed-bg);
+}
+.byEDdialogActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+/* --- ACCESSIBILITY AND PRINT --- */
+@media (forced-colors: active) {
+  .byMDeditor,
+  .byMDeditor.dark:not([data-theme="light"]),
+  .byMDeditor[data-theme="dark"] {
+    --by-ed-accent: Highlight;
+    --by-ed-border: ButtonText;
+    --by-ed-bg: Canvas;
+    --by-ed-text: CanvasText;
+    --by-ed-muted: CanvasText;
+  }
+  .byEDsyntax {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .byMDeditor *,
+  .byEDcontrols > .byVIEWthemeToggle::after {
+    scroll-behavior: auto !important;
+    transition: none !important;
+    animation: none !important;
+  }
+}
+@media print {
+  .byEDgroup {
+    content-visibility: visible;
+  }
+  .byEDbar,
+  .byEDtoolbar,
+  .byEDstatus,
+  .byEDsource,
+  .byEDsurface,
+  .byEDdialog {
+    display: none !important;
+  }
+  .byMDeditor {
+    border: 0;
+  }
+  .byEDpreview:not([hidden]) {
+    display: block !important;
+  }
+  .byEDpreview :is(pre, code) {
+    white-space: pre-wrap;
+    overflow: visible;
+    overflow-wrap: anywhere;
+  }
+  .byEDpreview :is(h1, h2, h3, h4, h5, h6) {
+    break-after: avoid;
+  }
+  .byEDpreview tr {
+    break-inside: avoid;
+  }
+}
