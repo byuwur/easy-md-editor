@@ -147,6 +147,7 @@ test("source-driven editor browser contracts", async (t) => {
             .click({ position: { x: 2, y: 2 } });
           const offset = [source.indexOf(eol) + eol.length, source.indexOf("After") - eol.length, source.length][index];
           assert.deepEqual(await page.evaluate(() => editor.getSelection()), { anchor: offset, focus: offset });
+          await page.waitForFunction(() => document.querySelector(".byEDline.is-active")?.dataset.type === "blank");
           assert.equal(await page.locator(".byEDline.is-active").getAttribute("data-type"), "blank");
           await page.keyboard.type("New");
           assert.equal(await page.evaluate(() => editor.getMarkdown()), `${source.slice(0, offset)}New${source.slice(offset)}`);
