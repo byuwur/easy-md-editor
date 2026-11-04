@@ -1,5 +1,7 @@
 # byuwur/easy-md-editor
 
+![easy-md-editor preview](prev.jpg)
+
 **Markdown, made to be written.**
 
 Write a document, use familiar formatting tools, and get ordinary Markdown back. For notes, documentation, terms and conditions, and other text your application needs to store or move around.
