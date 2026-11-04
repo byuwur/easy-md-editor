@@ -20,7 +20,7 @@
   padding: 0;
   border: 0.0625rem solid var(--by-ed-border);
   border-radius: 0.75rem;
-  background: var(--by-ed-bg);
+  background: var(--by-view-document-bg, var(--by-ed-bg));
   color: var(--by-ed-text);
   font:
     1rem/1.5 system-ui,
@@ -59,14 +59,14 @@
   border: 0.0625rem solid var(--by-ed-border);
   border-radius: 0.5em;
   padding: 0.3em 0.55em;
-  background: var(--by-ed-bg);
+  background: var(--by-view-container-bg, var(--by-ed-bg));
 }
 .byMDeditor button {
   cursor: pointer;
   touch-action: manipulation;
 }
 .byMDeditor button:hover {
-  background: var(--by-ed-alt);
+  background: var(--by-view-container-bg, var(--by-ed-alt));
 }
 .byMDeditor button:disabled {
   opacity: 0.5;
@@ -74,7 +74,7 @@
 }
 .byMDeditor button[aria-pressed="true"],
 .byMDeditor button[aria-expanded="true"] {
-  background: var(--by-ed-alt);
+  background: var(--by-view-container-bg, var(--by-ed-alt));
   box-shadow: inset 0 -0.125em var(--by-ed-accent);
 }
 .byMDeditor :is(button, input, select, textarea, [contenteditable]):focus-visible {
@@ -167,6 +167,7 @@
   outline: none;
   white-space: pre-wrap;
   caret-color: var(--by-ed-text);
+  background: var(--by-view-container-bg, var(--by-ed-bg));
 }
 .byEDsurface[data-empty="true"]::before {
   content: attr(data-placeholder);
@@ -331,7 +332,7 @@
   resize: vertical;
   margin: 0;
   border: 0;
-  background: var(--by-ed-bg);
+  background: var(--by-view-container-bg, var(--by-ed-bg));
   padding: 1.5rem;
   font:
     0.875em/1.6 ui-monospace,
@@ -375,7 +376,7 @@
   border: 0.0625rem solid var(--by-ed-border);
   border-radius: 0.375rem;
   padding: 0.35em 0.5em;
-  background: var(--by-ed-bg);
+  background: var(--by-view-container-bg, var(--by-ed-bg));
 }
 .byEDdialogActions {
   display: flex;
