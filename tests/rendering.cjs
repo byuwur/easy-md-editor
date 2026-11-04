@@ -705,18 +705,21 @@ test("playground edits documents and exports exact Markdown", async () => {
     await page.locator(".byEDsurface").waitFor();
     assert.equal(await page.locator(".byEDsurface").isVisible(), true);
     const releases = await page.evaluate(() => ({ md: byMDviewer.VERSION, code: byCODEviewer.VERSION }));
-    assert.deepEqual(await page.locator('head [href*="easy-md-viewer"], head [href*="easy-code-viewer"], head [src*="easy-md-viewer"], head [src*="easy-code-viewer"]').evaluateAll((assets) => assets.map((asset) => asset.href || asset.src).sort()), [
-      `https://cdn.jsdelivr.net/gh/byuwur/easy-code-viewer@v${releases.code}/code.css`,
-      `https://cdn.jsdelivr.net/gh/byuwur/easy-code-viewer@v${releases.code}/code.js`,
-      `https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@v${releases.md}/md.css`,
-      `https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@v${releases.md}/md.js`
-    ]);
+    assert.deepEqual(
+      await page.locator('head [href*="easy-md-viewer"], head [href*="easy-code-viewer"], head [src*="easy-md-viewer"], head [src*="easy-code-viewer"]').evaluateAll((assets) => assets.map((asset) => asset.href || asset.src).sort()),
+      [
+        `https://cdn.jsdelivr.net/gh/byuwur/easy-code-viewer@v${releases.code}/code.css`,
+        `https://cdn.jsdelivr.net/gh/byuwur/easy-code-viewer@v${releases.code}/code.js`,
+        `https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@v${releases.md}/md.css`,
+        `https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@v${releases.md}/md.js`
+      ]
+    );
     assert.equal(await page.locator(".navbar-brand").innerText(), "md↑easy-md-editor");
     assert.equal(await page.locator(".viewer-suite a").count(), 9);
     assert.equal(await page.locator(".viewer-suite").getByRole("link", { name: "MD.edit", exact: true }).getAttribute("href"), "https://byuwur.github.io/easy-md-editor/");
     assert.equal(await page.locator(".viewer-suite").getByRole("link", { name: "MD.edit", exact: true }).getAttribute("aria-current"), "page");
     assert.equal(await page.locator("#integration-cdn").isChecked(), true);
-    await page.locator("#preview-bg").evaluate((field) => field.closest("details").open = true);
+    await page.locator("#preview-bg").evaluate((field) => (field.closest("details").open = true));
     await page.locator("#preview-bg").fill("transparent");
     await page.locator("#preview-bg").dispatchEvent("change");
     await page.locator('[data-color-picker="preview-container-bg"]').click();
@@ -900,7 +903,9 @@ test("document and content backgrounds stay independent through theme and toolba
   const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_EXECUTABLE_PATH || undefined, channel: process.env.BROWSER_CHANNEL || "chrome" });
   try {
     const page = await browser.newPage();
-    await page.route("https://cdn.jsdelivr.net/**", (route) => route.request().url().endsWith("fontawesome.min.css") ? route.fulfill({ path: path.join(__dirname, "../../spa.js/css/fontawesome.min.css"), contentType: "text/css" }) : route.abort());
+    await page.route("https://cdn.jsdelivr.net/**", (route) =>
+      route.request().url().endsWith("fontawesome.min.css") ? route.fulfill({ path: path.join(__dirname, "../../spa.js/css/fontawesome.min.css"), contentType: "text/css" }) : route.abort()
+    );
     await page.setContent('<div id="viewer" data-theme="light"></div><div id="neighbor" data-theme="light"></div>');
     await page.addStyleTag({ path: path.join(__dirname, "../../easy-md-viewer/md.css") });
     await page.addScriptTag({ path: path.join(__dirname, "../../easy-md-viewer/md.js") });
@@ -923,13 +928,25 @@ test("document and content backgrounds stay independent through theme and toolba
       if (changeMode) await root.locator(".byVIEWthemeToggle").click();
       assert.equal(await root.evaluate((element) => getComputedStyle(element).backgroundColor), "rgba(0, 0, 0, 0)");
       assert.equal(await root.locator(".byEDsurface").evaluate((element) => getComputedStyle(element).backgroundColor), "rgb(18, 52, 86)");
-      assert.equal(await root.locator(".byEDcontrols .byEDbutton").first().evaluate((element) => getComputedStyle(element).backgroundColor), "rgb(18, 52, 86)");
+      assert.equal(
+        await root
+          .locator(".byEDcontrols .byEDbutton")
+          .first()
+          .evaluate((element) => getComputedStyle(element).backgroundColor),
+        "rgb(18, 52, 86)"
+      );
       assert.equal(await root.locator(".byEDbar").evaluate((element) => getComputedStyle(element).backgroundColor), "rgba(0, 0, 0, 0)");
     }
     assert.equal(await page.locator("#neighbor").evaluate((element) => getComputedStyle(element).backgroundColor), neighbor);
     await root.evaluate((element) => element.style.removeProperty("--by-view-container-bg"));
     await page.waitForFunction(() => getComputedStyle(document.querySelector("#viewer .byEDcontrols .byEDbutton")).backgroundColor === "rgb(39, 40, 34)");
-    assert.notEqual(await root.locator(".byEDcontrols .byEDbutton").first().evaluate((element) => getComputedStyle(element).backgroundColor), "rgba(0, 0, 0, 0)");
+    assert.notEqual(
+      await root
+        .locator(".byEDcontrols .byEDbutton")
+        .first()
+        .evaluate((element) => getComputedStyle(element).backgroundColor),
+      "rgba(0, 0, 0, 0)"
+    );
   } finally {
     await browser.close();
   }

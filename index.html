@@ -677,7 +677,12 @@ Edit any example above. Clean, Assisted, Source, and Preview all use this same M
               continue;
             }
             const picker = Pickr.create({
-              el: button, useAsButton: true, position: "bottom-start", theme: "classic", default: "#fafaf5", defaultRepresentation: "HEX",
+              el: button,
+              useAsButton: true,
+              position: "bottom-start",
+              theme: "classic",
+              default: "#fafaf5",
+              defaultRepresentation: "HEX",
               components: { preview: true, opacity: true, hue: true, interaction: { hex: true, rgba: false, hsla: false, hsva: false, cmyk: false, input: true, save: true, clear: true } },
               i18n: { "btn:clear": "Theme default", "aria:btn:clear": "Use the theme background" }
             });
@@ -705,7 +710,9 @@ Edit any example above. Clean, Assisted, Source, and Preview all use this same M
             picker.on("save", () => picker.hide());
             pickers.push(picker);
           }
-          window.addEventListener("pagehide", (event) => { if (!event.persisted) pickers.forEach((picker) => picker.destroyAndRemove()); });
+          window.addEventListener("pagehide", (event) => {
+            if (!event.persisted) pickers.forEach((picker) => picker.destroyAndRemove());
+          });
         });
       })();
     </script>
@@ -722,14 +729,25 @@ Edit any example above. Clean, Assisted, Source, and Preview all use this same M
           document.getElementById("appearance-status").textContent = fields.some((field) => !field.checkValidity()) ? "Enter a CSS color or transparent." : "";
         };
         fields.forEach((field) => field.addEventListener("change", apply));
-        document.getElementById("reset-appearance").addEventListener("click", () => { fields.forEach((field) => { field.value = ""; field.setCustomValidity(""); }); apply(); });
+        document.getElementById("reset-appearance").addEventListener("click", () => {
+          fields.forEach((field) => {
+            field.value = "";
+            field.setCustomValidity("");
+          });
+          apply();
+        });
         document.getElementById("copy-appearance").addEventListener("click", async () => {
           if (fields.some((field) => !field.checkValidity())) return apply();
-          const rules = fields.map((field, index) => field.value ? `  ${properties[index]}: ${field.value};` : "").filter(Boolean).join("\n");
+          const rules = fields
+            .map((field, index) => (field.value ? `  ${properties[index]}: ${field.value};` : ""))
+            .filter(Boolean)
+            .join("\n");
           try {
             await navigator.clipboard.writeText(`.byMDeditor {\n${rules}\n}`);
             document.getElementById("appearance-status").textContent = "CSS copied.";
-          } catch { document.getElementById("appearance-status").textContent = "Copy failed. Check clipboard access."; }
+          } catch {
+            document.getElementById("appearance-status").textContent = "Copy failed. Check clipboard access.";
+          }
         });
       });
     </script>
