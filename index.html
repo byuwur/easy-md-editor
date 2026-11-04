@@ -1,0 +1,635 @@
+<!doctype html>
+<html lang="en" data-bs-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Write documents. Get Markdown. An accessible vanilla JavaScript Markdown editor by BONYUR." />
+    <meta name="theme-color" content="#141618" />
+    <meta name="author" content="Andrés Trujillo [Mateus] byUwUr" />
+    <title>easy-md-editor | Markdown, made to be written.</title>
+    <link rel="icon" href="https://byuwur.github.io/img/logo.png" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/byuwur/spa.js@v20.6/css/shards.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/byuwur/spa.js@v20.6/css/bootstrap.min.css" />
+    <!-- Restore @latest CDN imports once the MD parser and CODE tokenizer APIs are published. -->
+    <link rel="stylesheet" href="../easy-md-viewer/md.css" />
+    <link rel="stylesheet" href="../easy-code-viewer/code.css" />
+    <link rel="stylesheet" href="md.edit.css" />
+    <script src="https://cdn.jsdelivr.net/gh/byuwur/spa.js@v20.6/js/bootstrap.min.js" defer></script>
+    <script src="../easy-code-viewer/code.js" defer></script>
+    <script src="../easy-md-viewer/md.js" defer></script>
+    <script src="md.edit.js" defer></script>
+    <style>
+      /* --- FAMILY THEME --- */
+      @font-face {
+        font-family: Archivo;
+        src: url("https://cdn.jsdelivr.net/gh/byuwur/spa.js@v20.6/css/webfonts/archivo.ttf") format("truetype");
+        font-weight: 100 900;
+        font-display: swap;
+      }
+      :root {
+        --accent: #c4b5fd;
+        --accent-text: var(--accent);
+        --accent-ink: #212529;
+        --bs-body-font-family: Archivo, var(--bs-font-sans-serif);
+        --bs-border-radius: 0;
+        --bs-border-radius-sm: 0;
+        --bs-border-radius-lg: 0;
+      }
+      :root[data-bs-theme="dark"] {
+        --bs-body-bg: #141618;
+        --bs-body-bg-rgb: 20, 22, 24;
+      }
+      :root[data-bs-theme="light"] {
+        --accent: #d8cdf5;
+        --accent-text: #6b4f9a;
+      }
+      html {
+        scroll-padding-top: 1rem;
+      }
+      ::selection {
+        background: var(--accent);
+        color: var(--accent-ink);
+      }
+      :focus-visible {
+        outline: 0.125rem solid var(--accent-text);
+        outline-offset: 0.1875rem;
+      }
+      .site-width {
+        max-width: 92.5rem;
+        padding-inline: clamp(1rem, 3vw, 3rem);
+      }
+      .navbar {
+        min-height: 4.75rem;
+      }
+      .brand-mark {
+        width: 2.125rem;
+        height: 2.125rem;
+        background: var(--accent);
+        color: var(--accent-ink);
+      }
+      .viewer-suite .brand-mark {
+        width: 1.5rem;
+        height: 1.5rem;
+        background: var(--logo-dark);
+        font-size: 0.625rem;
+      }
+      [data-bs-theme="light"] .viewer-suite .brand-mark {
+        background: var(--logo-light);
+      }
+      .intro {
+        padding-block: 3rem 2rem;
+      }
+      .intro h1 {
+        font-size: clamp(2.5rem, 4.6vw, 4.5rem);
+        font-weight: 650;
+        line-height: 1.08;
+      }
+      .intro h1 span {
+        color: var(--accent-text);
+      }
+
+      /* --- PAGE CONTROLS --- */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 2.75rem;
+        font-weight: 600;
+      }
+      .btn i,
+      .nav-link i {
+        font-size: 0.85em;
+      }
+      .btn-accent {
+        --bs-btn-bg: var(--accent);
+        --bs-btn-color: var(--accent-ink);
+        --bs-btn-border-color: var(--accent);
+        --bs-btn-hover-bg: var(--accent);
+        --bs-btn-hover-color: var(--accent-ink);
+        --bs-btn-hover-border-color: var(--bs-body-color);
+      }
+      .btn-outline-secondary {
+        --bs-btn-color: var(--bs-body-color);
+        --bs-btn-border-color: var(--bs-border-color);
+        --bs-btn-hover-color: var(--bs-body-color);
+        --bs-btn-hover-bg: var(--bs-tertiary-bg);
+        --bs-btn-hover-border-color: var(--accent-text);
+      }
+      .btn-outline-secondary[aria-pressed="true"],
+      .btn-check:checked + .btn-outline-secondary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: var(--accent-ink);
+      }
+      .form-select,
+      .form-control {
+        min-height: 2.75rem;
+      }
+      .form-select:focus,
+      .form-control:focus {
+        border-color: var(--accent-text);
+        box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--accent-text) 20%, transparent);
+      }
+      .source-picker {
+        width: min(100%, 18rem);
+      }
+
+      /* --- PLAYGROUND --- */
+      .playground > #editor {
+        border: 0;
+        border-radius: 0;
+      }
+      #editor :is(.byEDsurface, .byEDsource, .byEDpreview) {
+        max-height: clamp(34rem, 68dvh, 46rem);
+        overflow: auto;
+      }
+      .metric + .metric {
+        border-left: 0.0625rem solid var(--bs-border-color);
+      }
+      .source-output summary {
+        cursor: pointer;
+        padding-inline: 1.5rem 7rem;
+      }
+      .source-output > button {
+        right: 1.5rem;
+        top: 0.375rem;
+      }
+      #markdown-output,
+      .integration-code {
+        resize: vertical;
+        font-size: 0.875rem;
+        line-height: 1.8;
+        tab-size: 2;
+      }
+      #markdown-output {
+        min-height: 16rem;
+      }
+      .integration-code {
+        height: 28rem;
+        resize: none;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+      @media (max-width: 47.9375rem) {
+        #editor .byEDsurface {
+          padding: 1rem;
+        }
+      }
+      @media print {
+        header,
+        .intro,
+        .playground-toolbar,
+        .metrics,
+        .actions,
+        .source-output,
+        .get-started,
+        .viewer-suite,
+        footer {
+          display: none !important;
+        }
+        .site-width {
+          max-width: none;
+          padding: 0;
+        }
+        .playground {
+          border: 0 !important;
+        }
+        #editor .byEDpreview {
+          max-height: none;
+          overflow: visible;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="visually-hidden-focusable position-absolute top-0 start-0 p-3 z-3 bg-body-tertiary link-body-emphasis" href="#playground">Skip to playground</a>
+    <header class="border-bottom">
+      <nav class="navbar navbar-expand-md site-width container-fluid" aria-label="Main navigation">
+        <a class="navbar-brand fs-6 fw-semibold" href="#"><span class="brand-mark d-inline-flex align-items-center justify-content-center me-2 font-monospace fs-6 fw-bold" aria-hidden="true">md↑</span>easy-md-editor</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#site-menu" aria-controls="site-menu" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
+        <div class="collapse navbar-collapse" id="site-menu">
+          <div class="navbar-nav ms-auto align-items-md-center gap-md-2">
+            <a class="nav-link" href="#playground">Playground</a>
+            <a class="nav-link" href="#get-started">Get started</a>
+            <a class="nav-link" href="https://github.com/byuwur/easy-md-editor#readme">Docs <i class="fa-solid fa-arrow-up-right-from-square ms-1" aria-hidden="true"></i></a>
+            <a class="btn px-3 btn-outline-secondary fw-semibold" href="https://github.com/byuwur/easy-md-editor"><i class="fa-brands fa-github me-1" aria-hidden="true"></i> GitHub</a>
+            <button id="site-theme" class="btn px-3 btn-outline-secondary fw-semibold" type="button" aria-label="Switch website to light theme"><i class="fa-solid fa-sun me-1" aria-hidden="true"></i> <span>Light</span></button>
+          </div>
+        </div>
+      </nav>
+    </header>
+    <main class="site-width container-fluid">
+      <section class="intro" aria-labelledby="site-title">
+        <p class="small font-monospace text-body-secondary mb-2">A small tool by <a class="link-body-emphasis link-offset-2" href="https://byuwur.co" target="_blank" rel="noopener">BONYUR @byUwUr</a></p>
+        <h1 id="site-title" class="mb-2">Markdown, <span>made to be written.</span></h1>
+        <p class="text-body-secondary mb-0">Plain JavaScript. Open source. Free. Forever.</p>
+      </section>
+      <section id="playground" aria-labelledby="playground-title" tabindex="-1">
+        <div class="playground border">
+          <div class="playground-toolbar bg-body-tertiary px-4 py-3 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <h2 id="playground-title" class="h6 m-0 fw-semibold">Playground</h2>
+            <div class="source-picker">
+              <label class="small font-monospace text-body-secondary d-block mb-1" for="document-source">Sample</label>
+              <select id="document-source" class="form-select">
+                <option value="showcase">Default showcase</option>
+                <option value="custom">Blank document</option>
+              </select>
+            </div>
+          </div>
+          <div id="editor" data-theme="light"></div>
+          <div class="metrics row g-0 bg-body-tertiary border-top" aria-label="Markdown source statistics">
+            <div class="metric col-4 p-3"><span class="small font-monospace text-body-secondary d-block mb-2">Source size</span><span id="source-size" class="font-monospace"></span></div>
+            <div class="metric col-4 p-3"><span class="small font-monospace text-body-secondary d-block mb-2">Lines</span><span id="source-lines" class="font-monospace"></span></div>
+            <div class="metric col-4 p-3"><span class="small font-monospace text-body-secondary d-block mb-2">Characters</span><span id="source-characters" class="font-monospace"></span></div>
+          </div>
+        </div>
+        <div class="actions d-flex flex-wrap align-items-center gap-2 py-4">
+          <span class="small font-monospace text-body-secondary me-2">Try it!</span>
+          <button id="open-file" class="btn btn-outline-secondary fw-semibold" type="button"><i class="fa-solid fa-folder-open me-1" aria-hidden="true"></i> Open .md file</button>
+          <input id="file" type="file" accept=".md,.markdown,.txt,text/plain,text/markdown" hidden />
+          <button id="download" class="btn btn-outline-secondary fw-semibold" type="button"><i class="fa-solid fa-download me-1" aria-hidden="true"></i> Download Markdown</button>
+          <button id="print" class="btn btn-outline-secondary fw-semibold" type="button"><i class="fa-solid fa-print me-1" aria-hidden="true"></i> Print / PDF</button>
+          <button id="reset" class="btn btn-outline-secondary fw-semibold" type="button"><i class="fa-solid fa-rotate-left me-1" aria-hidden="true"></i> Restore sample</button>
+          <span id="feedback" class="small font-monospace text-body-secondary ms-auto" role="status" aria-live="polite"></span>
+        </div>
+        <div class="source-output position-relative mb-4">
+          <details class="border">
+            <summary class="bg-body-tertiary py-3 fw-semibold">Markdown output</summary>
+            <label class="visually-hidden" for="markdown-output">Markdown returned by the editor</label>
+            <textarea id="markdown-output" class="form-control font-monospace d-block w-100 border-0 px-4 py-3 bg-body" readonly spellcheck="false"></textarea>
+          </details>
+          <button id="copy-markdown" class="btn btn-sm px-3 btn-outline-secondary fw-semibold position-absolute" type="button" aria-label="Copy Markdown" aria-describedby="markdown-copy-feedback">
+            <i class="fa-solid fa-copy me-1" aria-hidden="true"></i> <span aria-live="polite">Copy</span>
+          </button>
+          <span id="markdown-copy-feedback" class="visually-hidden" role="status"></span>
+        </div>
+      </section>
+      <section id="get-started" class="get-started py-5 row gy-4 gx-lg-5 border-top" aria-labelledby="get-started-title">
+        <div class="col-lg-3">
+          <h2 id="get-started-title" class="h2 mb-3">Get started</h2>
+          <p class="text-body-secondary">Copy or download this Markdown editor starter with default settings.</p>
+          <p class="text-body-secondary small">Your application decides where the Markdown goes. The MD viewer supplies the parser and Preview.</p>
+          <p class="text-body-secondary small">Playground powered by <a class="link-body-emphasis link-offset-2" href="https://github.com/byuwur/spa.js" target="_blank" rel="noopener">SPA.js</a>.</p>
+          <p id="integration-note" class="text-body-secondary small mb-2"></p>
+          <a class="small link-body-emphasis link-offset-2" href="https://github.com/byuwur/easy-md-editor#readme" target="_blank" rel="noopener"
+            >Read the full API <i class="fa-solid fa-arrow-up-right-from-square ms-1" aria-hidden="true"></i
+          ></a>
+        </div>
+        <div class="col-lg-9">
+          <div class="code-box bg-body-tertiary border">
+            <div class="code-toolbar px-4 py-3 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2">
+              <fieldset class="m-0">
+                <legend class="visually-hidden">Integration assets</legend>
+                <div class="btn-group" role="group" aria-label="Integration assets">
+                  <input class="btn-check" type="radio" name="integrationMode" id="integration-cdn" value="cdn" checked />
+                  <label class="btn btn-outline-secondary fw-semibold" for="integration-cdn">CDN</label>
+                  <input class="btn-check" type="radio" name="integrationMode" id="integration-local" value="local" />
+                  <label class="btn btn-outline-secondary fw-semibold" for="integration-local">Local files</label>
+                </div>
+              </fieldset>
+              <div class="d-flex flex-wrap gap-2">
+                <button id="copy-integration" class="btn btn-sm px-3 copy-button btn-outline-secondary fw-semibold" type="button"><i class="fa-solid fa-copy me-1" aria-hidden="true"></i> <span aria-live="polite">Copy HTML</span></button>
+                <button id="download-html" class="btn btn-accent btn-sm px-3 fw-semibold" type="button"><i class="fa-solid fa-download me-1" aria-hidden="true"></i> Download HTML</button>
+              </div>
+            </div>
+            <textarea
+              id="integration-code"
+              class="integration-code m-0 form-control font-monospace d-block w-100 border-0 px-4 py-3 overflow-auto bg-body"
+              readonly
+              spellcheck="false"
+              wrap="soft"
+              aria-label="Complete HTML integration"></textarea>
+            <p id="integration-feedback" class="small text-body-secondary mx-4 my-0" role="status" aria-live="polite"></p>
+          </div>
+        </div>
+      </section>
+    </main>
+    <nav class="viewer-suite site-width py-4 container-fluid" aria-label="Viewer suite">
+      <p class="small text-body-secondary mb-3">Need a viewer for another format?</p>
+      <div class="d-flex flex-wrap align-items-center gap-3">
+        <a class="small font-monospace link-body-emphasis link-offset-2 text-decoration-none d-inline-flex align-items-center gap-2 py-1" href="https://byuwur.github.io/easy-md-viewer/">
+          <span class="brand-mark d-inline-flex align-items-center justify-content-center fw-bold" style="--logo-light: #d8cdf5; --logo-dark: #c4b5fd" aria-hidden="true">md↓</span>
+          <span class="text-decoration-underline">MD</span>
+        </a>
+        <a class="small font-monospace link-body-emphasis link-offset-2 text-decoration-none d-inline-flex align-items-center gap-2 py-1" href="https://byuwur.github.io/easy-json-viewer/">
+          <span class="brand-mark d-inline-flex align-items-center justify-content-center fw-bold" style="--logo-light: #f3e4b4; --logo-dark: #f2d98d" aria-hidden="true">{ }</span>
+          <span class="text-decoration-underline">JSON</span>
+        </a>
+        <a class="small font-monospace link-body-emphasis link-offset-2 text-decoration-none d-inline-flex align-items-center gap-2 py-1" href="https://byuwur.github.io/easy-csv-viewer/">
+          <span class="brand-mark d-inline-flex align-items-center justify-content-center fw-bold" style="--logo-light: #c0dfca; --logo-dark: #a9d6b8" aria-hidden="true">csv</span>
+          <span class="text-decoration-underline">CSV</span>
+        </a>
+        <a class="small font-monospace link-body-emphasis link-offset-2 text-decoration-none d-inline-flex align-items-center gap-2 py-1" href="https://byuwur.github.io/easy-log-viewer/">
+          <span class="brand-mark d-inline-flex align-items-center justify-content-center fw-bold" style="--logo-light: #f6d2bd; --logo-dark: #f3bfa0" aria-hidden="true">log</span>
+          <span class="text-decoration-underline">LOG</span>
+        </a>
+        <a class="small font-monospace link-body-emphasis link-offset-2 text-decoration-none d-inline-flex align-items-center gap-2 py-1" href="https://byuwur.github.io/easy-diff-viewer/">
+          <span class="brand-mark d-inline-flex align-items-center justify-content-center fw-bold" style="--logo-light: #f4c7cf; --logo-dark: #eeadb8" aria-hidden="true">±</span>
+          <span class="text-decoration-underline">DIFF</span>
+        </a>
+        <a class="small font-monospace link-body-emphasis link-offset-2 text-decoration-none d-inline-flex align-items-center gap-2 py-1" href="https://byuwur.github.io/easy-xml-viewer/">
+          <span class="brand-mark d-inline-flex align-items-center justify-content-center fw-bold" style="--logo-light: #c0e2ee; --logo-dark: #a3d5e8" aria-hidden="true">&lt;/&gt;</span>
+          <span class="text-decoration-underline">XML</span>
+        </a>
+        <a class="small font-monospace link-body-emphasis link-offset-2 text-decoration-none d-inline-flex align-items-center gap-2 py-1" href="https://byuwur.github.io/easy-yaml-viewer/">
+          <span class="brand-mark d-inline-flex align-items-center justify-content-center fw-bold" style="--logo-light: #e5cce3; --logo-dark: #dab6d7" aria-hidden="true">yml</span>
+          <span class="text-decoration-underline">YAML</span>
+        </a>
+        <a class="small font-monospace link-body-emphasis link-offset-2 text-decoration-none d-inline-flex align-items-center gap-2 py-1" href="https://byuwur.github.io/easy-code-viewer/">
+          <span class="brand-mark d-inline-flex align-items-center justify-content-center fw-bold" style="--logo-light: #cad8f4; --logo-dark: #aec5ef" aria-hidden="true">{ }</span>
+          <span class="text-decoration-underline">CODE</span>
+        </a>
+      </div>
+    </nav>
+    <footer class="site-footer border-top py-4 small">
+      <div class="site-width d-flex flex-wrap justify-content-between align-items-center gap-3 container-fluid">
+        <p class="m-0">
+          © <span id="year-txt"></span>, Made with <i class="fa-solid fa-heart" role="img" aria-label="love"></i> by
+          <a class="link-body-emphasis link-offset-2" href="https://byuwur.co" target="_blank" rel="noopener">BONYUR @byUwUr</a>
+        </p>
+        <div class="d-flex flex-wrap gap-3">
+          <a class="link-body-emphasis link-offset-2" href="https://github.com/byuwur/easy-md-editor/blob/main/LICENSE">MIT license</a>
+          <a class="link-body-emphasis link-offset-2" href="https://github.com/byuwur/easy-md-editor">Source &amp; contributions <i class="fa-solid fa-arrow-up-right-from-square ms-1" aria-hidden="true"></i></a>
+          <a class="link-body-emphasis link-offset-2" href="https://ko-fi.com/byuwur">Buy me a Pandebono <i class="fa-brands fa-ko-fi ms-1" aria-hidden="true"></i></a>
+        </div>
+      </div>
+    </footer>
+    <noscript
+      ><p class="site-width container-fluid">Enable JavaScript to use the playground. The <a href="https://github.com/byuwur/easy-md-editor#readme">README</a> includes integration examples.</p></noscript
+    >
+    <!-- Markdown indentation is content; preserve it when formatting the surrounding HTML. -->
+    <!-- prettier-ignore -->
+    <script id="sample" type="text/plain"># A little writing. A real document.
+
+Write something useful. Let **easy-md-editor** handle the Markdown.
+
+## Start small
+
+Use the toolbar, or type *a little emphasis*, **bold text**, ***both together***,
+~~cross something out~~, and `keep a little code inline`.
+
+## Lists that work for you
+
+- A bullet for the first idea
+- Another idea, with **formatting inside**
+
+1. Write a first draft
+2. Read it once more
+3. Make it yours
+
+- [x] Write a document
+- [ ] Try a table from the toolbar
+- [ ] Switch to Preview
+
+## Links and an image
+
+Visit [BONYUR's portfolio](https://byuwur.co), or paste https://example.com.
+Autolinks work too: <https://byuwur.co> and <hello@example.com>.
+
+![BONYUR's mark](https://byuwur.github.io/img/logo.png "BONYUR")
+
+## A table worth editing
+
+| Name | Role |
+| --- | --- |
+| Andres | Developer |
+| Sam | Designer |
+
+## A thought to keep
+
+> Simple is complicated enough.
+> A quote can have **emphasis**, too.
+
+A hard break keeps these lines together.\
+This is the next line, inside the same paragraph in Preview.
+
+---
+
+## Code stays code
+
+~~~javascript
+const markdown = editor.getMarkdown();
+/* Store Markdown as text.
+   Render it when reading. */
+const document = { title: "A little writing", published: true, revision: 1 };
+console.log(markdown, document);
+~~~
+
+## Every heading has its place
+
+### Make room for an idea
+
+#### Give it some detail
+
+##### Add a small note
+
+###### Even the smallest heading is editable
+
+Edit any example above. Clean, Assisted, Source, and Preview all use this same Markdown.
+</script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const sample = document.getElementById("sample").textContent;
+        const output = document.getElementById("markdown-output");
+        const feedback = document.getElementById("feedback");
+        const sourceSelect = document.getElementById("document-source");
+        const documents = { showcase: { source: sample, original: sample }, custom: { source: "", original: "" } };
+        let activeSource = "showcase";
+        let fileRequest = 0,
+          outputTimer;
+
+        /* --- DOCUMENT --- */
+        function updateOutput(markdown) {
+          output.value = markdown;
+          const bytes = new TextEncoder().encode(markdown).length;
+          document.getElementById("source-size").textContent = bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).toFixed(1)} KB`;
+          document.getElementById("source-lines").textContent = markdown.split(/\r\n|\r|\n/).length;
+          document.getElementById("source-characters").textContent = markdown.length;
+          feedback.textContent = markdown === documents[activeSource].original ? "Original" : "Edited";
+        }
+        const editor = byMDeditor(document.getElementById("editor"), sample, {
+          onChange(markdown) {
+            documents[activeSource].source = markdown;
+            clearTimeout(outputTimer);
+            outputTimer = setTimeout(() => updateOutput(markdown), 150);
+          }
+        });
+        updateOutput(sample);
+        window.playgroundEditor = editor;
+        const copyMarkdown = document.getElementById("copy-markdown");
+        copyMarkdown.addEventListener("click", async () => {
+          const markdown = editor.getMarkdown(),
+            caption = copyMarkdown.querySelector("span");
+          output.value = markdown;
+          document.getElementById("markdown-copy-feedback").textContent = "";
+          copyMarkdown.disabled = true;
+          try {
+            await navigator.clipboard.writeText(markdown);
+            caption.textContent = "Copied!";
+            copyMarkdown.removeAttribute("title");
+          } catch {
+            output.closest("details").open = true;
+            output.value = editor.getMarkdown();
+            output.focus();
+            output.select();
+            caption.textContent = "Failed";
+            copyMarkdown.title = "Clipboard unavailable. Press Ctrl+C or ⌘C to copy the selected Markdown.";
+            document.getElementById("markdown-copy-feedback").textContent = copyMarkdown.title;
+          } finally {
+            copyMarkdown.disabled = false;
+          }
+        });
+        const resetMarkdownCopy = () => {
+          if (copyMarkdown.querySelector("span").textContent !== "Failed") copyMarkdown.querySelector("span").textContent = "Copy";
+        };
+        copyMarkdown.addEventListener("mouseleave", resetMarkdownCopy);
+        copyMarkdown.addEventListener("focusout", resetMarkdownCopy);
+        sourceSelect.addEventListener("change", () => {
+          fileRequest++;
+          activeSource = sourceSelect.value;
+          editor.setMarkdown(documents[activeSource].source);
+        });
+
+        /* --- FILE ACTIONS --- */
+        function downloadText(text, filename, type) {
+          const url = URL.createObjectURL(new Blob([text], { type }));
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = filename;
+          document.body.append(link);
+          link.click();
+          link.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+        const file = document.getElementById("file");
+        document.getElementById("open-file").addEventListener("click", () => file.click());
+        file.addEventListener("change", async () => {
+          const current = ++fileRequest,
+            selected = file.files[0];
+          file.value = "";
+          if (!selected) return;
+          if (selected.size > 2000000) {
+            feedback.textContent = "Choose a file smaller than 2 MB.";
+            return;
+          }
+          try {
+            const text = await selected.text();
+            if (current !== fileRequest) return;
+            documents.custom = { source: text, original: text };
+            sourceSelect.querySelector('[value="custom"]').textContent = selected.name;
+            sourceSelect.value = activeSource = "custom";
+            editor.setMarkdown(text);
+          } catch {
+            if (current === fileRequest) feedback.textContent = "Could not open this file.";
+          }
+        });
+        document.getElementById("reset").addEventListener("click", () => {
+          fileRequest++;
+          sourceSelect.value = activeSource = "showcase";
+          documents.showcase = { source: sample, original: sample };
+          editor.setMarkdown(sample);
+        });
+        document.getElementById("download").addEventListener("click", () => downloadText(editor.getMarkdown(), "document.md", "text/markdown;charset=utf-8"));
+        document.getElementById("print").addEventListener("click", () => {
+          const wasPreview = !document.querySelector("#editor > .byEDpreview").hidden;
+          editor.setPreview(true);
+          window.print();
+          if (!wasPreview) editor.setPreview(false);
+        });
+
+        /* --- HTML STARTER --- */
+        function generateIntegration() {
+          const cdn = document.getElementById("integration-cdn").checked;
+          const mdPath = cdn ? "https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@latest/" : "";
+          const codePath = cdn ? "https://cdn.jsdelivr.net/gh/byuwur/easy-code-viewer@latest/" : "";
+          const editorPath = cdn ? "https://cdn.jsdelivr.net/gh/byuwur/easy-md-editor@latest/" : "";
+          // Keep a literal closing script tag out of this inline page script.
+          const endScript = "</" + "script>";
+          const html = [
+            "<!doctype html>",
+            '<html lang="en">',
+            "  <head>",
+            '    <meta charset="utf-8" />',
+            '    <meta name="viewport" content="width=device-width, initial-scale=1" />',
+            "    <title>easy-md-editor</title>",
+            `    <link rel="stylesheet" href="${mdPath}md.css" />`,
+            `    <link rel="stylesheet" href="${codePath}code.css" />`,
+            `    <link rel="stylesheet" href="${editorPath}md.edit.css" />`,
+            `    <script src="${codePath}code.js" defer>${endScript}`,
+            `    <script src="${mdPath}md.js" defer>${endScript}`,
+            `    <script src="${editorPath}md.edit.js" defer>${endScript}`,
+            "  </head>",
+            "  <body>",
+            '    <div id="document" data-theme="light"></div>',
+            "    <script>",
+            '      document.addEventListener("DOMContentLoaded", () => {',
+            '        const editor = byMDeditor(document.getElementById("document"), "# Hello\\n\\nStart writing.");',
+            "        // Read editor.getMarkdown() when your application saves.",
+            "      });",
+            `    ${endScript}`,
+            "  </body>",
+            "</html>"
+          ].join("\n");
+          document.getElementById("integration-code").value = html;
+          document.getElementById("integration-note").textContent = cdn
+            ? "CDN follows the latest release; updates may take time to reach caches."
+            : "Place the HTML beside md.edit.js, md.edit.css, md.js, md.css, code.js, and code.css. Toolbar icons load from the CDN; text labels work offline.";
+          return html;
+        }
+        document.querySelectorAll('[name="integrationMode"]').forEach((input) =>
+          input.addEventListener("change", () => {
+            generateIntegration();
+            document.getElementById("integration-feedback").textContent = "";
+            copyButton.querySelector("span").textContent = "Copy HTML";
+            copyButton.removeAttribute("title");
+          })
+        );
+        const copyButton = document.getElementById("copy-integration");
+        copyButton.addEventListener("click", async () => {
+          const code = document.getElementById("integration-code"),
+            caption = copyButton.querySelector("span");
+          const html = generateIntegration();
+          copyButton.disabled = true;
+          try {
+            await navigator.clipboard.writeText(html);
+            if (code.value !== html) return;
+            caption.textContent = "Copied!";
+            copyButton.removeAttribute("title");
+          } catch {
+            if (code.value !== html) return;
+            code.focus();
+            code.select();
+            caption.textContent = "Failed";
+            copyButton.title = "Clipboard unavailable. Press Ctrl+C or ⌘C to copy the selected text.";
+          } finally {
+            copyButton.disabled = false;
+          }
+        });
+        const resetCopy = () => {
+          const caption = copyButton.querySelector("span");
+          if (caption.textContent !== "Failed") caption.textContent = "Copy HTML";
+        };
+        copyButton.addEventListener("mouseleave", resetCopy);
+        copyButton.addEventListener("focusout", resetCopy);
+        document.getElementById("download-html").addEventListener("click", () => {
+          downloadText(generateIntegration(), "easy-md-editor.html", "text/html;charset=utf-8");
+          document.getElementById("integration-feedback").textContent = "Downloaded. The starter uses default editor settings.";
+        });
+
+        /* --- WEBSITE THEME --- */
+        document.getElementById("site-theme").addEventListener("click", (event) => {
+          const button = event.currentTarget;
+          const theme = document.documentElement.dataset.bsTheme === "dark" ? "light" : "dark";
+          const next = theme === "dark" ? "light" : "dark";
+          document.documentElement.dataset.bsTheme = theme;
+          button.querySelector("span").textContent = next === "light" ? "Light" : "Dark";
+          button.querySelector("i").className = `fa-solid fa-${next === "light" ? "sun" : "moon"} me-1`;
+          button.setAttribute("aria-label", `Switch website to ${next} theme`);
+          document.querySelector('meta[name="theme-color"]').content = getComputedStyle(document.documentElement).getPropertyValue("--bs-body-bg").trim();
+        });
+        document.getElementById("year-txt").textContent = new Date().getFullYear();
+        generateIntegration();
+      });
+    </script>
+  </body>
+</html>

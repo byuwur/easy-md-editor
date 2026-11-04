@@ -21,7 +21,7 @@ Save `md.edit.js` and `md.edit.css` beside your HTML. Use the CDN for the compan
 <script src="md.edit.js" defer></script>
 ```
 
-Visual editing requires the MD viewer's `parseInline()` and `scanLine()` APIs; live code colors use CODE's `tokenize()` API. Use companion releases exposing these APIs, or sibling development files until publication. In your own page, load the companions before creating an editor. An older or missing MD viewer leaves Source editing available until reinitialization; missing CODE leaves fenced code editable as plain text.
+Visual editing requires the MD viewer's `parseInline()` and `scanLine()` APIs; live code colors use CODE's `tokenize()` API. The playground temporarily imports sibling files until those updates are published; its CDN examples are ready for the releases. In your own page, load the companions before creating an editor. An older or missing MD viewer leaves Source editing available until reinitialization; missing CODE leaves fenced code editable as plain text.
 
 `md.edit.css` imports Font Awesome for the toolbar icons. Buttons keep readable labels when icons are unavailable; no extra HTML import is needed.
 
@@ -143,7 +143,7 @@ Custom palettes use the viewer's `--by-md-*` variables on `.byMDdocument[data-th
 
 Visual editing supports ATX headings, emphasis/strike, ordinary code spans, flat lists and checklists, single-level quotes, links, image descriptions, GFM tables, fences, and dividers. Tables can be inserted with 1–100 data rows and 1–20 columns. Source editing preserves other constructs.
 
-The toolbar covers these formatting commands, rather than every viewer setting or Markdown structure.
+The toolbar covers these formatting commands, rather than every viewer setting or Markdown structure. The default playground document demonstrates all six heading levels and each editable formatting feature, including mixed emphasis, autolinks, an image, both list types, tasks, tables, quotes, a hard break, a divider, and highlighted code.
 
 Complex nesting, indented code, comments, document markers, escapes/entities, and code spans with normalized whitespace remain literal where visual editing would lose source mapping. Lines longer than 8,192 characters stay literal. Soft-wrapped source lines are separate editing lines; Preview applies the viewer's paragraph rules. Source remains the fallback for structural table surgery and unsupported extensions.
 
@@ -153,22 +153,20 @@ Keyboard access, labeled controls, native dialogs, focus indicators, reduced mot
 
 ## Playground and checks
 
-Browser checks require sibling checkouts of `easy-md-viewer`, `easy-code-viewer`, and `spa.js` for offline fixtures. Install Playwright outside the source tree or set `NODE_PATH` to its modules, then run:
+With `easy-md-viewer` and `easy-code-viewer` checked out beside this repository:
+
+```sh
+node tests/serve.cjs
+```
+
+Open [the local playground](http://127.0.0.1:4173), or use WAMP at `http://localhost/easy-md-editor/`. The playground currently loads sibling sources directly; restore `@latest` imports after publishing the viewer changes. Open/download Markdown and Print / PDF belong to the demo, not the editor API. Printing uses the read-only viewer preview and the browser's print dialog.
+
+The Get started section exports a complete HTML starter with CDN selected by default, or local files for offline use. Copy and Download use the displayed starter and default editor settings, independently of playground edits. CDN starters need published editor and viewer releases; local starters need `md.edit.js`, `md.edit.css`, `md.js`, `md.css`, `code.js`, and `code.css` beside the HTML.
+
+Install Playwright outside the source tree or make it available through `NODE_PATH`, then run:
 
 ```sh
 node --test tests/rendering.cjs
 ```
 
-Tests use installed Chrome by default; `BROWSER_CHANNEL` or `CHROMIUM_EXECUTABLE_PATH` selects another Chromium installation.
-
-## The easy viewers
-
-Need another format, or a Markdown editor? Explore the family:
-
-[Markdown](https://github.com/byuwur/easy-md-viewer) · [JSON](https://github.com/byuwur/easy-json-viewer) · [CSV & TSV](https://github.com/byuwur/easy-csv-viewer) · [Logs](https://github.com/byuwur/easy-log-viewer) · [Diff](https://github.com/byuwur/easy-diff-viewer) · [XML](https://github.com/byuwur/easy-xml-viewer) · [YAML](https://github.com/byuwur/easy-yaml-viewer) · [Source code](https://github.com/byuwur/easy-code-viewer)
-
-[Write Markdown with easy-md-editor](https://github.com/byuwur/easy-md-editor).
-
-## License
-
-MIT (c) Andres Trujillo [Mateus] byUwUr
+Tests default to installed Chrome; `BROWSER_CHANNEL` and `CHROMIUM_EXECUTABLE_PATH` override the browser. Tests exercise actual companion files, not parser mocks. Browser tests also read the sibling `spa.js` styles and Bootstrap script as offline playground fixtures.
