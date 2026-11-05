@@ -10,6 +10,12 @@ const { chromium } = require("playwright");
 const launch = () => chromium.launch({ channel: process.env.BROWSER_CHANNEL || "chrome", executablePath: process.env.CHROMIUM_EXECUTABLE_PATH || undefined });
 const root = path.join(__dirname, "..");
 
+// Read the displayed source without line numbers or status text.
+const readStarter = async (page) => {
+  await page.locator('#integration-code[aria-busy="false"]').waitFor();
+  return (await page.locator("#integration-code .byCODEtext").allTextContents()).join("\n");
+};
+
 /* --- PINNED PLAYGROUND DEPENDENCIES --- */
 let assetsPromise;
 const getAssets = () =>
@@ -145,7 +151,35 @@ test("playground edits documents and exports exact Markdown", async () => {
     assert.equal(await page.locator("#preview-bg").evaluate((field) => field.checkValidity()), false);
     await page.locator("#reset-appearance").click();
     assert.equal(await page.locator("#preview-bg").evaluate((field) => field.checkValidity()), true);
-    const cdnHTML = await page.locator("#integration-code").inputValue();
+    const cdnHTML = await readStarter(page);
+    const starterViewer = page.locator("#integration-code.byCODEdocument");
+    assert.equal(await page.evaluate(() => byCODEviewer.VERSION), "1.5");
+    assert.equal(await starterViewer.getAttribute("data-theme"), "dark");
+    await starterViewer.locator(".byCODEtext").first().waitFor();
+    assert.ok((await starterViewer.locator(".byCODElineNumber").count()) > 0);
+    assert.equal(await starterViewer.locator(".byVIEWtoolbar, button, input, select").count(), 0);
+    assert.equal(await starterViewer.locator(".byVIEWstatus:visible").count(), 0);
+    assert.deepEqual(await starterViewer.evaluate((element) => [element, element.querySelector(".byVIEWpanel"), element.querySelector(".byCODElineNumber")].map((node) => getComputedStyle(node).backgroundColor)), [
+      "rgba(0, 0, 0, 0)",
+      "rgba(0, 0, 0, 0)",
+      "rgba(0, 0, 0, 0)"
+    ]);
+    assert.ok((await starterViewer.locator(".byCODEtag").count()) > 0);
+    assert.equal(await page.locator("#integration-code script").count(), 0);
+    const starterTagColor = await starterViewer
+      .locator(".byCODEtag")
+      .first()
+      .evaluate((token) => getComputedStyle(token).color);
+    await page.locator("#site-theme").click();
+    assert.equal(await starterViewer.getAttribute("data-theme"), "light");
+    assert.notEqual(
+      await starterViewer
+        .locator(".byCODEtag")
+        .first()
+        .evaluate((token) => getComputedStyle(token).color),
+      starterTagColor
+    );
+    await page.locator("#site-theme").click();
     assert.match(cdnHTML, /easy-md-editor@latest\/md\.edit\.js/);
     assert.match(cdnHTML, /easy-md-editor@latest\/md\.edit\.css/);
     assert.equal(cdnHTML.includes("fontawesome"), false);
@@ -248,7 +282,7 @@ test("playground edits documents and exports exact Markdown", async () => {
     assert.equal(await page.locator("#editor").getAttribute("data-theme"), "light");
     await page.getByRole("button", { name: "Switch website to dark theme", exact: true }).click();
     await page.getByText("Local files", { exact: true }).click();
-    const localHTML = await page.locator("#integration-code").inputValue();
+    const localHTML = await readStarter(page);
     assert.match(localHTML, /href="md\.edit\.css"/);
     assert.match(localHTML, /src="md\.js"/);
     assert.equal(localHTML.includes("https://"), false);
@@ -271,7 +305,10 @@ test("playground edits documents and exports exact Markdown", async () => {
     });
     await page.locator("#copy-integration").click();
     assert.equal(await page.locator("#copy-integration span").textContent(), "Failed");
-    assert.equal(await page.locator("#integration-code").evaluate((element) => element.selectionStart === 0 && element.selectionEnd === element.value.length), true);
+    assert.equal(
+      await page.locator("#integration-code").evaluate((element) => document.activeElement === element && document.getSelection().toString() === [...element.querySelectorAll(".byCODEtext")].map((line) => line.textContent).join("\n")),
+      true
+    );
     const starterDownload = page.waitForEvent("download");
     await page.getByRole("button", { name: "Download HTML", exact: true }).click();
     assert.equal(await fs.readFile(await (await starterDownload).path(), "utf8"), localHTML);
