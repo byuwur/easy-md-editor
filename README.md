@@ -176,7 +176,70 @@ The editor uses the viewer's scoped variables and palettes. No global theme rule
 <div id="accessible-document" class="light" data-theme="high-contrast"></div>
 ```
 
-Monokai, GitHub, Solarized, and High Contrast each include light and dark modes. Use `setTheme("light")` / `setTheme("dark")` to change mode while retaining the palette, or `setPalette("github")` to change palette while retaining the mode. These changes apply to No-code, Clean, Assisted, Source, and Preview without changing the Markdown or undo history.
+**48 palettes, each with Light and Dark modes.** The four core palettes come from `md.css`; the other 44 require `md.themes.css`, loaded after it:
+
+```html
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@latest/md.themes.css" />
+```
+
+Local installations can save `md.themes.css` beside `md.css`. The playground loads the optional pack; default HTML starters use only the core stylesheets. A missing pack produces a one-time warning for known extra presets, while custom CSS palettes remain supported. The picker groups skins into Essentials, Editor classics, App inspired, Colorful, and Reading & nature.
+
+| Palette | `data-theme` | What it looks like |
+| --- | --- | --- |
+| Monokai (default) | `monokai` | Warm light and dark colors; the default. |
+| GitHub | `github` | Neutral GitHub surfaces and syntax. |
+| Solarized | `solarized` | Warm paper and deep blue-green surfaces. |
+| High Contrast | `high-contrast` | Strong text, borders, and focus indicators. |
+| Dracula | `dracula` | Purple with vivid pink, green, and cyan. |
+| Darcula | `darcula` | Charcoal surfaces and warm IDE accents. |
+| Nord | `nord` | Arctic blues and snowy neutral surfaces. |
+| Catppuccin | `catppuccin` | Latte and Mocha with soft mauve accents. |
+| Catppuccin Frappé | `catppuccin-frappe` | Cooler Catppuccin with a blue accent. |
+| Catppuccin Macchiato | `catppuccin-macchiato` | Catppuccin with a warm pink accent. |
+| Rosé Pine | `rose-pine` | Dawn and Pine with dusty rose accents. |
+| Rosé Pine Moon | `rose-pine-moon` | A duskier violet take on Rosé Pine. |
+| Gruvbox | `gruvbox` | Warm retro browns, olive, and orange. |
+| Gruvbox Material | `gruvbox-material` | Softer earthy surfaces and muted greens. |
+| Tokyo Night | `tokyo-night` | Tokyo Day and Night with electric blues. |
+| Tokyo Storm | `tokyo-storm` | A brighter blue-gray Tokyo evening. |
+| Tokyo Moon | `tokyo-moon` | Indigo nights and luminous lavender. |
+| One | `one` | Clean One Light and One Dark colors. |
+| Material | `material` | Blue-gray material surfaces and cyan. |
+| Material Ocean | `material-ocean` | Deep navy with soft fluorescent accents. |
+| Night Owl | `night-owl` | Little Light and deep-blue night colors. |
+| Synthwave | `synthwave` | Neon magenta and cyan with no glow effects. |
+| Ayu | `ayu` | Warm amber over light paper or dark navy. |
+| Everforest | `everforest` | Soft forest greens and cream. |
+| Kanagawa | `kanagawa` | Ink, old paper, and Japanese wave colors. |
+| Selenized | `selenized` | Balanced teal surfaces and restrained color. |
+| VS Code | `vscode` | Familiar neutral editor surfaces and blue. |
+| Monokai Dimmed | `monokai-dimmed` | Quieter charcoal and desaturated Monokai. |
+| Discord | `discord` | Blurple accents and familiar chat surfaces. |
+| Slack | `slack` | Aubergine, warm pink, and friendly teal. |
+| BONYUR | `bonyur` | Signature teal and pink over warm neutral ink. |
+| Sakura | `sakura` | Cherry-blossom pink from surface to syntax. |
+| Bubblegum | `bubblegum` | Saturated hot-pink surfaces and cyan accents. |
+| Candy | `candy` | Pink and mint with playful lavender syntax. |
+| Rose Gold | `rose-gold` | Dusty pink and warm copper. |
+| Lavender | `lavender` | Lilac surfaces with deep violet accents. |
+| Cyberpunk | `cyberpunk` | Acid yellow, electric cyan, and magenta. |
+| Sunset | `sunset` | Burnt orange, coral, and evening purple. |
+| Volcano | `volcano` | Lava reds over warm ash. |
+| Amber | `amber` | Golden amber inspired by old displays. |
+| Terminal | `terminal` | Phosphor greens on near-black. |
+| Paper | `paper` | Warm cream, brown ink, and quiet margins. |
+| Ink | `ink` | Grayscale surfaces and restrained syntax. |
+| Ocean | `ocean` | Deep ocean blue and clear turquoise. |
+| Forest | `forest` | Rich green surfaces and mossy accents. |
+| Mint | `mint` | Fresh mint surfaces and cool teal. |
+| Ice | `ice` | Glacial blue, crisp whites, and silver. |
+| Sepia | `sepia` | Aged parchment and warm brown ink. |
+
+Editor and app skins are inspired adaptations, including light counterparts where needed; colors are adjusted for readable text and controls rather than exact replicas. All palettes use the same layout and need no assets beyond the core stylesheet and optional theme pack.
+
+The editor inherits palette colors from `md.css` and the optional `md.themes.css`; `md.edit.css` keeps its surface variables at the end, without duplicating the palettes. Extra skins live in the optional `md.themes.css` pack.
+
+Use `setTheme("light")` / `setTheme("dark")` to change mode while retaining the palette, or `setPalette("github")` to change palette while retaining the mode. These changes apply to No-code, Clean, Assisted, Source, and Preview without changing the Markdown or undo history.
 
 Custom palettes use the viewer's `--by-md-*` variables on `.byMDdocument[data-theme="your-name"]`, with `.dark` for the dark variant. The same rules reach the editor and its Preview. Select a custom name with `palette: "your-name"` or `setPalette("your-name")`; it appears in that editor's selector. Editor-only colors can override `--by-ed-bg`, `--by-ed-text`, `--by-ed-muted`, `--by-ed-border`, `--by-ed-alt`, and `--by-ed-accent` on `.byMDeditor`.
 

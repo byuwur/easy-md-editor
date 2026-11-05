@@ -3,15 +3,8 @@
 /* --- ICONS --- */
 @import url("https://cdn.jsdelivr.net/gh/byuwur/spa.js@v20.7/css/fontawesome.min.css");
 
-/* --- LIGHT --- */
+/* --- EDITOR --- */
 .byMDeditor {
-  --by-view-toggle-position: -100%;
-  --by-ed-bg: var(--by-md-bg, #fafaf5);
-  --by-ed-text: var(--by-md-text, #272822);
-  --by-ed-muted: var(--by-md-muted, #686856);
-  --by-ed-border: var(--by-md-border, #d8d8c8);
-  --by-ed-alt: var(--by-md-code-bg, #eeeee4);
-  --by-ed-accent: var(--by-md-link, #087f8c);
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -31,19 +24,6 @@
 .byMDeditor *::before,
 .byMDeditor *::after {
   box-sizing: border-box;
-}
-
-/* --- DARK --- */
-.byMDeditor.dark:not([data-theme="light"]),
-.byMDeditor[data-theme="dark"] {
-  --by-view-toggle-position: 0%;
-  --by-ed-bg: var(--by-md-bg, #272822);
-  --by-ed-text: var(--by-md-text, #f8f8f2);
-  --by-ed-muted: var(--by-md-muted, #a6a28c);
-  --by-ed-border: var(--by-md-border, #49483e);
-  --by-ed-alt: var(--by-md-code-bg, #20211c);
-  --by-ed-accent: var(--by-md-link, #66d9ef);
-  color-scheme: dark;
 }
 
 /* --- CONTROLS --- */
@@ -579,4 +559,30 @@
 
 .byMDeditor .byVIEWinfo {
   transition: opacity var(--by-view-motion-duration) ease-out;
+}
+
+/* --- THEMES --- */
+/* Palette colors come from md.css; keep editor surfaces in sync without copying its tables. */
+/* --- LIGHT --- */
+.byMDeditor {
+  --by-view-toggle-position: -100%;
+  --by-ed-bg: var(--by-md-bg, #fafaf5);
+  --by-ed-text: var(--by-md-text, #272822);
+  --by-ed-muted: var(--by-md-muted, #686856);
+  --by-ed-border: var(--by-md-border, #d8d8c8);
+  --by-ed-alt: var(--by-md-code-bg, #eeeee4);
+  --by-ed-accent: var(--by-md-link, #087f8c);
+}
+
+/* --- DARK --- */
+.byMDeditor.dark:not([data-theme="light"]),
+.byMDeditor[data-theme="dark"] {
+  --by-view-toggle-position: 0%;
+  --by-ed-bg: var(--by-md-bg, #272822);
+  --by-ed-text: var(--by-md-text, #f8f8f2);
+  --by-ed-muted: var(--by-md-muted, #a6a28c);
+  --by-ed-border: var(--by-md-border, #49483e);
+  --by-ed-alt: var(--by-md-code-bg, #20211c);
+  --by-ed-accent: var(--by-md-link, #66d9ef);
+  color-scheme: dark;
 }

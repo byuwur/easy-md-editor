@@ -11,6 +11,7 @@ const files = {
   "/LICENSE": "LICENSE",
   "/md.js": "../easy-md-viewer/md.js",
   "/md.css": "../easy-md-viewer/md.css",
+  "/md.themes.css": "../easy-md-viewer/md.themes.css",
   "/code.js": "../easy-code-viewer/code.js",
   "/code.css": "../easy-code-viewer/code.css"
 };
@@ -18,7 +19,7 @@ for (const [name, repo] of [
   ["md", "easy-md-viewer"],
   ["code", "easy-code-viewer"]
 ]) {
-  for (const extension of ["js", "css"]) files[`/${repo}/${name}.${extension}`] = `../${repo}/${name}.${extension}`;
+  for (const extension of ["js", "css", "themes.css"]) files[`/${repo}/${name}.${extension}`] = `../${repo}/${name}.${extension}`;
 }
 const server = http.createServer(async (request, response) => {
   const file = files[new URL(request.url, "http://localhost").pathname];

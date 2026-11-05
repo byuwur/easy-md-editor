@@ -43,7 +43,7 @@ async function routeAssets(page, assets) {
   await page.route("https://cdn.jsdelivr.net/**", async (route) => {
     const url = new URL(route.request().url());
     if (assets.has(url.href)) return route.fulfill(assets.get(url.href));
-    const companion = url.pathname.match(/^\/gh\/byuwur\/(easy-(?:md|code)-viewer)@v\d+(?:\.\d+)*\/((?:md|code)\.(?:css|js))$/);
+    const companion = url.pathname.match(/^\/gh\/byuwur\/(easy-(?:md|code)-viewer)@v\d+(?:\.\d+)*\/((?:md|code)(?:\.themes)?\.(?:css|js))$/);
     if (companion) return route.fulfill({ path: path.join(root, "..", companion[1], companion[2]), contentType: companion[2].endsWith("css") ? "text/css" : "text/javascript" });
     return route.abort();
   });
@@ -120,7 +120,8 @@ test("playground edits documents and exports exact Markdown", async () => {
         `https://cdn.jsdelivr.net/gh/byuwur/easy-code-viewer@v${releases.code}/code.css`,
         `https://cdn.jsdelivr.net/gh/byuwur/easy-code-viewer@v${releases.code}/code.js`,
         `https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@v${releases.md}/md.css`,
-        `https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@v${releases.md}/md.js`
+        `https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@v${releases.md}/md.js`,
+        `https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@v${releases.md}/md.themes.css`
       ]
     );
     assert.equal(await page.locator(".navbar-brand").innerText(), "md↑easy-md-editor");

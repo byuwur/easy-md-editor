@@ -646,13 +646,17 @@ test("source-driven editor browser contracts", async (t) => {
       assert.notEqual(await formatting.evaluate((button) => getComputedStyle(button).boxShadow), "none");
     });
     await t.test("palettes match the viewer in every mode and preserve document state", async () => {
+      await page.addStyleTag({ path: path.join(__dirname, "../../easy-md-viewer/md.themes.css") });
       const source = "# Palette\n\n**Text**\n\n~~~js\nconst value = 1;\n~~~";
       await page.evaluate((source) => {
         render(source, { palette: "github", theme: "dark" });
         editor.setSelection(4, 7);
       }, source);
       assert.equal(await page.getByLabel("Color palette", { exact: true }).inputValue(), "github");
-      for (const palette of ["monokai", "github", "solarized", "high-contrast"]) {
+      const names = await page.getByLabel("Color palette", { exact: true }).locator("option").evaluateAll((options) => options.map((option) => option.value));
+      assert.equal(names.length, 48);
+      assert.equal(await page.getByLabel("Color palette", { exact: true }).locator("optgroup").count(), 5);
+      for (const palette of names) {
         await page.getByLabel("Color palette", { exact: true }).selectOption(palette);
         assert.equal(await page.locator("#editor").evaluate((element) => element.classList.contains("dark")), true);
         for (const mode of ["light", "dark"]) {
@@ -678,9 +682,9 @@ test("source-driven editor browser contracts", async (t) => {
         }
       }
       assert.deepEqual(await page.evaluate(() => changes), []);
-      await page.addStyleTag({ content: '.byMDdocument[data-theme="paper"] { --by-md-bg: #fff8ee; --by-md-text: #382b20; } .byMDdocument.dark[data-theme="paper"] { --by-md-bg: #201a16; --by-md-text: #fff8ee; }' });
-      await page.evaluate(() => editor.setPalette("paper"));
-      assert.equal(await page.getByLabel("Color palette", { exact: true }).inputValue(), "paper");
+      await page.addStyleTag({ content: '.byMDdocument[data-theme="custom-paper"] { --by-md-bg: #fff8ee; --by-md-text: #382b20; } .byMDdocument.dark[data-theme="custom-paper"] { --by-md-bg: #201a16; --by-md-text: #fff8ee; }' });
+      await page.evaluate(() => editor.setPalette("custom-paper"));
+      assert.equal(await page.getByLabel("Color palette", { exact: true }).inputValue(), "custom-paper");
       assert.equal(await page.locator("#editor").evaluate((element) => getComputedStyle(element).backgroundColor), "rgb(32, 26, 22)");
       await page.evaluate(() => {
         editor.setTheme("light");
@@ -1002,8 +1006,8 @@ test("appearance options override markup and preserve independent viewer state",
       return renderAppearance({ theme: "light", toolbar: false });
     });
     assert.deepEqual(await page.locator("#appearance").evaluate((element) => [element.dataset.theme, element.classList.contains("dark"), element.classList.contains("light")]), ["light", false, true]);
-    await page.evaluate(() => renderAppearance({ theme: "dark", palette: "ocean", fontSize: 1.125, toolbar: false }));
-    assert.deepEqual(await page.locator("#appearance").evaluate((element) => [element.dataset.theme, element.classList.contains("dark"), element.style.fontSize]), ["ocean", true, "1.125rem"]);
+    await page.evaluate(() => renderAppearance({ theme: "dark", palette: "custom-ocean", fontSize: 1.125, toolbar: false }));
+    assert.deepEqual(await page.locator("#appearance").evaluate((element) => [element.dataset.theme, element.classList.contains("dark"), element.style.fontSize]), ["custom-ocean", true, "1.125rem"]);
     const preserved = await page.locator("#appearance").evaluate((element) => [element.className, element.dataset.theme, element.style.fontSize]);
     await page.evaluate(() => renderAppearance());
     assert.deepEqual(await page.locator("#appearance").evaluate((element) => [element.className, element.dataset.theme, element.style.fontSize]), preserved);

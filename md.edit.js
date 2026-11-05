@@ -38,7 +38,66 @@
     assisted: "Keep Markdown syntax visible beside formatted text.",
     source: "Edit the complete Markdown source as plain text."
   };
-  const palettes = { monokai: "Monokai", github: "GitHub", solarized: "Solarized", "high-contrast": "High Contrast" };
+  const palettes = {
+    Essentials: {
+      monokai: "Monokai",
+      github: "GitHub",
+      solarized: "Solarized",
+      "high-contrast": "High Contrast"
+    },
+    "Editor classics": {
+      dracula: "Dracula",
+      darcula: "Darcula",
+      nord: "Nord",
+      catppuccin: "Catppuccin",
+      "catppuccin-frappe": "Catppuccin Frappé",
+      "catppuccin-macchiato": "Catppuccin Macchiato",
+      "rose-pine": "Rosé Pine",
+      "rose-pine-moon": "Rosé Pine Moon",
+      gruvbox: "Gruvbox",
+      "gruvbox-material": "Gruvbox Material",
+      "tokyo-night": "Tokyo Night",
+      "tokyo-storm": "Tokyo Storm",
+      "tokyo-moon": "Tokyo Moon",
+      one: "One",
+      material: "Material",
+      "material-ocean": "Material Ocean",
+      "night-owl": "Night Owl",
+      synthwave: "Synthwave",
+      ayu: "Ayu",
+      everforest: "Everforest",
+      kanagawa: "Kanagawa",
+      selenized: "Selenized",
+      vscode: "VS Code",
+      "monokai-dimmed": "Monokai Dimmed"
+    },
+    "App inspired": {
+      discord: "Discord",
+      slack: "Slack"
+    },
+    Colorful: {
+      bonyur: "BONYUR",
+      sakura: "Sakura",
+      bubblegum: "Bubblegum",
+      candy: "Candy",
+      "rose-gold": "Rose Gold",
+      lavender: "Lavender",
+      cyberpunk: "Cyberpunk",
+      sunset: "Sunset",
+      volcano: "Volcano",
+      amber: "Amber",
+      terminal: "Terminal"
+    },
+    "Reading & nature": {
+      paper: "Paper",
+      ink: "Ink",
+      ocean: "Ocean",
+      forest: "Forest",
+      mint: "Mint",
+      ice: "Ice",
+      sepia: "Sepia"
+    }
+  };
 
   /* --- STATE --- */
   const instances = new WeakMap();
@@ -75,11 +134,21 @@
   };
 
   /* --- APPEARANCE --- */
+  const warnedPalettes = new Set();
+  const warnMissingThemes = (element, palette = element.dataset.theme) => {
+    if (!Object.values(palettes).some((choices) => Object.hasOwn(choices, palette)) || ["monokai", "github", "solarized", "high-contrast"].includes(palette) || warnedPalettes.has(palette)) return;
+    const document = element.ownerDocument;
+    if (document.defaultView.getComputedStyle(document.documentElement).getPropertyValue("--by-md-themes-loaded").trim() === "1") return;
+    warnedPalettes.add(palette);
+    console.warn(`easy-md-editor: Palette "${palette}" requires md.themes.css. Import it after md.css. https://byuwur.github.io/easy-md-viewer/`);
+  };
+
   /** Explicit appearance options override markup; omitted values preserve the container's state. */
   const applyAppearance = (element, options) => {
     const { theme, palette, fontSize } = options;
     if (theme != null && !["light", "dark"].includes(theme)) throw new RangeError("Theme must be light or dark.");
     if (palette != null && (typeof palette !== "string" || !/^[a-z][\w-]*$/i.test(palette) || ["light", "dark"].includes(palette))) throw new RangeError("Palette must be a CSS theme name; use theme for light or dark.");
+    warnMissingThemes(element, palette ?? element.dataset.theme);
     const size = typeof fontSize === "number" ? `${Math.max(0.5, Math.min(3, fontSize))}rem` : typeof fontSize === "string" ? `clamp(0.5rem, ${fontSize}, 3rem)` : "";
     if (fontSize != null && (typeof fontSize === "number" ? !Number.isFinite(fontSize) : typeof fontSize !== "string" || !CSS.supports("font-size", size))) throw new RangeError("Font size must be a finite multiplier or a CSS size.");
     if (theme != null || palette != null) {
@@ -207,10 +276,15 @@
     listen(picker, "change", () => api.setSyntaxMode(picker.value));
     const palettePicker = node("select", "byEDselect");
     palettePicker.setAttribute("aria-label", "Color palette");
-    for (const [value, label] of Object.entries(palettes)) {
-      const option = node("option", "", label);
-      option.value = value;
-      palettePicker.append(option);
+    for (const [label, choices] of Object.entries(palettes)) {
+      const group = node("optgroup");
+      group.label = label;
+      for (const [value, caption] of Object.entries(choices)) {
+        const option = node("option", "", caption);
+        option.value = value;
+        group.append(option);
+      }
+      palettePicker.append(group);
     }
     const selectPalette = (palette) => {
       if (![...palettePicker.options].some((option) => option.value === palette)) {
@@ -1619,6 +1693,7 @@
       setPalette(palette) {
         if (!alive) return;
         if (typeof palette !== "string" || !/^[a-z][\w-]*$/i.test(palette) || ["light", "dark"].includes(palette)) throw new RangeError("Palette must be a CSS theme name; use setTheme() for light or dark.");
+        warnMissingThemes(element, palette);
         const mode = isDark() ? "dark" : "light";
         element.dataset.theme = palette;
         selectPalette(palette);
