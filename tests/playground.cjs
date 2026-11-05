@@ -44,6 +44,58 @@ async function routeAssets(page, assets) {
 }
 
 /* --- DOCUMENT ACTIONS AND EXPORTS --- */
+test("playground configures No-code and individual controls without recreating the document", async () => {
+  const assets = await getAssets();
+  const server = require("./serve.cjs");
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const browser = await launch();
+  try {
+    const page = await browser.newPage();
+    const errors = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await routeAssets(page, assets);
+    await page.goto(`http://127.0.0.1:${server.address().port}`);
+    await page.locator(".byEDsurface").waitFor();
+    const source = await page.evaluate(() => playgroundEditor.getMarkdown());
+    await page.locator("#viewer-settings").evaluate((details) => (details.open = true));
+    await page.locator("#syntax-mode").selectOption("no-code");
+    assert.equal(await page.locator("#editor").getAttribute("data-syntax"), "no-code");
+    assert.equal(await page.locator("#editor .byEDsyntax:visible").count(), 0);
+    await page.evaluate(() => (window.originalLine = document.querySelector(".byEDline")));
+    const selectors = {
+      toolbarToggle: '[aria-label="Formatting"]',
+      syntaxSelect: '[aria-label="Syntax visibility"]',
+      previewToggle: '[aria-label="Preview"]',
+      themeToggle: ".byVIEWthemeToggle",
+      paletteSelect: '[aria-label="Color palette"]',
+      statusBar: ".byEDstatus"
+    };
+    for (const [name, selector] of Object.entries(selectors)) {
+      await page.locator(`#${name}`).uncheck();
+      assert.equal(await page.locator(`#editor ${selector}`).isHidden(), true, name);
+      assert.equal(JSON.parse(await page.locator("#options-json").inputValue())[name], false);
+    }
+    assert.equal(await page.locator(".byEDbar").isHidden(), true);
+    await page.locator("#toolbar").uncheck();
+    await page.locator(".byEDtoolbar").waitFor({ state: "hidden" });
+    assert.equal(await page.locator(".byEDtoolbar").isHidden(), true);
+    assert.equal(await page.evaluate(() => originalLine === document.querySelector(".byEDline")), true);
+    assert.equal(await page.evaluate(() => playgroundEditor.getMarkdown()), source);
+    for (const name of Object.keys(selectors)) await page.locator(`#${name}`).check();
+    await page.locator("#toolbar").check();
+    await page.getByLabel("Syntax visibility", { exact: true }).selectOption("assisted");
+    assert.equal(await page.locator("#syntax-mode").inputValue(), "assisted");
+    assert.equal(JSON.parse(await page.locator("#options-json").inputValue()).syntax, "assisted");
+    await page.getByRole("button", { name: "Formatting", exact: true }).click();
+    assert.equal(await page.locator("#toolbar").isChecked(), false);
+    assert.equal(JSON.parse(await page.locator("#options-json").inputValue()).toolbar, false);
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
 test("playground edits documents and exports exact Markdown", async () => {
   const assets = await getAssets();
   const server = require("./serve.cjs");

@@ -342,11 +342,50 @@
             <p id="appearance-status" class="form-text" role="status"></p>
           </details>
           <details class="border-top px-3 py-2" id="viewer-settings">
-            <summary class="small fw-semibold">Viewer controls</summary>
+            <summary class="small fw-semibold">Editor controls</summary>
+            <label class="form-label mt-3" for="syntax-mode">Editing mode</label>
+            <select id="syntax-mode" class="form-select mb-3">
+              <option value="no-code">No-code</option>
+              <option value="clean" selected>Clean</option>
+              <option value="assisted">Assisted</option>
+              <option value="source">Source</option>
+            </select>
+            <div class="form-switch d-flex align-items-center gap-3 ps-0 m-0">
+              <input class="form-check-input order-2 float-none flex-shrink-0 ms-0 my-0" id="toolbar" type="checkbox" role="switch" checked />
+              <label class="form-check-label flex-grow-1 py-2" for="toolbar">Formatting toolbar</label>
+            </div>
+            <div class="form-switch d-flex align-items-center gap-3 ps-0 m-0">
+              <input class="form-check-input order-2 float-none flex-shrink-0 ms-0 my-0" id="toolbarToggle" type="checkbox" role="switch" checked />
+              <label class="form-check-label flex-grow-1 py-2" for="toolbarToggle">Formatting toolbar toggle</label>
+            </div>
+            <div class="form-switch d-flex align-items-center gap-3 ps-0 m-0">
+              <input class="form-check-input order-2 float-none flex-shrink-0 ms-0 my-0" id="syntaxSelect" type="checkbox" role="switch" checked />
+              <label class="form-check-label flex-grow-1 py-2" for="syntaxSelect">Mode selector</label>
+            </div>
+            <div class="form-switch d-flex align-items-center gap-3 ps-0 m-0">
+              <input class="form-check-input order-2 float-none flex-shrink-0 ms-0 my-0" id="previewToggle" type="checkbox" role="switch" checked />
+              <label class="form-check-label flex-grow-1 py-2" for="previewToggle">Preview toggle</label>
+            </div>
+            <div class="form-switch d-flex align-items-center gap-3 ps-0 m-0">
+              <input class="form-check-input order-2 float-none flex-shrink-0 ms-0 my-0" id="themeToggle" type="checkbox" role="switch" checked />
+              <label class="form-check-label flex-grow-1 py-2" for="themeToggle">Theme switch</label>
+            </div>
+            <div class="form-switch d-flex align-items-center gap-3 ps-0 m-0">
+              <input class="form-check-input order-2 float-none flex-shrink-0 ms-0 my-0" id="paletteSelect" type="checkbox" role="switch" checked />
+              <label class="form-check-label flex-grow-1 py-2" for="paletteSelect">Palette selector</label>
+            </div>
+            <div class="form-switch d-flex align-items-center gap-3 ps-0 m-0">
+              <input class="form-check-input order-2 float-none flex-shrink-0 ms-0 my-0" id="statusBar" type="checkbox" role="switch" checked />
+              <label class="form-check-label flex-grow-1 py-2" for="statusBar">Status information</label>
+            </div>
             <div class="form-switch d-flex align-items-center gap-3 ps-0 m-0">
               <input class="form-check-input order-2 float-none flex-shrink-0 ms-0 my-0" id="animations" type="checkbox" role="switch" checked />
               <label class="form-check-label flex-grow-1 py-2" for="animations">Animations</label>
             </div>
+            <details class="mt-3">
+              <summary class="small fw-semibold">Configuration JSON</summary>
+              <textarea id="options-json" class="form-control font-monospace mt-2" rows="10" readonly spellcheck="false" aria-label="Editor configuration JSON"></textarea>
+            </details>
           </details>
           <div id="editor" data-theme="light"></div>
           <div class="metrics row g-0 bg-body-tertiary border-top" aria-label="Markdown source statistics">
@@ -541,7 +580,7 @@ console.log(markdown, document);
 
 ###### Even the smallest heading is editable
 
-Edit any example above. Clean, Assisted, Source, and Preview all use this same Markdown.
+Edit any example above. No-code, Clean, Assisted, Source, and Preview all use this same Markdown.
 </script>
     <script>
       document.addEventListener("DOMContentLoaded", () => {
@@ -572,9 +611,51 @@ Edit any example above. Clean, Assisted, Source, and Preview all use this same M
         });
         updateOutput(sample);
         window.playgroundEditor = editor;
+        /* --- EDITOR CONFIGURATION --- */
+        const visibilityOptions = ["toolbarToggle", "syntaxSelect", "previewToggle", "themeToggle", "paletteSelect", "statusBar"];
+        const modeSelect = document.getElementById("syntax-mode");
+        const updateConfiguration = () => {
+          modeSelect.value = document.getElementById("editor").dataset.syntax;
+          document.getElementById("options-json").value = JSON.stringify(
+            {
+              syntax: modeSelect.value,
+              toolbar: document.getElementById("toolbar").checked,
+              ...Object.fromEntries(visibilityOptions.map((name) => [name, document.getElementById(name).checked])),
+              animations: document.getElementById("animations").checked
+            },
+            null,
+            2
+          );
+        };
+        for (const name of visibilityOptions)
+          document.getElementById(name).addEventListener("change", (event) => {
+            editor.setControls({ [name]: event.target.checked });
+            updateConfiguration();
+          });
+        document.getElementById("toolbar").addEventListener("change", (event) => {
+          editor.setToolbar(event.target.checked);
+          updateConfiguration();
+        });
+        modeSelect.addEventListener("change", () => {
+          editor.setSyntaxMode(modeSelect.value);
+          updateConfiguration();
+        });
+        document.getElementById("editor").addEventListener("change", (event) => {
+          if (event.target.getAttribute("aria-label") === "Syntax visibility") modeSelect.value = event.target.value;
+          updateConfiguration();
+        });
+        document.getElementById("editor").addEventListener("click", (event) => {
+          const toggle = event.target.closest('[aria-label="Formatting"]');
+          if (toggle) {
+            document.getElementById("toolbar").checked = toggle.getAttribute("aria-expanded") === "true";
+            updateConfiguration();
+          }
+        });
+        updateConfiguration();
         document.getElementById("animations").addEventListener("change", (event) => {
           editor.setAnimations(event.target.checked);
           document.body.classList.toggle("byVIEWmotion", event.target.checked);
+          updateConfiguration();
         });
         const copyMarkdown = document.getElementById("copy-markdown");
         copyMarkdown.addEventListener("click", async () => {

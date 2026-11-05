@@ -83,7 +83,23 @@
     if (typeof source !== "string") throw new TypeError("byMDeditor: Markdown must be a string or HTMLElement.");
     if (source.length > 2000000) throw new RangeError("byMDeditor: maximum document size is 2,000,000 characters.");
     instances.get(element)?.destroy();
-    options = { syntax: "clean", animations: true, toolbar: true, shortcuts: true, codeHighlighting: true, label: "Document", placeholder: "Start writing…", historyLimit: 200, ...options };
+    options = {
+      syntax: "clean",
+      animations: true,
+      toolbar: true,
+      toolbarToggle: true,
+      syntaxSelect: true,
+      previewToggle: true,
+      themeToggle: true,
+      paletteSelect: true,
+      statusBar: true,
+      shortcuts: true,
+      codeHighlighting: true,
+      label: "Document",
+      placeholder: "Start writing…",
+      historyLimit: 200,
+      ...options
+    };
     options.historyLimit = Math.max(0, Math.min(1000, Math.trunc(Number(options.historyLimit)) || 0));
     let syntax = modes.includes(options.syntax) ? options.syntax : "clean";
     // Companion capabilities are captured at mount; loading a newer MD viewer requires reinitialization.
@@ -184,7 +200,7 @@
       palettePicker.value = palette;
     };
     listen(palettePicker, "change", () => api.setPalette(palettePicker.value));
-    if (options.paletteSelect !== false) controls.append(palettePicker);
+    controls.append(palettePicker);
     const previewButton = button("Preview", "eye", () => api.setPreview(!previewing), controls);
     previewButton.setAttribute("aria-pressed", "false");
     const themeButton = node("button", "byVIEWthemeToggle");
@@ -214,6 +230,7 @@
       if (wraps[name]) control.setAttribute("aria-pressed", "false");
     }
     element.append(bar, toolbar, surface, raw, preview, status);
+    const controlVisibility = { toolbarToggle: toggle, syntaxSelect: picker, previewToggle: previewButton, themeToggle: themeButton, paletteSelect: palettePicker, statusBar: status };
     const isDark = () => element.dataset.theme === "dark" || (element.dataset.theme !== "light" && element.classList.contains("dark"));
 
     /* --- SOURCE MAPPING --- */
@@ -1478,6 +1495,18 @@
         toggle.setAttribute("aria-expanded", String(!toolbar.hidden));
         options.toolbar = Boolean(visible);
       },
+      /** Change control visibility without replacing the document, selection, or history. */
+      setControls(visibility = {}) {
+        if (!alive) return;
+        for (const [name, control] of Object.entries(controlVisibility)) {
+          if (Object.hasOwn(visibility, name)) options[name] = visibility[name] !== false;
+          control.hidden = options[name] === false;
+        }
+        if (palettePicker.hidden) palettePicker.remove();
+        else if (palettePicker.parentNode !== controls) controls.prepend(palettePicker);
+        controls.hidden = palettePicker.hidden && previewButton.hidden && themeButton.hidden;
+        bar.hidden = toggle.hidden && picker.hidden && controls.hidden;
+      },
       /** Render the actual MD viewer on demand; returning to editing restores its saved selection. */
       setPreview(visible) {
         if (!alive) return;
@@ -1596,6 +1625,7 @@
     surface.hidden = syntax === "source";
     preview.hidden = true;
     api.setToolbar(options.toolbar);
+    api.setControls(options);
     toolbar.classList.remove("byVIEWreveal");
     if (options.palette) api.setPalette(options.palette);
     else {

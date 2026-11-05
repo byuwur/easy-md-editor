@@ -59,6 +59,11 @@ No database, network requests, autosave, or browser storage are built in.
 | `syntax`           | `"clean"`                                | `"no-code"`, `"clean"`, `"assisted"`, or `"source"`.                                                                        |
 | `animations`       | `true`                                   | Brief control/disclosure motion. `true` enables it and `false` disables it, overriding the system motion preference.        |
 | `toolbar`          | `true`                                   | Show formatting tools; users can collapse them.                                                                             |
+| `toolbarToggle`    | `true`                                   | Show the Formatting button that opens or closes the toolbar.                                                                |
+| `syntaxSelect`     | `true`                                   | Show the editing-mode selector.                                                                                             |
+| `previewToggle`    | `true`                                   | Show the Preview button.                                                                                                    |
+| `themeToggle`      | `true`                                   | Show the light/dark theme switch.                                                                                           |
+| `statusBar`        | `true`                                   | Show editing status and guidance.                                                                                           |
 | `shortcuts`        | `true`                                   | Enable Ctrl/Cmd+B, I, Z, Shift+Z, and Y.                                                                                    |
 | `codeHighlighting` | `true`                                   | Use easy-code-viewer for fenced-code colors while editing and in Preview.                                                   |
 | `theme`            | Container theme, otherwise light         | `"light"` or `"dark"`; named palettes use container attributes below.                                                       |
@@ -78,6 +83,8 @@ Use `editor.setAnimations(false)` to change motion without recreating the editor
 ### Syntax and Preview
 
 **No-code** keeps Markdown delimiters hidden, including in the active line or code block. Format text with the toolbar. An inline formatting command at an empty caret inserts selected placeholder text for you to replace. **Clean** hides completed delimiters and reveals them in the active line. **Assisted** keeps them visible in a muted color, with stronger contrast on the active line. **Source** is a normal Markdown textarea. Clean remains the default.
+
+For a fixed No-code interface, use `syntax: "no-code", syntaxSelect: false, previewToggle: false`. Visibility options hide controls; `setSyntaxMode()`, `setPreview()`, `setTheme()`, and `setPalette()` remain available to the host application.
 
 Switching modes preserves the source exactly. Preview is read-only and uses the actual viewer, including its URL safety rules and optional code highlighting. Leaving Preview restores the editing selection. Preview renders on request, never during typing.
 
@@ -100,6 +107,7 @@ editor.getMarkdown();
 editor.setMarkdown("# Another document"); // Replaces the source and clears undo history.
 editor.setSyntaxMode("assisted");
 editor.setToolbar(false);
+editor.setControls({ syntaxSelect: false, previewToggle: false, themeToggle: false });
 editor.setAnimations(false);
 editor.setPreview(true);
 editor.setTheme("dark");
@@ -111,6 +119,8 @@ editor.destroy();
 `getMarkdown()` returns the last committed source. During IME composition, the browser owns the composing text until `compositionend`; reading the source does not interrupt it.
 
 `onChange` is synchronous. Debounce expensive application work such as storage or remote requests outside the editor. Mode, theme, and selection changes do not call it.
+
+`setControls(options)` changes any of `toolbarToggle`, `syntaxSelect`, `previewToggle`, `themeToggle`, `paletteSelect`, and `statusBar` without rebuilding the document or resetting selection/history. Omitted keys retain their current values; `false` hides a control. Use `setToolbar()` for the formatting tools themselves. An empty control bar is hidden automatically.
 
 `getSelection()` returns `{ anchor, focus }`. `setSelection(anchor, focus = anchor)` accepts UTF-16 source offsets, like JavaScript string indexes; reverse ranges preserve their direction. No-code projects positions inside hidden syntax onto visible text; read-only blocks expose their source boundaries. Select All still includes the complete Markdown.
 

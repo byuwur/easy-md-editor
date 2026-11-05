@@ -1,6 +1,6 @@
 /*
  * File: tests/editor-options.cjs
- * Desc: No-code editing without playground assets.
+ * Desc: No-code editing and independently configurable controls, without playground assets.
  */
 const assert = require("node:assert/strict");
 const path = require("node:path");
@@ -8,7 +8,7 @@ const test = require("node:test");
 const { chromium } = require("playwright");
 
 /* --- LOCAL LIBRARY FIXTURE --- */
-test("No-code editing", async (t) => {
+test("No-code editing and control visibility", async (t) => {
   const browser = await chromium.launch({ channel: process.env.BROWSER_CHANNEL || "chrome", executablePath: process.env.CHROMIUM_EXECUTABLE_PATH || undefined });
   try {
     const page = await browser.newPage();
@@ -311,6 +311,60 @@ test("No-code editing", async (t) => {
       assert.equal(await page.evaluate(() => editor.getMarkdown()), source);
     });
 
+    /* --- OPTIONAL CONTROLS --- */
+    const selectors = {
+      toolbarToggle: '[aria-label="Formatting"]',
+      syntaxSelect: '[aria-label="Syntax visibility"]',
+      previewToggle: '[aria-label="Preview"]',
+      themeToggle: ".byVIEWthemeToggle",
+      paletteSelect: '[aria-label="Color palette"]',
+      statusBar: ".byEDstatus"
+    };
+    await t.test("each control can be disabled at initialization without disabling its API", async () => {
+      for (const [name, selector] of Object.entries(selectors)) {
+        await page.evaluate((name) => render("# Heading", { [name]: false }), name);
+        assert.equal(await page.locator(selector).isHidden(), true, name);
+        await page.evaluate(() => {
+          editor.setSyntaxMode("source");
+          editor.setPreview(true);
+          editor.setPreview(false);
+          editor.setTheme("dark");
+          editor.setPalette("github");
+        });
+        assert.equal(await page.evaluate(() => editor.getMarkdown()), "# Heading");
+        assert.equal(await page.locator(selector).isHidden(), true, name);
+      }
+    });
+    await t.test("live visibility changes preserve selection and undo history", async () => {
+      await page.evaluate(() => {
+        render("Text");
+        editor.setSelection(0, 4);
+        editor.command("bold");
+      });
+      const selection = await page.evaluate(() => editor.getSelection());
+      await page.evaluate(() => editor.setControls({ toolbarToggle: false, syntaxSelect: false, previewToggle: false, themeToggle: false, paletteSelect: false, statusBar: false }));
+      assert.equal(await page.locator(".byEDbar").isHidden(), true);
+      assert.equal(await page.locator(".byEDtoolbar").isVisible(), true);
+      assert.deepEqual(await page.evaluate(() => editor.getSelection()), selection);
+      await page.evaluate(() => editor.setControls({ toolbarToggle: true, syntaxSelect: true, previewToggle: true, themeToggle: true, paletteSelect: true, statusBar: true }));
+      assert.equal(await page.locator(".byEDbar").isVisible(), true);
+      await page.evaluate(() => editor.command("undo"));
+      assert.equal(await page.evaluate(() => editor.getMarkdown()), "Text");
+    });
+    await t.test("visibility changes leave IME text under browser ownership until composition ends", async () => {
+      const result = await page.evaluate(() => {
+        render("**Hello**");
+        editor.setSelection(7);
+        const surface = document.querySelector(".byEDsurface");
+        surface.dispatchEvent(new CompositionEvent("compositionstart", { bubbles: true }));
+        document.getSelection().focusNode.data += "日本語";
+        editor.setControls({ syntaxSelect: false, previewToggle: false });
+        const during = editor.getMarkdown();
+        surface.dispatchEvent(new CompositionEvent("compositionend", { bubbles: true, data: "日本語" }));
+        return { during, after: editor.getMarkdown() };
+      });
+      assert.deepEqual(result, { during: "**Hello**", after: "**Hello日本語**" });
+    });
     assert.deepEqual(errors, []);
   } finally {
     await browser.close();
