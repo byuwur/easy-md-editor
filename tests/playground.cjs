@@ -9,6 +9,9 @@ const test = require("node:test");
 const { chromium } = require("playwright");
 const launch = () => chromium.launch({ channel: process.env.BROWSER_CHANNEL || "chrome", executablePath: process.env.CHROMIUM_EXECUTABLE_PATH || undefined });
 const root = path.join(__dirname, "..");
+const codeCDNBase = require("node:fs")
+  .readFileSync(path.join(root, "index.html"), "utf8")
+  .match(/https:\/\/cdn\.jsdelivr\.net\/gh\/byuwur\/easy-code-viewer@v[\d.]+\//)[0];
 
 // Read the displayed source without line numbers or status text.
 const readStarter = async (page) => {
@@ -20,19 +23,19 @@ const readStarter = async (page) => {
 let assetsPromise;
 const getAssets = () =>
   (assetsPromise ||= (async () => {
-    const files = ["css/pickr.min.css", "js/pickr.min.js", "css/bootstrap.min.css", "css/shards.min.css", "css/fontawesome.min.css", "js/bootstrap.min.js"];
+    const files = ["css/pickr.min.css", "js/pickr.min.js", "css/bootstrap.min.css", "css/shards.min.css", "css/fontawesome.min.css", "js/bootstrap.min.js"].map((file) => `https://cdn.jsdelivr.net/gh/byuwur/spa.js@v20.7/${file}`);
+    files.push(`${codeCDNBase}code.min.css`, `${codeCDNBase}code.min.js`);
     return new Map(
       await Promise.all(
-        files.map(async (file) => {
-          const url = `https://cdn.jsdelivr.net/gh/byuwur/spa.js@v20.7/${file}`;
+        files.map(async (url) => {
           const body =
-            file === "css/bootstrap.min.css" && process.env.BOOTSTRAP_CSS_PATH
+            url.endsWith("/bootstrap.min.css") && process.env.BOOTSTRAP_CSS_PATH
               ? await fs.readFile(process.env.BOOTSTRAP_CSS_PATH, "utf8")
               : await fetch(url).then(async (response) => {
                   assert.ok(response.ok, `Unable to load pinned playground asset: ${url}`);
                   return response.text();
                 });
-          return [url, { body, contentType: file.endsWith("css") ? "text/css" : "text/javascript" }];
+          return [url, { body, contentType: url.endsWith("css") ? "text/css" : "text/javascript" }];
         })
       )
     );
