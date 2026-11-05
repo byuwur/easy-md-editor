@@ -18,7 +18,7 @@ jobs:
       matrix:
         include:
           - name: Library
-            files: tests/rendering.cjs
+            files: tests/rendering.cjs tests/editor-options.cjs
           - name: Playground
             files: tests/playground.cjs
     steps:

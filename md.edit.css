@@ -321,6 +321,16 @@
 .byMDeditor[data-syntax="clean"] .byEDgroup-fence.is-active .byEDline:is([data-type="fenceOpen"], [data-type="fenceClose"]) {
   display: block;
 }
+.byMDeditor[data-syntax="no-code"] .byEDline:is([data-type="fenceOpen"], [data-type="fenceClose"], [data-type="tableDelimiter"]) {
+  display: none;
+}
+.byMDeditor[data-syntax="no-code"] :is(.byEDescape, .byEDhardBreak, .byEDunsupportedSource) {
+  display: none;
+}
+.byMDeditor[data-syntax="no-code"] .byEDline[data-type="source"] {
+  font: inherit;
+  background: transparent;
+}
 .byMDeditor[data-syntax="clean"] .byEDimageSource:not(:focus-within) > :not(.byEDimage) {
   color: var(--by-ed-muted);
 }

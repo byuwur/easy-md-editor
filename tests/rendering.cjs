@@ -637,7 +637,7 @@ test("source-driven editor browser contracts", async (t) => {
             },
             { mode, palette }
           );
-          for (const syntax of ["clean", "assisted", "source"]) {
+          for (const syntax of ["no-code", "clean", "assisted", "source"]) {
             await page.getByLabel("Syntax visibility", { exact: true }).selectOption(syntax);
             assert.equal(await page.locator("#editor").evaluate((element) => getComputedStyle(element).backgroundColor === getComputedStyle(document.getElementById("other")).backgroundColor), true);
             if (syntax === "source") assert.equal(await page.locator(".byEDsource").evaluate((element) => getComputedStyle(element).backgroundColor === getComputedStyle(document.getElementById("editor")).backgroundColor), true);

@@ -56,7 +56,7 @@ No database, network requests, autosave, or browser storage are built in.
 
 | Option             | Default                                  | Meaning                                                                                                                     |
 | ------------------ | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `syntax`           | `"clean"`                                | `"clean"`, `"assisted"`, or `"source"`.                                                                                     |
+| `syntax`           | `"clean"`                                | `"no-code"`, `"clean"`, `"assisted"`, or `"source"`.                                                                        |
 | `animations`       | `true`                                   | Brief control/disclosure motion. `true` enables it and `false` disables it, overriding the system motion preference.        |
 | `toolbar`          | `true`                                   | Show formatting tools; users can collapse them.                                                                             |
 | `shortcuts`        | `true`                                   | Enable Ctrl/Cmd+B, I, Z, Shift+Z, and Y.                                                                                    |
@@ -77,7 +77,7 @@ Use `editor.setAnimations(false)` to change motion without recreating the editor
 
 ### Syntax and Preview
 
-**Clean** hides completed delimiters and reveals them in the active line. **Assisted** keeps them visible in a muted color, with stronger contrast on the active line. **Source** is a normal Markdown textarea.
+**No-code** keeps Markdown delimiters hidden, including in the active line or code block. Format text with the toolbar. An inline formatting command at an empty caret inserts selected placeholder text for you to replace. **Clean** hides completed delimiters and reveals them in the active line. **Assisted** keeps them visible in a muted color, with stronger contrast on the active line. **Source** is a normal Markdown textarea. Clean remains the default.
 
 Switching modes preserves the source exactly. Preview is read-only and uses the actual viewer, including its URL safety rules and optional code highlighting. Leaving Preview restores the editing selection. Preview renders on request, never during typing.
 
@@ -112,7 +112,7 @@ editor.destroy();
 
 `onChange` is synchronous. Debounce expensive application work such as storage or remote requests outside the editor. Mode, theme, and selection changes do not call it.
 
-`getSelection()` returns `{ anchor, focus }`. `setSelection(anchor, focus = anchor)` accepts UTF-16 source offsets, like JavaScript string indexes; reverse ranges preserve their direction.
+`getSelection()` returns `{ anchor, focus }`. `setSelection(anchor, focus = anchor)` accepts UTF-16 source offsets, like JavaScript string indexes; reverse ranges preserve their direction. No-code projects positions inside hidden syntax onto visible text; read-only blocks expose their source boundaries. Select All still includes the complete Markdown.
 
 `command(name, value?)` exposes the same formatting actions:
 
@@ -153,7 +153,7 @@ The editor uses the viewer's scoped variables and palettes. No global theme rule
 <div id="accessible-document" class="light" data-theme="high-contrast"></div>
 ```
 
-Monokai, GitHub, Solarized, and High Contrast each include light and dark modes. Use `setTheme("light")` / `setTheme("dark")` to change mode while retaining the palette, or `setPalette("github")` to change palette while retaining the mode. These changes apply to Clean, Assisted, Source, and Preview without changing the Markdown or undo history.
+Monokai, GitHub, Solarized, and High Contrast each include light and dark modes. Use `setTheme("light")` / `setTheme("dark")` to change mode while retaining the palette, or `setPalette("github")` to change palette while retaining the mode. These changes apply to No-code, Clean, Assisted, Source, and Preview without changing the Markdown or undo history.
 
 Custom palettes use the viewer's `--by-md-*` variables on `.byMDdocument[data-theme="your-name"]`, with `.dark` for the dark variant. The same rules reach the editor and its Preview. Select a custom name with `palette: "your-name"` or `setPalette("your-name")`; it appears in that editor's selector. Editor-only colors can override `--by-ed-bg`, `--by-ed-text`, `--by-ed-muted`, `--by-ed-border`, `--by-ed-alt`, and `--by-ed-accent` on `.byMDeditor`.
 
@@ -164,6 +164,10 @@ Visual editing supports ATX headings, emphasis/strike, ordinary code spans, flat
 The toolbar covers these formatting commands, rather than every viewer setting or Markdown structure. The default playground document demonstrates all six heading levels and each editable formatting feature, including mixed emphasis, autolinks, an image, both list types, tasks, tables, quotes, a hard break, a divider, and highlighted code.
 
 Complex nesting, indented code, comments, document markers, escapes/entities, and code spans with normalized whitespace remain literal where visual editing would lose source mapping. Lines longer than 8,192 characters stay literal. Soft-wrapped source lines are separate editing lines; Preview applies the viewer's paragraph rules. Source remains the fallback for structural table surgery and unsupported extensions.
+
+In No-code mode, unsupported block structures render as read-only fragments through the actual Markdown viewer; edit those blocks in Source. Escape backslashes and hard-break backslashes stay hidden, while entity spellings retain their literal source representation. Code contents remain visible; only their Markdown fences are hidden.
+
+Ordinary No-code edits preserve hidden table separators and code fences; use Source to change those structures. Empty fenced blocks accept typing and paste without changing their source until the first edit.
 
 Unchanged source preserves delimiters, whitespace, BOM, and mixed line endings. The source limit is 2,000,000 UTF-16 characters. Formatting deliberately changes only the selected source region.
 
@@ -185,13 +189,14 @@ Install Playwright outside the source tree or make it available through `NODE_PA
 
 ```sh
 node --test tests/rendering.cjs
+node --test tests/editor-options.cjs
 node --test tests/playground.cjs
 node tests/performance.cjs
 ```
 
 Tests default to installed Chrome; `BROWSER_CHANNEL` and `CHROMIUM_EXECUTABLE_PATH` override the browser. Tests exercise actual companion files, not parser mocks. Library and option checks run separately from playground checks, which fetch pinned SPA.js assets from the CDN; `BOOTSTRAP_CSS_PATH` can supply a cached Bootstrap stylesheet. No SPA.js checkout is needed. [GitHub Actions](.github/workflows/rendering.yml) reports Library and Playground independently. Benchmarks cover 1,000/5,000/10,000 lines, large tables, nested lists, and fences at normal and 6× CPU slowdown. They report parse, edit, DOM patch, selection, preview, long-task, and heap measurements. `BENCHMARK_OUTPUT` optionally writes JSON outside the repository. Targets are measured engineering goals, not timing guarantees.
 
-Ordinary input patches the affected line or row. Native word input preserves text nodes; Markdown punctuation and structure go through the shared parser. Offscreen groups use `content-visibility: auto` while retaining their DOM. Source mode builds no hidden visual document until needed. A full editor-line scan is reserved for initialization, source replacement, and returning from changed Source mode. Full document rendering belongs to Preview. Code highlighting runs separately, caches unchanged fences, and cancels obsolete work on edits or teardown.
+Ordinary input patches the affected line or row. Native word input preserves text nodes; Markdown punctuation and structure go through the shared parser. Offscreen groups use `content-visibility: auto` while retaining their DOM. Source mode builds no hidden visual document until needed. A full editor-line scan is reserved for initialization, source replacement, returning from changed Source mode, and changing the No-code representation. Full document rendering belongs to Preview. Code highlighting runs separately, caches unchanged fences, and cancels obsolete work on edits or teardown.
 
 Measured in local Chrome with CODE loaded, a 1,500-row table, 5,000 code lines, and up to 10,000 prose lines: edit-handler p95 stayed below 1 ms normally, with no typing long tasks. At 6× CPU slowdown, most fixtures stayed below 2.5 ms; the 10,000-line document reached 8.3 ms. Selection p95 stayed below 0.5 ms. Browser layout still produced long tasks on large tables, nested lists, and code at that slowdown. Source mode remains the practical option for heavy documents on slower devices. These observations are machine-specific, not guarantees.
 

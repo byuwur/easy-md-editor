@@ -31,8 +31,13 @@
     ["horizontalRule", "Divider", "minus"]
   ];
   const wraps = { bold: "**", italic: "*", strikethrough: "~~", inlineCode: "`" };
-  const modes = ["clean", "assisted", "source"];
-  const modeDescriptions = { clean: "Hide Markdown syntax outside the active line or code block.", assisted: "Keep Markdown syntax visible beside formatted text.", source: "Edit the complete Markdown source as plain text." };
+  const modes = ["no-code", "clean", "assisted", "source"];
+  const modeDescriptions = {
+    "no-code": "Keep Markdown syntax hidden while editing. Use the toolbar to format text.",
+    clean: "Hide Markdown syntax outside the active line or code block.",
+    assisted: "Keep Markdown syntax visible beside formatted text.",
+    source: "Edit the complete Markdown source as plain text."
+  };
   const palettes = { monokai: "Monokai", github: "GitHub", solarized: "Solarized", "high-contrast": "High Contrast" };
 
   /* --- STATE --- */
@@ -92,6 +97,7 @@
     let alive = true,
       previewing = false,
       dirty = false,
+      renderedNoCode = false,
       composing = null,
       nativeEdit = null,
       dialog = null,
@@ -100,7 +106,8 @@
     let lines = [],
       groups = [],
       position = { anchor: 0, focus: 0 },
-      savedPosition = position;
+      savedPosition = position,
+      fullSelection = null;
     let history = [],
       historyIndex = 0,
       historyBytes = 0,
@@ -155,7 +162,7 @@
     const picker = node("select", "byEDselect");
     picker.setAttribute("aria-label", "Syntax visibility");
     for (const mode of modes) {
-      const option = node("option", "", { clean: "Clean", assisted: "Assisted", source: "Source" }[mode]);
+      const option = node("option", "", { "no-code": "No-code", clean: "Clean", assisted: "Assisted", source: "Source" }[mode]);
       option.value = mode;
       option.disabled = !rich && mode !== "source";
       picker.append(option);
@@ -275,6 +282,7 @@
     };
     const firstPoint = (target, end) => {
       if (!target) return null;
+      if (syntax === "no-code" && target.nodeType === Node.ELEMENT_NODE && target.matches(".byEDsyntax,.byEDescape,.byEDhardBreak,.byEDunsupportedSource,.byEDunsupported")) return null;
       if (textMap.has(target)) {
         const point = textMap.get(target);
         return point.record.from + (end ? point.to : point.from);
@@ -290,11 +298,20 @@
     };
     /** Translate a native DOM boundary into a source offset, including empty-line placeholder nodes. */
     const offsetOf = (target, offset) => {
+      if (syntax === "no-code") {
+        const readOnly = (target.nodeType === Node.ELEMENT_NODE ? target : target.parentElement)?.closest(".byEDunsupported");
+        if (readOnly) {
+          const record = lineMap.get(readOnly.closest(".byEDline"));
+          return record.from + (offset ? record.text.length : 0);
+        }
+      }
       if (textMap.has(target)) {
         const item = textMap.get(target);
         return item.record.from + item.from + Math.min(offset, target.length);
       }
       if (target.nodeType === Node.ELEMENT_NODE) {
+        const line = lineMap.get(target);
+        if (syntax === "no-code" && line?.meta.type === "source") return line.from + (offset ? line.text.length : 0);
         const point = offset < target.childNodes.length ? firstPoint(target.childNodes[offset], false) : firstPoint(target, true);
         if (point !== null) return point;
         // A blank line's placeholder <br> still belongs to a canonical source position.
@@ -310,6 +327,16 @@
         return { anchor: rawOffset(raw.selectionDirection === "backward" ? raw.selectionEnd : raw.selectionStart, true), focus: rawOffset(raw.selectionDirection === "backward" ? raw.selectionStart : raw.selectionEnd, true) };
       const current = document.getSelection();
       if (current && surface.contains(current.anchorNode) && surface.contains(current.focusNode)) {
+        // Select All includes source that has no visible caret boundary, such as headings and closing fences.
+        if (
+          syntax === "no-code" &&
+          fullSelection &&
+          current.anchorNode === fullSelection.anchorNode &&
+          current.anchorOffset === fullSelection.anchorOffset &&
+          current.focusNode === fullSelection.focusNode &&
+          current.focusOffset === fullSelection.focusOffset
+        )
+          return position;
         const anchor = offsetOf(current.anchorNode, current.anchorOffset),
           focus = offsetOf(current.focusNode, current.focusOffset);
         if (anchor !== null && focus !== null) return { anchor, focus };
@@ -331,6 +358,7 @@
     };
     /** Restore a directed source selection in either editing surface without replacing document content. */
     const restore = (next = position, focus = true) => {
+      fullSelection = null;
       position = { anchor: Math.max(0, Math.min(source.length, next.anchor)), focus: Math.max(0, Math.min(source.length, next.focus)) };
       if (previewing) return;
       if (syntax === "source") {
@@ -339,16 +367,28 @@
         return;
       }
       const point = (offset) => {
-        const record = lines[lineAt(offset)],
-          relative = Math.min(record.text.length, offset - record.from);
-        const found = record.points.find((item) => item.from <= relative && item.to >= relative) || record.points.at(-1);
-        return found ? [found.node, Math.max(0, Math.min(found.node.length, relative - found.from))] : [record.view, 0];
+        let index = lineAt(offset),
+          record = lines[index];
+        // Hidden fences and table separators cannot own a visible caret in No-code mode.
+        if (syntax === "no-code" && ["fenceOpen", "fenceClose", "tableDelimiter"].includes(record.meta.type)) {
+          const step = record.meta.type === "fenceClose" ? -1 : 1;
+          while (lines[index + step] && ["fenceOpen", "fenceClose", "tableDelimiter"].includes(lines[index].meta.type)) index += step;
+          record = lines[index];
+        }
+        const relative = Math.max(0, Math.min(record.text.length, offset - record.from));
+        const points = syntax === "no-code" ? record.points.filter((item) => !item.node.parentElement.closest(".byEDsyntax,.byEDescape,.byEDhardBreak,.byEDunsupportedSource")) : record.points;
+        const found = points.find((item) => item.from <= relative && item.to >= relative) || (relative <= (points[0]?.from ?? 0) ? points[0] : points.at(-1));
+        return found ? [found.node, Math.max(0, Math.min(found.node.length, relative - found.from))] : [record.view, relative ? record.view.childNodes.length : 0];
       };
       activate(lines[lineAt(position.focus)]);
       if (focus && document.activeElement !== surface) surface.focus({ preventScroll: true });
       const anchor = point(position.anchor),
         end = point(position.focus);
       document.getSelection()?.setBaseAndExtent(...anchor, ...end);
+      if (syntax === "no-code" && position.anchor !== position.focus && Math.min(position.anchor, position.focus) === 0 && Math.max(position.anchor, position.focus) === source.length) {
+        const current = document.getSelection();
+        fullSelection = { anchorNode: current.anchorNode, anchorOffset: current.anchorOffset, focusNode: current.focusNode, focusOffset: current.focusOffset };
+      }
     };
 
     /* --- INCREMENTAL RENDERING --- */
@@ -366,14 +406,23 @@
             mappedText(parent, record, start, end);
             continue;
           }
-          // Entity normalization and complex code spans remain literal while editing.
-          if (["entity", "escape"].includes(token.type) || (token.type === "code" && token.text !== value.slice(token.bodyFrom, token.bodyTo))) {
+          if (token.type === "escape") {
+            const literal = node("span", "byEDliteral");
+            mappedText(literal, record, start, from + token.bodyFrom, "byEDescape");
+            mappedText(literal, record, from + token.bodyFrom, end);
+            record.formats.push({ type: "escape", from: start, to: end, bodyFrom: from + token.bodyFrom, bodyTo: end });
+            parent.append(literal);
+            continue;
+          }
+          // Entities retain their source spelling; other modes also keep normalized code spans literal.
+          if (token.type === "entity" || (syntax !== "no-code" && token.type === "code" && token.text !== value.slice(token.bodyFrom, token.bodyTo))) {
             mappedText(parent, record, start, end, "byEDliteral");
             continue;
           }
           const tag = { strongEm: "strong", link: "span", image: "span" }[token.type] || token.type;
           const wrapper = node(tag, token.type === "code" ? "byMDinlineCode" : token.type === "link" ? "byMDlink" : "");
-          if (["strong", "strongEm", "em", "del", "code"].includes(token.type)) record.formats.push({ ...token, from: start, to: end, bodyFrom: from + token.bodyFrom, bodyTo: from + token.bodyTo });
+          if (["strong", "strongEm", "em", "del", "code"].includes(token.type) || (syntax === "no-code" && !token.auto && ["link", "image"].includes(token.type)))
+            record.formats.push({ ...token, from: start, to: end, bodyFrom: from + token.bodyFrom, bodyTo: from + token.bodyTo });
           mappedText(wrapper, record, start, from + token.bodyFrom, "byEDsyntax");
           if (token.children && !token.auto) render(wrapper, token.children);
           else mappedText(wrapper, record, from + token.bodyFrom, from + token.bodyTo);
@@ -450,6 +499,16 @@
         const hr = node("hr");
         hr.contentEditable = "false";
         view.append(hr);
+      } else if (type === "source" && syntax === "no-code") {
+        // Unsupported structures remain readable without exposing source or pretending their DOM is editable.
+        mappedText(view, record, 0, record.text.length, "byEDunsupportedSource");
+        const readOnly = node("div", "byEDunsupported");
+        readOnly.contentEditable = "false";
+        readOnly.title = "Edit this block in Source mode.";
+        view.append(readOnly);
+        global.byMDviewer(readOnly, record.text, { toolbar: false, statusBar: false, animations: false, codeHighlighting: false });
+        // The editor owns the palette; this fragment inherits it instead of starting a nested theme.
+        readOnly.classList.remove("byMDdocument");
       } else if (["code", "source", "fenceOpen", "fenceClose"].includes(type)) {
         mappedText(view, record, 0, record.text.length, type.startsWith("fence") ? "byEDsyntax" : "");
       } else {
@@ -462,10 +521,19 @@
           box.setAttribute("aria-label", `Complete ${record.text.slice(meta.bodyFrom) || "task"}`);
           view.append(box);
         }
-        renderInline(view, record, meta.bodyFrom, meta.bodyTo);
+        const hardBreak = record.text.slice(meta.bodyFrom, meta.bodyTo).match(/\\+$/);
+        const bodyTo = hardBreak?.[0].length % 2 ? meta.bodyTo - 1 : meta.bodyTo;
+        renderInline(view, record, meta.bodyFrom, bodyTo);
+        mappedText(view, record, bodyTo, meta.bodyTo, "byEDhardBreak");
         mappedText(view, record, meta.bodyTo, record.text.length, "byEDsyntax");
       }
-      if (!record.points.length) view.appendChild(document.createElement("br"));
+      if (!record.points.length || (meta.bodyFrom === meta.bodyTo && !meta.cells && record.points.every((item) => item.node.parentElement.closest(".byEDsyntax")))) {
+        const offset = meta.bodyFrom || 0;
+        const empty = document.createTextNode("");
+        textMap.set(empty, { record, from: offset, to: offset });
+        record.points.push({ node: empty, from: offset, to: offset });
+        view.append(empty, document.createElement("br"));
+      }
       if (active === record) view.classList.add("is-active");
     };
     /** Carry the previous line's parser state forward and inspect the next line only for table headers. */
@@ -621,6 +689,7 @@
 
     /** Rebuild the derived line/group index from canonical source after initialization or source replacement. */
     const build = () => {
+      renderedNoCode = syntax === "no-code";
       textMap = new WeakMap();
       lineMap = new WeakMap();
       active = null;
@@ -698,7 +767,7 @@
         const record = !dirty && lines[lineAt(from)];
         const pressed =
           (source.slice(Math.max(0, from - marker.length), from) === marker && source.slice(to, to + marker.length) === marker) ||
-          Boolean(record?.formats?.some((token) => token.type === tokenType && record.from + token.bodyFrom <= from && record.from + token.bodyTo >= to));
+          Boolean(record?.formats?.some((token) => (token.type === tokenType || (token.type === "strongEm" && ["strong", "em"].includes(tokenType))) && record.from + token.bodyFrom <= from && record.from + token.bodyTo >= to));
         const button = commandButtons.get(name);
         if (button && button.getAttribute("aria-pressed") !== String(pressed)) button.setAttribute("aria-pressed", String(pressed));
       }
@@ -730,6 +799,48 @@
     /** Commit one source edit, update derived views and undo state, then notify the application synchronously. */
     const change = (from, to, inserted, next, type = "command", remember = true, native = null) => {
       if (!alive || previewing) return false;
+      // Text edits stay inside visible structure; explicit commands and undo can change that structure.
+      if (syntax === "no-code" && remember && (type.startsWith("insert") || type.startsWith("delete") || ["paste", "cut", "composition"].includes(type)) && !(from === 0 && to === source.length && from < to)) {
+        const first = lineAt(from),
+          last = lineAt(to),
+          record = lines[first];
+        if (record.meta.type === "source") {
+          announce("Edit this block in Source mode.");
+          return false;
+        }
+        if (record.meta.cells && (first !== last || !record.meta.cells.some((cell) => from >= record.from + cell.from && to <= record.from + cell.to))) {
+          // A native text node can include newly typed spaces that the Markdown parser trims.
+          const startPoint = first === last ? record.points.find((point) => from >= record.from + point.from && from <= record.from + point.to && point.node.parentElement.closest(".byEDcell")) : null;
+          const cell = startPoint?.node.parentElement.closest(".byEDcell");
+          if (!cell || !record.points.some((point) => to >= record.from + point.from && to <= record.from + point.to && cell.contains(point.node))) {
+            announce("Edit one table cell at a time. Use Tab to move between cells.");
+            return false;
+          }
+        }
+        for (let index = first; index <= last; index++) {
+          if (!["fenceOpen", "fenceClose"].includes(lines[index].meta.type)) continue;
+          const opening = record.meta.type === "fenceOpen" ? record : lines[first - 1];
+          const closing = record.meta.type === "fenceClose" ? record : lines[first + 1];
+          if (from === to && inserted && opening?.meta.type === "fenceOpen" && closing?.meta.type === "fenceClose" && opening.group === closing.group) {
+            // Materialize an empty code line only when it is edited; untouched Markdown stays exact.
+            from = to = closing.from;
+            next = { anchor: from + inserted.length, focus: from + inserted.length };
+            inserted += opening.eol || eol;
+            break;
+          }
+          announce("Code fences stay hidden. Use Source mode to change the block structure.");
+          return false;
+        }
+      }
+      if (syntax === "no-code" && !inserted && (type.startsWith("delete") || type === "cut")) {
+        // Deleting all visible text in a format must not leave orphaned hidden delimiters.
+        const record = lines[lineAt(from)];
+        let token;
+        while ((token = record.formats.find((item) => record.from + item.bodyFrom === from && record.from + item.bodyTo === to))) {
+          from = record.from + token.from;
+          to = record.from + token.to;
+        }
+      }
       if (source.length - (to - from) + inserted.length > 2000000) {
         announce("This document has reached the two-million-character limit.");
         return false;
@@ -859,6 +970,10 @@
         undo(name === "redo");
         return true;
       }
+      if (syntax === "no-code" && lines[lineAt(from)]?.meta.type === "source") {
+        announce("Edit this block in Source mode.");
+        return false;
+      }
       if (wraps[name]) {
         let marker = wraps[name];
         const selected = source.slice(from, to);
@@ -869,20 +984,22 @@
         if (from === to && syntax !== "source" && !dirty) {
           const record = lines[lineAt(from)],
             type = { bold: "strong", italic: "em", strikethrough: "del", inlineCode: "code" }[name];
-          const token = record.formats.find((item) => item.type === type && record.from + item.bodyFrom <= from && record.from + item.bodyTo >= from);
+          const token = record.formats.find((item) => (item.type === type || (item.type === "strongEm" && ["strong", "em"].includes(type))) && record.from + item.bodyFrom <= from && record.from + item.bodyTo >= from);
           if (token) {
             const start = record.from + token.from,
               end = record.from + token.to,
               body = record.from + token.bodyFrom;
-            const caret = from - (body - start);
-            return change(start, end, source.slice(body, record.from + token.bodyTo), { anchor: caret, focus: caret }, name);
+            const remaining = token.type === "strongEm" ? source.slice(start, start + (name === "bold" ? 1 : 2)) : "";
+            const caret = from - (body - start) + remaining.length;
+            return change(start, end, remaining + source.slice(body, record.from + token.bodyTo) + remaining, { anchor: caret, focus: caret }, name);
           }
         }
         if (name === "inlineCode" && selected.includes("`")) marker = "`".repeat(Math.max(...[...selected.matchAll(/`+/g)].map((match) => match[0].length)) + 1);
         if (source.slice(from - marker.length, from) === marker && source.slice(to, to + marker.length) === marker)
           return change(from - marker.length, to + marker.length, selected, { anchor: from - marker.length, focus: to - marker.length }, name);
         if (selected.startsWith(marker) && selected.endsWith(marker) && selected.length >= marker.length * 2) return change(from, to, selected.slice(marker.length, -marker.length), { anchor: from, focus: to - marker.length * 2 }, name);
-        return change(from, to, marker + selected + marker, { anchor: from + marker.length, focus: to + marker.length }, name);
+        const body = selected || (syntax === "no-code" ? "Text" : "");
+        return change(from, to, marker + body + marker, { anchor: from + marker.length, focus: from + marker.length + body.length }, name);
       }
       if (["heading", "paragraph", "bulletList", "orderedList", "checklist", "blockquote"].includes(name)) {
         const start = Math.max(source.lastIndexOf("\n", from - 1), source.lastIndexOf("\r", from - 1)) + 1;
@@ -1018,10 +1135,38 @@
       nativeEdit = null;
       const type = event.inputType;
       position = selection();
+      if (syntax === "no-code" && position.anchor === position.focus && lines[lineAt(position.focus)]?.meta.type === "source") {
+        event.preventDefault();
+        announce("Edit this block in Source mode.");
+        return;
+      }
       let from = Math.min(position.anchor, position.focus),
         to = Math.max(position.anchor, position.focus),
         inserted = null;
-      if (type === "deleteContentBackward" && from === to && syntax !== "source") {
+      if (syntax === "no-code" && from === to && ["deleteContentBackward", "deleteContentForward"].includes(type)) {
+        const record = lines[lineAt(from)],
+          backward = type === "deleteContentBackward";
+        let edge = from,
+          token;
+        // Walk through every enclosing format, not just the innermost delimiter.
+        while ((token = record.formats.find((item) => (backward ? edge === record.from + item.bodyFrom || edge === record.from + item.to : edge === record.from + item.bodyTo || edge === record.from + item.from)))) {
+          const next = record.from + (backward ? (edge === record.from + token.to ? token.bodyTo : token.from) : token.to);
+          if (next === edge) break;
+          edge = next;
+        }
+        if (backward && record.meta.bodyFrom > 0 && edge === record.from + record.meta.bodyFrom && ["heading", "quote", "bullet", "ordered", "task"].includes(record.meta.type)) {
+          event.preventDefault();
+          change(record.from, edge, "", { anchor: record.from, focus: record.from }, type);
+          return;
+        }
+        // Cross hidden inline delimiters without deleting the formatting itself.
+        if (edge !== from) {
+          event.preventDefault();
+          change(backward ? boundary(source, edge, -1) : edge, backward ? edge : boundary(source, edge, 1), "", null, type);
+          return;
+        }
+      }
+      if (type === "deleteContentBackward" && from === to && syntax !== "source" && syntax !== "no-code") {
         const record = lines[lineAt(from)];
         if (record.formats.some((token) => record.from + token.bodyTo === from && token.to > token.bodyTo)) {
           event.preventDefault();
@@ -1302,13 +1447,15 @@
       /** Change presentation while retaining source and the directed selection. */
       setSyntaxMode(mode) {
         if (!alive) return;
-        if (!modes.includes(mode)) throw new RangeError("Syntax mode must be clean, assisted, or source.");
+        if (!modes.includes(mode)) throw new RangeError("Syntax mode must be no-code, clean, assisted, or source.");
         if (mode !== "source" && !rich) {
           announce("Visual editing requires the updated easy-md-viewer parser. Source editing remains available.");
           return;
         }
         finishComposition();
         if (!previewing) position = selection();
+        // Source mode can retain a hidden visual document built in a different mode.
+        const rebuild = renderedNoCode !== (mode === "no-code");
         syntax = mode;
         picker.value = mode;
         element.dataset.syntax = mode;
@@ -1318,7 +1465,7 @@
         surface.classList.add("byVIEWreveal");
         raw.hidden = mode !== "source" || previewing;
         surface.hidden = mode === "source" || previewing;
-        if (mode !== "source" && dirty) build();
+        if (mode !== "source" && (dirty || rebuild)) build();
         queueCode();
         if (!previewing) restore(position, false);
         scheduleToolbar();
@@ -1416,6 +1563,7 @@
         groups = [];
         active = null;
         composing = null;
+        fullSelection = null;
         dialog = null;
         textMap = new WeakMap();
         lineMap = new WeakMap();
