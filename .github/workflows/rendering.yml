@@ -1,0 +1,52 @@
+name: Editor checks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rendering:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Library
+            files: tests/rendering.cjs
+          - name: Playground
+            files: tests/playground.cjs
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: easy-md-editor
+      - uses: actions/checkout@v4
+        with:
+          repository: byuwur/easy-md-viewer
+          ref: v2.5
+          path: easy-md-viewer
+      - uses: actions/checkout@v4
+        with:
+          repository: byuwur/easy-code-viewer
+          ref: v1.4
+          path: easy-code-viewer
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install browser test tools
+        run: |
+          npm install --prefix "$RUNNER_TEMP/editor-tests" --no-package-lock playwright@1.63.0
+          node "$RUNNER_TEMP/editor-tests/node_modules/playwright/cli.js" install --with-deps chromium
+      - name: Check ${{ matrix.name }}
+        working-directory: easy-md-editor
+        env:
+          NODE_PATH: ${{ runner.temp }}/editor-tests/node_modules
+          BROWSER_CHANNEL: chromium
+        run: |
+          node --check md.edit.js
+          node --test ${{ matrix.files }}

@@ -185,10 +185,11 @@ Install Playwright outside the source tree or make it available through `NODE_PA
 
 ```sh
 node --test tests/rendering.cjs
+node --test tests/playground.cjs
 node tests/performance.cjs
 ```
 
-Tests default to installed Chrome; `BROWSER_CHANNEL` and `CHROMIUM_EXECUTABLE_PATH` override the browser. Tests exercise actual companion files, not parser mocks. Browser tests also read the sibling `spa.js` styles and Bootstrap script as offline playground fixtures. Benchmarks cover 1,000/5,000/10,000 lines, large tables, nested lists, and fences at normal and 6× CPU slowdown. They report parse, edit, DOM patch, selection, preview, long-task, and heap measurements. `BENCHMARK_OUTPUT` optionally writes JSON outside the repository. Targets are measured engineering goals, not timing guarantees.
+Tests default to installed Chrome; `BROWSER_CHANNEL` and `CHROMIUM_EXECUTABLE_PATH` override the browser. Tests exercise actual companion files, not parser mocks. Library and option checks run separately from playground checks, which fetch pinned SPA.js assets from the CDN; `BOOTSTRAP_CSS_PATH` can supply a cached Bootstrap stylesheet. No SPA.js checkout is needed. [GitHub Actions](.github/workflows/rendering.yml) reports Library and Playground independently. Benchmarks cover 1,000/5,000/10,000 lines, large tables, nested lists, and fences at normal and 6× CPU slowdown. They report parse, edit, DOM patch, selection, preview, long-task, and heap measurements. `BENCHMARK_OUTPUT` optionally writes JSON outside the repository. Targets are measured engineering goals, not timing guarantees.
 
 Ordinary input patches the affected line or row. Native word input preserves text nodes; Markdown punctuation and structure go through the shared parser. Offscreen groups use `content-visibility: auto` while retaining their DOM. Source mode builds no hidden visual document until needed. A full editor-line scan is reserved for initialization, source replacement, and returning from changed Source mode. Full document rendering belongs to Preview. Code highlighting runs separately, caches unchanged fences, and cancels obsolete work on edits or teardown.
 

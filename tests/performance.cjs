@@ -15,7 +15,7 @@ const summary = (values) => ({ median: percentile(values, 0.5), p95: percentile(
   try {
     const page = await browser.newPage({ viewport: { width: 1100, height: 800 } });
     await page.route("https://cdn.jsdelivr.net/**", async (route) => {
-      if (route.request().url().endsWith("fontawesome.min.css")) return route.fulfill({ body: await fs.readFile(path.join(__dirname, "../../spa.js/css/fontawesome.min.css")), contentType: "text/css" });
+      if (route.request().url().endsWith("fontawesome.min.css")) return route.fulfill({ body: "", contentType: "text/css" });
       return route.abort();
     });
     await page.setContent('<style>body{margin:1rem}#editor{max-width:60rem}</style><div id="editor"></div>');
