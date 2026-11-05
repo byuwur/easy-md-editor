@@ -227,14 +227,39 @@ test("source-driven editor browser contracts", async (t) => {
       await page.keyboard.press("Control+z");
       assert.equal(await page.evaluate(() => editor.getMarkdown()), "# Title\n\n**bold**");
     });
-    await t.test("Enter creates paragraphs, continues lists, and exits empty list items", async () => {
+    await t.test("Enter adds one source break in every mode and preserves line endings and undo", async () => {
+      for (const syntax of ["no-code", "clean", "assisted", "source"]) {
+        for (const [source, from, to, eol] of [
+          ["Hello", 5, 5, "\n"],
+          ["Hello\r\nTail", 2, 2, "\r\n"],
+          ["Hello\nTail", 1, 4, "\n"]
+        ]) {
+          await page.evaluate(
+            ({ source, syntax, from, to }) => {
+              render(source, { syntax });
+              editor.setSelection(from, to);
+            },
+            { source, syntax, from, to }
+          );
+          await page.keyboard.press("Enter");
+          assert.equal(await page.evaluate(() => editor.getMarkdown()), source.slice(0, from) + eol + source.slice(to), syntax);
+          const caret = from + eol.length;
+          assert.deepEqual(await page.evaluate(() => editor.getSelection()), { anchor: caret, focus: caret });
+          await page.evaluate(() => editor.command("undo"));
+          assert.equal(await page.evaluate(() => editor.getMarkdown()), source);
+          await page.evaluate(() => editor.command("redo"));
+          assert.equal(await page.evaluate(() => editor.getMarkdown()), source.slice(0, from) + eol + source.slice(to));
+        }
+      }
+    });
+    await t.test("Enter continues lists and exits empty list items", async () => {
       await page.evaluate(() => {
         render("Hello");
         editor.setSelection(5);
       });
       await page.keyboard.press("Enter");
       await page.keyboard.type("World");
-      assert.equal(await page.evaluate(() => editor.getMarkdown()), "Hello\n\nWorld");
+      assert.equal(await page.evaluate(() => editor.getMarkdown()), "Hello\nWorld");
       await page.evaluate(() => {
         render("- One");
         editor.setSelection(5);
@@ -251,7 +276,7 @@ test("source-driven editor browser contracts", async (t) => {
       });
       await page.keyboard.press("Enter");
       await page.keyboard.type("Between");
-      assert.deepEqual(await page.locator(".byEDline").allTextContents(), ["First", "", "Between", "Second", "Third"]);
+      assert.deepEqual(await page.locator(".byEDline").allTextContents(), ["First", "Between", "Second", "Third"]);
     });
     await t.test("headings, lists, quote and divider commands produce viewer-compatible Markdown", async () => {
       await page.evaluate(() => {
@@ -756,31 +781,39 @@ test("Clean markers animate closed after line breaks and local reparses", async 
     const page = await browser.newPage();
     await install(page);
     for (const [source, offset, key, expected] of [
-      ["# Heading\n\nOther", 9, "Enter", "# Heading\n\n\n\nOther"],
-      ["# Heading\n\nOther", 5, "Enter", "# Hea\n\nding\n\nOther"],
+      ["# Heading\n\nOther", 9, "Enter", "# Heading\n\n\nOther"],
+      ["# Heading\n\nOther", 5, "Enter", "# Hea\nding\n\nOther"],
       ["# Heading\n\nOther", 9, "Shift+Enter", "# Heading  \n\n\nOther"],
-      ["A **bold** word.\n\nOther", 16, "Enter", "A **bold** word.\n\n\n\nOther"]
+      ["A **bold** word.\n\nOther", 16, "Enter", "A **bold** word.\n\n\nOther"]
     ]) {
-      await page.evaluate(({ source, offset }) => {
-        render(source, { syntax: "clean", animations: true });
-        editor.setSelection(offset);
-        window.leavingMarker = document.querySelector(".byEDline.is-active .byEDsyntax");
-        window.markerTransitions = [];
-      }, { source, offset });
+      await page.evaluate(
+        ({ source, offset }) => {
+          render(source, { syntax: "clean", animations: true });
+          editor.setSelection(offset);
+          window.leavingMarker = document.querySelector(".byEDline.is-active .byEDsyntax");
+          window.markerTransitions = [];
+        },
+        { source, offset }
+      );
       await page.evaluate(() => Promise.allSettled(leavingMarker.getAnimations().map((animation) => animation.finished)));
-      await page.evaluate(() => leavingMarker.addEventListener("transitionrun", (event) => {
-        markerTransitions.push({ property: event.propertyName, active: leavingMarker.closest(".byEDline").classList.contains("is-active") });
-      }));
+      await page.evaluate(() =>
+        leavingMarker.addEventListener("transitionrun", (event) => {
+          markerTransitions.push({ property: event.propertyName, active: leavingMarker.closest(".byEDline").classList.contains("is-active") });
+        })
+      );
       await page.keyboard.press(key);
       await page.waitForFunction(() => markerTransitions.some((event) => ["inline-size", "width"].includes(event.property) && !event.active), null, { timeout: 2000 });
       await page.evaluate(() => Promise.allSettled(leavingMarker.getAnimations().map((animation) => animation.finished)));
       assert.equal(await page.evaluate(() => getComputedStyle(leavingMarker).opacity), "0");
       assert.equal(await page.evaluate(() => editor.getMarkdown()), expected);
-      const caret = offset + (key === "Shift+Enter" ? 3 : 2);
+      const caret = offset + (key === "Shift+Enter" ? 3 : 1);
       assert.deepEqual(await page.evaluate(() => editor.getSelection()), { anchor: caret, focus: caret });
       await page.keyboard.type("Next");
       assert.equal(await page.evaluate(() => editor.getMarkdown()), expected.slice(0, caret) + "Next" + expected.slice(caret));
-      await page.evaluate(() => { editor.command("undo"); editor.command("undo"); });
+      await page.evaluate(() => {
+        editor.command("undo");
+        editor.command("undo");
+      });
       assert.equal(await page.evaluate(() => editor.getMarkdown()), source);
     }
   } finally {

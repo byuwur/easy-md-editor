@@ -1311,8 +1311,7 @@
               to = record.from + record.text.length;
               inserted = "";
             } else inserted += meta.type === "task" ? "- [ ] " : meta.type === "ordered" ? `${meta.number + 1}. ` : record.text.slice(0, meta.bodyFrom);
-          } else if (type === "insertParagraph" && !["code", "fenceOpen", "fenceClose", "tableRow", "tableHeader"].includes(meta.type)) inserted += eol;
-          else if (type === "insertLineBreak" && !["code", "fenceOpen", "fenceClose"].includes(meta.type)) inserted = "  " + eol;
+          } else if (type === "insertLineBreak" && !["code", "fenceOpen", "fenceClose"].includes(meta.type)) inserted = "  " + eol;
         }
       } else if (type.startsWith("delete")) {
         inserted = "";
