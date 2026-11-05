@@ -68,6 +68,16 @@ test("playground configures No-code and individual controls without recreating t
     assert.equal(await page.locator("#editor").getAttribute("data-syntax"), "no-code");
     assert.equal(await page.locator("#editor .byEDsyntax:visible").count(), 0);
     await page.evaluate(() => (window.originalLine = document.querySelector(".byEDline")));
+    assert.equal(await page.locator("#appearAnimation").isChecked(), false);
+    await page.locator("#appearAnimation").check();
+    assert.equal(JSON.parse(await page.locator("#options-json").inputValue()).appearAnimation, true);
+    assert.equal(await page.locator("#editor").evaluate((element) => element.classList.contains("byVIEWappear")), true);
+    await page.locator("#animations").uncheck();
+    assert.equal(await page.locator("#appearAnimation").isDisabled(), true);
+    assert.equal(await page.locator("#appearAnimation").isChecked(), true);
+    await page.locator("#animations").check();
+    assert.equal(await page.locator("#appearAnimation").isEnabled(), true);
+    await page.locator("#appearAnimation").uncheck();
     const selectors = {
       toolbarToggle: '[aria-label="Formatting"]',
       syntaxSelect: '[aria-label="Syntax visibility"]',
@@ -130,6 +140,7 @@ test("playground edits documents and exports exact Markdown", async () => {
     assert.equal(await page.locator(".viewer-suite").getByRole("link", { name: "MD.edit", exact: true }).getAttribute("aria-current"), "page");
     assert.equal(await page.locator("#integration-cdn").isChecked(), true);
     await page.locator("#preview-bg").evaluate((field) => (field.closest("details").open = true));
+    await page.waitForFunction(() => getComputedStyle(document.getElementById("preview-bg").closest("details"), "::details-content").opacity === "1");
     await page.locator("#preview-bg").fill("transparent");
     await page.locator("#preview-bg").dispatchEvent("change");
     await page.locator('[data-color-picker="preview-container-bg"]').click();

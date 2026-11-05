@@ -653,7 +653,10 @@ test("source-driven editor browser contracts", async (t) => {
         editor.setSelection(4, 7);
       }, source);
       assert.equal(await page.getByLabel("Color palette", { exact: true }).inputValue(), "github");
-      const names = await page.getByLabel("Color palette", { exact: true }).locator("option").evaluateAll((options) => options.map((option) => option.value));
+      const names = await page
+        .getByLabel("Color palette", { exact: true })
+        .locator("option")
+        .evaluateAll((options) => options.map((option) => option.value));
       assert.equal(names.length, 48);
       assert.equal(await page.getByLabel("Color palette", { exact: true }).locator("optgroup").count(), 5);
       for (const palette of names) {
@@ -837,8 +840,8 @@ test("animation options preserve initial visibility and override system motion p
     await page.addStyleTag({ path: path.join(__dirname, "../md.edit.css") });
     await page.addScriptTag({ path: path.join(__dirname, "../md.edit.js") });
     await page.evaluate(() => {
-      window.renderMotion = async (animations) => {
-        window.motionController = byMDeditor(document.getElementById("motion-viewer"), "# Heading\n\nUseful text.", { animations });
+      window.renderMotion = async (animations, appearAnimation = false) => {
+        window.motionController = byMDeditor(document.getElementById("motion-viewer"), "# Heading\n\nUseful text.", { animations, appearAnimation });
         await motionController?.ready;
       };
     });
@@ -908,6 +911,51 @@ test("animation options preserve initial visibility and override system motion p
     await page.emulateMedia({ media: "print" });
     assert.equal(await root.locator(".byEDpreview").evaluate((element) => getComputedStyle(element).opacity), "1", "Print never captures a partially faded document");
     assert.equal(await root.evaluate((element) => element.getAnimations({ subtree: true }).length), 0);
+    await page.emulateMedia({ media: "screen", reducedMotion: "reduce" });
+    await page.evaluate(() => renderMotion(true));
+    await page.waitForFunction(() => document.getElementById("motion-viewer").classList.contains("byVIEWready"));
+    const fade = await root.evaluate((element) => {
+      const before = getComputedStyle(element).backgroundColor;
+      element.querySelector('[aria-label^="Switch to"]').click();
+      const transition = element.getAnimations().find((animation) => animation.transitionProperty === "background-color");
+      if (!transition)
+        return {
+          active: false,
+          before,
+          after: getComputedStyle(element).backgroundColor,
+          property: getComputedStyle(element).transitionProperty,
+          duration: getComputedStyle(element).transitionDuration,
+          classes: element.className,
+          palette: element.dataset.theme
+        };
+      transition.pause();
+      transition.currentTime = 90;
+      const middle = getComputedStyle(element).backgroundColor;
+      transition.finish();
+      return { active: true, before, middle, after: getComputedStyle(element).backgroundColor, fontTransition: getComputedStyle(element).transitionProperty.includes("font-size") };
+    });
+    assert.equal(fade.active, true, "Theme backgrounds fade after the first paint " + JSON.stringify(fade));
+    assert.notEqual(fade.middle, fade.before);
+    assert.notEqual(fade.middle, fade.after);
+    assert.equal(fade.fontTransition, false);
+    await root.evaluate((element) => {
+      element.dataset.theme = "high-contrast";
+    });
+    assert.equal(await root.evaluate((element) => element.getAnimations().filter((animation) => animation.transitionProperty === "background-color").length), 0);
+    const entrance = await page.evaluate(async () => {
+      await renderMotion(true, true);
+      const element = document.getElementById("motion-viewer");
+      const animation = element.getAnimations().find((animation) => animation.animationName === "byVIEWappear");
+      if (!animation) return { active: false };
+      animation.pause();
+      animation.currentTime = 90;
+      return { active: true, opacity: Number(getComputedStyle(element).opacity), content: element.textContent.length };
+    });
+    assert.equal(entrance.active, true, "Entrance motion is explicit even when the system requests reduced motion");
+    assert.ok(entrance.opacity > 0 && entrance.opacity < 1);
+    assert.ok(entrance.content > 0, "Rendering completes without waiting for the animation");
+    await page.evaluate(() => renderMotion(false, true));
+    assert.equal(await root.evaluate((element) => element.getAnimations({ subtree: true }).length), 0, "Animations off overrides the requested entrance");
   } finally {
     await browser.close();
   }

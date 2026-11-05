@@ -380,6 +380,10 @@
 /* --- ACCESSIBILITY AND PRINT --- */
 @media (forced-colors: active) {
   .byMDeditor,
+  .byMDeditor :is(.byEDbar, .byEDtoolbar, .byEDsurface, .byEDsource, .byEDpreview, .byEDstatus) {
+    transition: none;
+  }
+  .byMDeditor,
   .byMDeditor.dark:not([data-theme="light"]),
   .byMDeditor[data-theme="dark"] {
     --by-ed-accent: Highlight;
@@ -424,12 +428,30 @@
 }
 
 /* --- MOTION --- */
-/* Initial document content is immediate; motion belongs to controls and disclosures. */
+/* Initial content is immediate unless the entrance animation is explicitly enabled. */
 .byMDeditor {
   --by-view-motion-duration: 0s;
 }
 .byMDeditor.byVIEWmotion {
   --by-view-motion-duration: 0.18s;
+}
+/* Background fades stay on shared surfaces, never individual rows or syntax tokens. */
+.byMDeditor.byVIEWready,
+.byMDeditor :is(.byEDbar, .byEDtoolbar, .byEDsurface, .byEDsource, .byEDpreview, .byEDstatus) {
+  transition: background-color var(--by-view-motion-duration, 0s) ease;
+}
+.byMDeditor.byVIEWmotion.byVIEWappear {
+  animation: byVIEWappear var(--by-view-motion-duration) ease-out;
+}
+@keyframes byVIEWappear {
+  from {
+    opacity: 0;
+    translate: 0 0.25rem;
+  }
+  to {
+    opacity: 1;
+    translate: 0;
+  }
 }
 .byMDeditor :is(button, input, select, textarea, summary, a) {
   transition:
@@ -538,6 +560,10 @@
 }
 
 /* High Contrast switches colors immediately so intermediate colors cannot lose contrast. */
+.byMDeditor[data-theme="high-contrast"],
+.byMDeditor[data-theme="high-contrast"] :is(.byEDbar, .byEDtoolbar, .byEDsurface, .byEDsource, .byEDpreview, .byEDstatus) {
+  transition: none;
+}
 .byMDeditor[data-theme="high-contrast"] :is(button, input, select, textarea, summary, a) {
   transition-property: opacity, translate;
 }

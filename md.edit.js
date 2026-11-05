@@ -173,10 +173,12 @@
     if (typeof source !== "string") throw new TypeError("byMDeditor: Markdown must be a string or HTMLElement.");
     if (source.length > 2000000) throw new RangeError("byMDeditor: maximum document size is 2,000,000 characters.");
     applyAppearance(element, options);
+    const painted = element.classList.contains("byVIEWready");
     instances.get(element)?.destroy();
     options = {
       syntax: "clean",
       animations: true,
+      appearAnimation: false,
       toolbar: true,
       toolbarToggle: true,
       syntaxSelect: true,
@@ -218,7 +220,8 @@
     let history = [],
       historyIndex = 0,
       historyBytes = 0,
-      toolbarFrame = 0;
+      toolbarFrame = 0,
+      motionFrame = 0;
     let codeTimer = 0,
       codeFrame = 0,
       codeJob = null,
@@ -233,6 +236,15 @@
     element.replaceChildren();
     element.classList.add("byMDeditor", "byMDdocument");
     element.classList.toggle("byVIEWmotion", options.animations !== false);
+    element.classList.toggle("byVIEWappear", options.appearAnimation === true);
+    if (painted) element.classList.add("byVIEWready");
+    else {
+      motionFrame = requestAnimationFrame(() => {
+        motionFrame = requestAnimationFrame(() => {
+          if (alive) element.classList.add("byVIEWready");
+        });
+      });
+    }
     if (!element.dataset.theme && !element.classList.contains("dark")) element.dataset.theme = "light";
     const bar = node("div", "byEDbar"),
       toolbar = node("div", "byEDtoolbar"),
@@ -1680,6 +1692,11 @@
         element.classList.toggle("byVIEWmotion", options.animations);
         preview.classList.toggle("byVIEWmotion", options.animations);
       },
+      setAppearAnimation(enabled) {
+        if (!alive) return;
+        options.appearAnimation = Boolean(enabled);
+        element.classList.toggle("byVIEWappear", options.appearAnimation);
+      },
       setTheme(mode) {
         if (!alive) return;
         if (!["light", "dark"].includes(mode)) throw new RangeError("Theme must be light or dark.");
@@ -1718,6 +1735,7 @@
         abort.abort();
         dialogAbort?.abort();
         cancelAnimationFrame(toolbarFrame);
+        cancelAnimationFrame(motionFrame);
         dialog?.close();
         cancelCode();
         history = [];
@@ -1737,7 +1755,7 @@
         if (instances.get(element) === api) {
           instances.delete(element);
           element.replaceChildren();
-          element.classList.remove("byMDeditor", "byMDdocument", "byVIEWmotion");
+          element.classList.remove("byMDeditor", "byMDdocument", "byVIEWmotion", "byVIEWappear", "byVIEWready");
           element.removeAttribute("data-syntax");
         }
       }

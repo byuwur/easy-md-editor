@@ -57,7 +57,8 @@ No database, network requests, autosave, or browser storage are built in.
 | Option             | Default                                  | Meaning                                                                                                                     |
 | ------------------ | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | `syntax`           | `"clean"`                                | `"no-code"`, `"clean"`, `"assisted"`, or `"source"`.                                                                        |
-| `animations`       | `true`                                   | Brief control/disclosure motion. `true` enables it and `false` disables it, overriding the system motion preference.        |
+| `animations` | `true` | Brief interaction motion and shared-surface background fades; overrides the system motion preference. |
+| `appearAnimation` | `false` | Fade and gently move the editor in when `animations` is enabled. |
 | `toolbar`          | `true`                                   | Show formatting tools; users can collapse them.                                                                             |
 | `toolbarToggle`    | `true`                                   | Show the Formatting button that opens or closes the toolbar.                                                                |
 | `syntaxSelect`     | `true`                                   | Show the editing-mode selector.                                                                                             |
@@ -110,6 +111,7 @@ editor.setSyntaxMode("assisted");
 editor.setToolbar(false);
 editor.setControls({ syntaxSelect: false, previewToggle: false, themeToggle: false });
 editor.setAnimations(false);
+editor.setAppearAnimation(true); // Requires animations to be enabled.
 editor.setPreview(true);
 editor.setTheme("dark");
 editor.setPalette("github");
@@ -237,7 +239,7 @@ Local installations can save `md.themes.css` beside `md.css`. The playground loa
 
 Editor and app skins are inspired adaptations, including light counterparts where needed; colors are adjusted for readable text and controls rather than exact replicas. All palettes use the same layout and need no assets beyond the core stylesheet and optional theme pack.
 
-The editor inherits palette colors from `md.css` and the optional `md.themes.css`; `md.edit.css` keeps its surface variables at the end, without duplicating the palettes. Extra skins live in the optional `md.themes.css` pack.
+The editor inherits palette colors from `md.css` and the optional `md.themes.css`; `md.edit.css` keeps its surface variables at the end, without duplicating the palettes. Extra skins live in the matching optional `md.themes.css` pack. Font size and syntax colors update immediately; only shared backgrounds fade. First appearance stays immediate unless explicitly enabled. High Contrast and forced-color backgrounds switch immediately.
 
 Use `setTheme("light")` / `setTheme("dark")` to change mode while retaining the palette, or `setPalette("github")` to change palette while retaining the mode. These changes apply to No-code, Clean, Assisted, Source, and Preview without changing the Markdown or undo history.
 

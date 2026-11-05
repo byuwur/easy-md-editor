@@ -393,6 +393,10 @@
               <input class="form-check-input order-2 float-none flex-shrink-0 ms-0 my-0" id="animations" type="checkbox" role="switch" checked />
               <label class="form-check-label flex-grow-1 py-2" for="animations">Animations</label>
             </div>
+            <div class="form-switch d-flex align-items-center gap-3 ps-0 m-0">
+              <input class="form-check-input order-2 float-none flex-shrink-0 ms-0 my-0" id="appearAnimation" type="checkbox" role="switch" />
+              <label class="form-check-label flex-grow-1 py-2" for="appearAnimation">Appearing animation</label>
+            </div>
             <details class="mt-3">
               <summary class="small fw-semibold">Configuration JSON</summary>
               <textarea id="options-json" class="form-control font-monospace mt-2" rows="10" readonly spellcheck="false" aria-label="Editor configuration JSON"></textarea>
@@ -626,7 +630,8 @@ Edit any example above. No-code, Clean, Assisted, Source, and Preview all use th
               syntax: modeSelect.value,
               toolbar: document.getElementById("toolbar").checked,
               ...Object.fromEntries(visibilityOptions.map((name) => [name, document.getElementById(name).checked])),
-              animations: document.getElementById("animations").checked
+              animations: document.getElementById("animations").checked,
+              appearAnimation: document.getElementById("appearAnimation").checked
             },
             null,
             2
@@ -659,7 +664,12 @@ Edit any example above. No-code, Clean, Assisted, Source, and Preview all use th
         updateConfiguration();
         document.getElementById("animations").addEventListener("change", (event) => {
           editor.setAnimations(event.target.checked);
+          document.getElementById("appearAnimation").disabled = !event.target.checked;
           document.body.classList.toggle("byVIEWmotion", event.target.checked);
+          updateConfiguration();
+        });
+        document.getElementById("appearAnimation").addEventListener("change", (event) => {
+          editor.setAppearAnimation(event.target.checked);
           updateConfiguration();
         });
         const copyMarkdown = document.getElementById("copy-markdown");
