@@ -466,6 +466,39 @@
       measure("parse", started, { characters: value.length, scope: "inline" });
       render(target, tokens);
     };
+    /** Keep existing inline nodes attached so CSS can finish a marker's closing transition after a reparse. */
+    const patchLineContent = (target, content, record) => {
+      const retained = new WeakMap();
+      const sync = (parent, replacement) => {
+        let current = parent.firstChild;
+        for (const child of [...replacement.childNodes]) {
+          const next = current?.nextSibling;
+          if (current?.nodeType === Node.TEXT_NODE && child.nodeType === Node.TEXT_NODE) {
+            current.data = child.data;
+            const mapping = textMap.get(child);
+            if (mapping) textMap.set(current, mapping);
+            retained.set(child, current);
+          } else if (
+            current?.nodeType === Node.ELEMENT_NODE &&
+            child.nodeType === Node.ELEMENT_NODE &&
+            current.tagName === child.tagName &&
+            current.className === child.className &&
+            ["SPAN", "STRONG", "EM", "DEL", "CODE", "TH", "TD"].includes(child.tagName)
+          ) {
+            sync(current, child);
+          } else if (current) current.replaceWith(child);
+          else parent.append(child);
+          current = next;
+        }
+        while (current) {
+          const next = current.nextSibling;
+          current.remove();
+          current = next;
+        }
+      };
+      sync(target, content);
+      for (const point of record.points) point.node = retained.get(point.node) || point.node;
+    };
     /** Render one physical line; ambiguous source mappings deliberately retain literal Markdown. */
     const renderLine = (record) => {
       const meta = record.meta,
@@ -479,10 +512,13 @@
         view = replacement;
         record.view = view;
       }
-      lineMap.set(view, record);
-      view.replaceChildren();
-      view.dataset.type = type;
-      view.classList.toggle("byCODEhighlight", type === "code");
+      const target = view;
+      const preserveMotion = options.animations && syntax === "clean" && target.classList.contains("byEDvisited") && target.querySelector(".byEDsyntax");
+      lineMap.set(target, record);
+      if (preserveMotion) view = node(tag);
+      else view.replaceChildren();
+      target.dataset.type = type;
+      target.classList.toggle("byCODEhighlight", type === "code");
       if (record.group?.kind === "fence") record.group.codeCache = null;
       record.points = [];
       record.formats = [];
@@ -551,7 +587,8 @@
         record.points.push({ node: empty, from: offset, to: offset });
         view.append(empty, document.createElement("br"));
       }
-      if (active === record) view.classList.add("is-active");
+      if (preserveMotion) patchLineContent(target, view, record);
+      if (active === record) target.classList.add("is-active");
     };
     /** Carry the previous line's parser state forward and inspect the next line only for table headers. */
     const classify = (record, previous, next) => {

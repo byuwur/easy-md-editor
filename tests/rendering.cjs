@@ -750,6 +750,44 @@ test("document and content backgrounds stay independent through theme and toolba
 });
 
 /* --- INTERACTION MOTION --- */
+test("Clean markers animate closed after line breaks and local reparses", async () => {
+  const browser = await launch();
+  try {
+    const page = await browser.newPage();
+    await install(page);
+    for (const [source, offset, key, expected] of [
+      ["# Heading\n\nOther", 9, "Enter", "# Heading\n\n\n\nOther"],
+      ["# Heading\n\nOther", 5, "Enter", "# Hea\n\nding\n\nOther"],
+      ["# Heading\n\nOther", 9, "Shift+Enter", "# Heading  \n\n\nOther"],
+      ["A **bold** word.\n\nOther", 16, "Enter", "A **bold** word.\n\n\n\nOther"]
+    ]) {
+      await page.evaluate(({ source, offset }) => {
+        render(source, { syntax: "clean", animations: true });
+        editor.setSelection(offset);
+        window.leavingMarker = document.querySelector(".byEDline.is-active .byEDsyntax");
+        window.markerTransitions = [];
+      }, { source, offset });
+      await page.evaluate(() => Promise.allSettled(leavingMarker.getAnimations().map((animation) => animation.finished)));
+      await page.evaluate(() => leavingMarker.addEventListener("transitionrun", (event) => {
+        markerTransitions.push({ property: event.propertyName, active: leavingMarker.closest(".byEDline").classList.contains("is-active") });
+      }));
+      await page.keyboard.press(key);
+      await page.waitForFunction(() => markerTransitions.some((event) => ["inline-size", "width"].includes(event.property) && !event.active), null, { timeout: 2000 });
+      await page.evaluate(() => Promise.allSettled(leavingMarker.getAnimations().map((animation) => animation.finished)));
+      assert.equal(await page.evaluate(() => getComputedStyle(leavingMarker).opacity), "0");
+      assert.equal(await page.evaluate(() => editor.getMarkdown()), expected);
+      const caret = offset + (key === "Shift+Enter" ? 3 : 2);
+      assert.deepEqual(await page.evaluate(() => editor.getSelection()), { anchor: caret, focus: caret });
+      await page.keyboard.type("Next");
+      assert.equal(await page.evaluate(() => editor.getMarkdown()), expected.slice(0, caret) + "Next" + expected.slice(caret));
+      await page.evaluate(() => { editor.command("undo"); editor.command("undo"); });
+      assert.equal(await page.evaluate(() => editor.getMarkdown()), source);
+    }
+  } finally {
+    await browser.close();
+  }
+});
+
 test("animation options preserve initial visibility and override system motion preferences", async () => {
   const browser = await chromium.launch({ channel: process.env.BROWSER_CHANNEL || "chrome", executablePath: process.env.CHROMIUM_EXECUTABLE_PATH || undefined });
   try {
