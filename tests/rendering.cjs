@@ -360,17 +360,20 @@ test("source-driven editor browser contracts", async (t) => {
       await page.getByRole("button", { name: "Insert", exact: true }).click();
       assert.equal(await page.locator(".byEDsurface table").count(), 1);
       assert.equal(await page.locator('.byEDline[data-type="tableRow"]').count(), 3);
-      await page.evaluate(() => {
+      await page.getByRole("button", { name: "Table", exact: true }).focus();
+      const selectedRowActive = await page.evaluate(() => {
         const source = editor.getMarkdown();
         editor.setSelection(source.indexOf("|   |") + 2);
         window.lastRow = document.querySelectorAll('.byEDline[data-type="tableRow"]')[2];
+        return document.getSelection().focusNode.parentElement.closest(".byEDline").classList.contains("is-active");
       });
+      assert.equal(selectedRowActive, true);
       await page.keyboard.type("Andres");
       assert.match(await page.evaluate(() => editor.getMarkdown()), /Andres/);
       assert.equal(await page.evaluate(() => lastRow === document.querySelectorAll('.byEDline[data-type="tableRow"]')[2]), true);
       await page.keyboard.press("Tab");
       await page.keyboard.type("Developer");
-      assert.match(await page.evaluate(() => editor.getMarkdown()), /Andres[^\n]*Developer/);
+      assert.match(await page.evaluate(() => editor.getMarkdown()), /^\| [^\n]*Andres[^\n]*Developer[^\n]*\|$/m);
     });
     await t.test("links, image descriptions and code fences preserve selected content", async () => {
       await page.evaluate(() => {

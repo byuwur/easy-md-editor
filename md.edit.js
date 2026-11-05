@@ -418,8 +418,9 @@
         const found = points.find((item) => item.from <= relative && item.to >= relative) || (relative <= (points[0]?.from ?? 0) ? points[0] : points.at(-1));
         return found ? [found.node, Math.max(0, Math.min(found.node.length, relative - found.from))] : [record.view, relative ? record.view.childNodes.length : 0];
       };
-      activate(lines[lineAt(position.focus)]);
       if (focus && document.activeElement !== surface) surface.focus({ preventScroll: true });
+      // Focusing may restore an old native range; reveal the requested line after its focus handler.
+      activate(lines[lineAt(position.focus)]);
       const anchor = point(position.anchor),
         end = point(position.focus);
       document.getSelection()?.setBaseAndExtent(...anchor, ...end);
