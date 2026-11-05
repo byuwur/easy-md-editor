@@ -5,7 +5,7 @@
 
 /* --- LIGHT --- */
 .byMDeditor {
-  --by-view-toggle-position: 25%;
+  --by-view-toggle-position: -100%;
   --by-ed-bg: var(--by-md-bg, #fafaf5);
   --by-ed-text: var(--by-md-text, #272822);
   --by-ed-muted: var(--by-md-muted, #686856);
@@ -36,7 +36,7 @@
 /* --- DARK --- */
 .byMDeditor.dark:not([data-theme="light"]),
 .byMDeditor[data-theme="dark"] {
-  --by-view-toggle-position: 75%;
+  --by-view-toggle-position: 0%;
   --by-ed-bg: var(--by-md-bg, #272822);
   --by-ed-text: var(--by-md-text, #f8f8f2);
   --by-ed-muted: var(--by-md-muted, #a6a28c);
@@ -106,13 +106,14 @@
 .byEDcontrols > .byVIEWthemeToggle {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, 1.5em);
+  place-content: center;
   place-items: center;
   flex-shrink: 0;
-  width: calc(3.5em - 0.125rem);
-  height: 1.75em;
+  width: 3.75em;
+  height: 2em;
   min-height: 0;
-  padding: 0;
+  padding: 0.125em;
   border-radius: 2em;
   font-family: ui-monospace, monospace;
 }
@@ -129,14 +130,14 @@
   content: "";
   position: absolute;
   top: 50%;
-  left: var(--by-view-toggle-position);
-  width: calc(1.5em - 0.125rem);
-  height: calc(1.5em - 0.125rem);
-  transform: translate(-50%, -50%);
+  left: 50%;
+  width: 1.5em;
+  height: 1.5em;
+  transform: translate(var(--by-view-toggle-position), -50%);
   pointer-events: none;
   border-radius: 50%;
   background: currentColor;
-  transition: left var(--by-view-motion-duration, 0s) ease-out;
+  transition: transform var(--by-view-motion-duration, 0s) ease-out;
 }
 .byEDtoolbar {
   padding: 0.5rem 0.75rem;
@@ -348,7 +349,7 @@
 
 /* --- DIALOGS --- */
 .byEDdialog {
-  width: min(26rem, calc(100vw - 2rem));
+  width: min(26rem, 100vw - 2rem);
   max-height: calc(100dvh - 2rem);
   overflow: auto;
   border: 0.0625rem solid var(--by-ed-border);

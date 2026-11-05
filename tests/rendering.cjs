@@ -600,10 +600,10 @@ test("source-driven editor browser contracts", async (t) => {
       await theme.click();
       assert.equal(await theme.getAttribute("aria-label"), "Switch to light theme");
       assert.equal(await page.locator("#editor").getAttribute("data-theme"), "github");
-      assert.equal(await page.locator("#editor").evaluate((element) => getComputedStyle(element).getPropertyValue("--by-view-toggle-position").trim()), "75%");
+      assert.equal(await page.locator("#editor").evaluate((element) => getComputedStyle(element).getPropertyValue("--by-view-toggle-position").trim()), "0%");
       await theme.press("Space");
       assert.equal(await theme.getAttribute("aria-label"), "Switch to dark theme");
-      assert.equal(await page.locator("#editor").evaluate((element) => getComputedStyle(element).getPropertyValue("--by-view-toggle-position").trim()), "25%");
+      assert.equal(await page.locator("#editor").evaluate((element) => getComputedStyle(element).getPropertyValue("--by-view-toggle-position").trim()), "-100%");
       await page.getByRole("button", { name: "Preview", exact: true }).click();
       assert.equal(await formatting.getAttribute("aria-expanded"), "false");
       assert.equal(await formatting.evaluate((button) => getComputedStyle(button).boxShadow), "none");
