@@ -11,7 +11,13 @@ permissions:
 jobs:
   rendering:
     name: ${{ matrix.name }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    container:
+      # Keep the image and npm package on the same Playwright version.
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      options: --ipc=host
+    env:
+      BROWSER_CHANNEL: chromium
     timeout-minutes: 10
     strategy:
       fail-fast: false
@@ -39,14 +45,11 @@ jobs:
         with:
           node-version: 22
       - name: Install browser test tools
-        run: |
-          npm install --prefix "$RUNNER_TEMP/editor-tests" --no-package-lock playwright@1.63.0
-          node "$RUNNER_TEMP/editor-tests/node_modules/playwright/cli.js" install --with-deps chromium
+        run: npm install --prefix "$RUNNER_TEMP/editor-tests" --no-package-lock --no-audit --no-fund playwright@1.63.0
       - name: Check ${{ matrix.name }}
         working-directory: easy-md-editor
         env:
           NODE_PATH: ${{ runner.temp }}/editor-tests/node_modules
-          BROWSER_CHANNEL: chromium
         run: |
           node --check md.edit.js
           node --test ${{ matrix.files }}
