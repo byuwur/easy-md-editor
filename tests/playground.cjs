@@ -20,7 +20,7 @@ const readStarter = async (page) => {
 let assetsPromise;
 const getAssets = () =>
   (assetsPromise ||= (async () => {
-    const files = ["css/pickr.min.css", "js/pickr.min.js", "css/bootstrap.min.css", "css/shards.css", "css/fontawesome.min.css", "js/bootstrap.min.js"];
+    const files = ["css/pickr.min.css", "js/pickr.min.js", "css/bootstrap.min.css", "css/shards.min.css", "css/fontawesome.min.css", "js/bootstrap.min.js"];
     return new Map(
       await Promise.all(
         files.map(async (file) => {
@@ -43,8 +43,8 @@ async function routeAssets(page, assets) {
   await page.route("https://cdn.jsdelivr.net/**", async (route) => {
     const url = new URL(route.request().url());
     if (assets.has(url.href)) return route.fulfill(assets.get(url.href));
-    const companion = url.pathname.match(/^\/gh\/byuwur\/(easy-(?:md|code)-viewer)@v\d+(?:\.\d+)*\/((?:md|code)(?:\.themes)?\.(?:css|js))$/);
-    if (companion) return route.fulfill({ path: path.join(root, "..", companion[1], companion[2]), contentType: companion[2].endsWith("css") ? "text/css" : "text/javascript" });
+    const companion = url.pathname.match(/^\/gh\/byuwur\/(easy-(?:md|code)-viewer)@v\d+(?:\.\d+)*\/((?:md|code)(?:\.themes)?(?:\.min)?\.(?:css|js))$/);
+    if (companion) return route.fulfill({ path: path.join(root, "..", companion[1], companion[2].replace(/\.min(?=\.(?:css|js)$)/, "")), contentType: companion[2].endsWith("css") ? "text/css" : "text/javascript" });
     return route.abort();
   });
 }
@@ -127,11 +127,11 @@ test("playground edits documents and exports exact Markdown", async () => {
     assert.deepEqual(
       await page.locator('head [href*="easy-md-viewer"], head [href*="easy-code-viewer"], head [src*="easy-md-viewer"], head [src*="easy-code-viewer"]').evaluateAll((assets) => assets.map((asset) => asset.href || asset.src).sort()),
       [
-        `https://cdn.jsdelivr.net/gh/byuwur/easy-code-viewer@v${releases.code}/code.css`,
-        `https://cdn.jsdelivr.net/gh/byuwur/easy-code-viewer@v${releases.code}/code.js`,
-        `https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@v${releases.md}/md.css`,
-        `https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@v${releases.md}/md.js`,
-        `https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@v${releases.md}/md.themes.css`
+        `https://cdn.jsdelivr.net/gh/byuwur/easy-code-viewer@v${releases.code}/code.min.css`,
+        `https://cdn.jsdelivr.net/gh/byuwur/easy-code-viewer@v${releases.code}/code.min.js`,
+        `https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@v${releases.md}/md.min.css`,
+        `https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@v${releases.md}/md.min.js`,
+        `https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@v${releases.md}/md.themes.min.css`
       ]
     );
     assert.equal(await page.locator(".navbar-brand").innerText(), "md↑easy-md-editor");
@@ -195,11 +195,11 @@ test("playground edits documents and exports exact Markdown", async () => {
       starterTagColor
     );
     await page.locator("#site-theme").click();
-    assert.match(cdnHTML, /easy-md-editor@latest\/md\.edit\.js/);
-    assert.match(cdnHTML, /easy-md-editor@latest\/md\.edit\.css/);
+    assert.match(cdnHTML, /easy-md-editor@latest\/md\.edit\.min\.js/);
+    assert.match(cdnHTML, /easy-md-editor@latest\/md\.edit\.min\.css/);
     assert.equal(cdnHTML.includes("fontawesome"), false);
-    assert.match(cdnHTML, /easy-md-viewer@latest\/md\.js/);
-    assert.match(cdnHTML, /easy-code-viewer@latest\/code\.js/);
+    assert.match(cdnHTML, /easy-md-viewer@latest\/md\.min\.js/);
+    assert.match(cdnHTML, /easy-code-viewer@latest\/code\.min\.js/);
     assert.match(cdnHTML, /\n {2}<head>\n {4}<meta/);
     assert.equal((await page.locator("#source-size").textContent()) !== "", true);
     for (const level of [1, 2, 3, 4, 5, 6]) assert.ok((await page.locator(`.byEDsurface h${level}`).count()) > 0);

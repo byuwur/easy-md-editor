@@ -28,17 +28,17 @@
     <meta name="twitter:description" content="Write Markdown visually with familiar formatting tools, tables, checklists, and an exact document preview. A free, accessible JavaScript editor by BONYUR." />
     <meta name="twitter:image" content="https://byuwur.github.io/easy-md-editor/prev.jpg" />
     <meta name="twitter:image:alt" content="easy-md-editor by BONYUR: Markdown editing, formatting tools, and live preview." />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/byuwur/spa.js@v20.7/css/shards.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/byuwur/spa.js@v20.7/css/shards.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/byuwur/spa.js@v20.7/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/byuwur/spa.js@v20.7/css/pickr.min.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@v2.6/md.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@v2.6/md.themes.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/byuwur/easy-code-viewer@v1.5/code.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@v2.6/md.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@v2.6/md.themes.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/byuwur/easy-code-viewer@v1.5/code.min.css" />
     <link rel="stylesheet" href="md.edit.css" />
     <script src="https://cdn.jsdelivr.net/gh/byuwur/spa.js@v20.7/js/pickr.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/gh/byuwur/spa.js@v20.7/js/bootstrap.min.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/gh/byuwur/easy-code-viewer@v1.5/code.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@v2.6/md.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/gh/byuwur/easy-code-viewer@v1.5/code.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@v2.6/md.min.js" defer></script>
     <script src="md.edit.js" defer></script>
     <style>
       /* --- FAMILY THEME --- */
@@ -772,6 +772,7 @@ Edit any example above. No-code, Clean, Assisted, Source, and Preview all use th
 
         function generateIntegration() {
           const cdn = document.getElementById("integration-cdn").checked;
+          const min = cdn ? ".min" : "";
           const mdPath = cdn ? "https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@latest/" : "";
           const codePath = cdn ? "https://cdn.jsdelivr.net/gh/byuwur/easy-code-viewer@latest/" : "";
           const editorPath = cdn ? "https://cdn.jsdelivr.net/gh/byuwur/easy-md-editor@latest/" : "";
@@ -784,12 +785,12 @@ Edit any example above. No-code, Clean, Assisted, Source, and Preview all use th
             '    <meta charset="utf-8" />',
             '    <meta name="viewport" content="width=device-width, initial-scale=1" />',
             "    <title>easy-md-editor</title>",
-            `    <link rel="stylesheet" href="${mdPath}md.css" />`,
-            `    <link rel="stylesheet" href="${codePath}code.css" />`,
-            `    <link rel="stylesheet" href="${editorPath}md.edit.css" />`,
-            `    <script src="${codePath}code.js" defer>${endScript}`,
-            `    <script src="${mdPath}md.js" defer>${endScript}`,
-            `    <script src="${editorPath}md.edit.js" defer>${endScript}`,
+            `    <link rel="stylesheet" href="${mdPath}md${min}.css" />`,
+            `    <link rel="stylesheet" href="${codePath}code${min}.css" />`,
+            `    <link rel="stylesheet" href="${editorPath}md.edit${min}.css" />`,
+            `    <script src="${codePath}code${min}.js" defer>${endScript}`,
+            `    <script src="${mdPath}md${min}.js" defer>${endScript}`,
+            `    <script src="${editorPath}md.edit${min}.js" defer>${endScript}`,
             "  </head>",
             "  <body>",
             '    <div id="document" data-theme="light"></div>',
