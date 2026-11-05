@@ -74,6 +74,27 @@
     return Math.max(0, Math.min(text.length, next));
   };
 
+  /* --- APPEARANCE --- */
+  /** Explicit appearance options override markup; omitted values preserve the container's state. */
+  const applyAppearance = (element, options) => {
+    const { theme, palette, fontSize } = options;
+    if (theme != null && !["light", "dark"].includes(theme)) throw new RangeError("Theme must be light or dark.");
+    if (palette != null && (typeof palette !== "string" || !/^[a-z][\w-]*$/i.test(palette) || ["light", "dark"].includes(palette))) throw new RangeError("Palette must be a CSS theme name; use theme for light or dark.");
+    const size = typeof fontSize === "number" ? `${Math.max(0.5, Math.min(3, fontSize))}rem` : typeof fontSize === "string" ? `clamp(0.5rem, ${fontSize}, 3rem)` : "";
+    if (fontSize != null && (typeof fontSize === "number" ? !Number.isFinite(fontSize) : typeof fontSize !== "string" || !CSS.supports("font-size", size))) throw new RangeError("Font size must be a finite multiplier or a CSS size.");
+    if (theme != null || palette != null) {
+      const mode = theme ?? (["light", "dark"].includes(element.dataset.theme) ? element.dataset.theme : element.classList.contains("dark") ? "dark" : "light");
+      element.classList.toggle("light", mode === "light");
+      element.classList.toggle("dark", mode === "dark");
+      if (palette != null) element.dataset.theme = palette;
+      else if (["light", "dark"].includes(element.dataset.theme)) element.dataset.theme = mode;
+    }
+    if (fontSize != null) {
+      element.style.fontSize = size;
+      element.dataset.byViewDefaultFontSize = element.style.fontSize;
+    }
+  };
+
   /* --- PUBLIC API --- */
   /** Mount an editor with caller-owned persistence; all selections use UTF-16 source offsets. */
   function byMDeditor(element, markdown, options = {}) {
@@ -82,6 +103,7 @@
     let source = markdown instanceof HTMLElement ? markdown.textContent : (markdown ?? element.textContent);
     if (typeof source !== "string") throw new TypeError("byMDeditor: Markdown must be a string or HTMLElement.");
     if (source.length > 2000000) throw new RangeError("byMDeditor: maximum document size is 2,000,000 characters.");
+    applyAppearance(element, options);
     instances.get(element)?.destroy();
     options = {
       syntax: "clean",
@@ -142,7 +164,6 @@
     element.replaceChildren();
     element.classList.add("byMDeditor", "byMDdocument");
     element.classList.toggle("byVIEWmotion", options.animations !== false);
-    if (options.theme) element.dataset.theme = options.theme;
     if (!element.dataset.theme && !element.classList.contains("dark")) element.dataset.theme = "light";
     const bar = node("div", "byEDbar"),
       toolbar = node("div", "byEDtoolbar"),

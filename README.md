@@ -68,6 +68,7 @@ No database, network requests, autosave, or browser storage are built in.
 | `codeHighlighting` | `true`                                   | Use easy-code-viewer for fenced-code colors while editing and in Preview.                                                   |
 | `theme`            | Container theme, otherwise light         | `"light"` or `"dark"`; named palettes use container attributes below.                                                       |
 | `palette`          | Container palette, otherwise `"monokai"` | `"monokai"`, `"github"`, `"solarized"`, `"high-contrast"`, or a custom CSS theme name.                                      |
+| `fontSize`         | Container size                           | Number in rem or a CSS size such as `"1.25em"` or `"20px"`; bounded to `0.5rem`–`3rem`.                                     |
 | `paletteSelect`    | `true`                                   | Show the palette selector; themes remain available through the API when hidden.                                             |
 | `label`            | `"Document"`                             | Accessible name for the editable document.                                                                                  |
 | `placeholder`      | `"Start writing…"`                       | Hint for an empty editing surface.                                                                                          |
@@ -143,6 +144,18 @@ Initialization and `setMarkdown()` throw `TypeError` for unsupported source type
 Destroying an editor commits any active composition before cleanup, so `onChange` may run during teardown. Dispose the editor before removing its host, and keep application callbacks valid through that step. Duplicate script imports preserve the installed API.
 
 ## Themes
+
+Configure appearance in the options object or on the container:
+
+```javascript
+byMDeditor(target, markdown, {
+  theme: "dark",
+  palette: "github",
+  fontSize: 1.125
+});
+```
+
+`theme` sets the mode class; `palette` sets `data-theme`. `fontSize` numbers use rem (`1` = the root text size); CSS sizes such as `"1.25em"`, `"1.25rem"`, and `"20px"` are also accepted. All sizes stay between `0.5rem` and `3rem`. Explicit options override markup; omitted or `null` values retain the container's settings. A named palette preserves its existing mode, including the `data-theme="light"` / `"dark"` aliases. Invalid appearance values throw `RangeError` before replacing the current document.
 
 Initial content appears immediately. Animations affect controls and deliberate show/hide actions; rows, tokens, and typing are not animated. Disclosure size/exit transitions progressively enhance browsers that support them.
 

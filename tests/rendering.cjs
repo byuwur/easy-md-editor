@@ -725,9 +725,7 @@ test("document and content backgrounds stay independent through theme and toolba
   const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_EXECUTABLE_PATH || undefined, channel: process.env.BROWSER_CHANNEL || "chrome" });
   try {
     const page = await browser.newPage();
-    await page.route("https://cdn.jsdelivr.net/**", (route) =>
-      route.request().url().endsWith("fontawesome.min.css") ? route.fulfill({ body: "", contentType: "text/css" }) : route.abort()
-    );
+    await page.route("https://cdn.jsdelivr.net/**", (route) => (route.request().url().endsWith("fontawesome.min.css") ? route.fulfill({ body: "", contentType: "text/css" }) : route.abort()));
     await page.setContent('<div id="viewer" data-theme="light"></div><div id="neighbor" data-theme="light"></div>');
     await page.addStyleTag({ path: path.join(__dirname, "../../easy-md-viewer/md.css") });
     await page.addScriptTag({ path: path.join(__dirname, "../../easy-md-viewer/md.js") });
@@ -903,6 +901,136 @@ test("animation options preserve initial visibility and override system motion p
     await page.emulateMedia({ media: "print" });
     assert.equal(await root.locator(".byEDpreview").evaluate((element) => getComputedStyle(element).opacity), "1", "Print never captures a partially faded document");
     assert.equal(await root.evaluate((element) => element.getAnimations({ subtree: true }).length), 0);
+  } finally {
+    await browser.close();
+  }
+});
+
+/* --- INITIAL APPEARANCE --- */
+test("appearance options override markup and preserve independent viewer state", async () => {
+  const browser = await chromium.launch({ channel: process.env.BROWSER_CHANNEL || undefined, executablePath: process.env.CHROMIUM_EXECUTABLE_PATH || undefined });
+  try {
+    const page = await browser.newPage();
+    await page.route("https://cdn.jsdelivr.net/**", (route) => route.fulfill({ body: "", contentType: "text/css" }));
+    await page.setContent('<style>html{font-size:20px}</style><div id="appearance" class="host light" data-theme="light"></div><div id="neighbor" class="dark" data-theme="monokai" style="font-size:2rem">Neighbor</div>');
+    await page.addStyleTag({ path: path.join(__dirname, "../../easy-md-viewer/md.css") });
+    await page.addScriptTag({ path: path.join(__dirname, "../../easy-md-viewer/md.js") });
+    await page.addStyleTag({ path: path.join(__dirname, "../md.edit.css") });
+    await page.addScriptTag({ path: path.join(__dirname, "../md.edit.js") });
+    await page.evaluate(() => {
+      window.appearanceTarget = document.getElementById("appearance");
+      window.renderAppearance = async (options = {}) => {
+        window.appearanceInstance = byMDeditor(appearanceTarget, "# Heading\n\nText", options);
+        await appearanceInstance?.ready;
+      };
+    });
+    const neighbor = await page.locator("#neighbor").evaluate((element) => element.outerHTML);
+    await page.evaluate(() => renderAppearance({ theme: "dark", palette: "github", fontSize: 1.5, animations: false }));
+    assert.deepEqual(
+      await page
+        .locator("#appearance")
+        .evaluate((element) => [element.classList.contains("host"), element.classList.contains("dark"), element.classList.contains("light"), element.dataset.theme, element.style.fontSize, getComputedStyle(element).fontSize]),
+      [true, true, false, "github", "1.5rem", "30px"]
+    );
+    const controls = page.locator("#appearance .byVIEWthemeToggle");
+    assert.equal(await controls.getAttribute("aria-label"), "Switch to light theme");
+    await controls.click();
+    assert.deepEqual(await page.locator("#appearance").evaluate((element) => [element.classList.contains("light"), element.dataset.theme, element.style.fontSize]), [true, "github", "1.5rem"]);
+
+    await page.evaluate(() => renderAppearance({ fontSize: 1.25 }));
+    assert.equal(await page.locator("#appearance").evaluate((element) => getComputedStyle(element).fontSize), "25px");
+
+    await page.evaluate(() => {
+      document.documentElement.style.fontSize = "24px";
+    });
+    assert.equal(await page.locator("#appearance").evaluate((element) => getComputedStyle(element).fontSize), "30px", "The multiplier follows root text-size changes");
+    await page.evaluate(() => {
+      document.documentElement.style.fontSize = "20px";
+    });
+    for (const [fontSize, expected] of [
+      ["1.25rem", 25],
+      ["1.25em", 25],
+      ["20px", 20],
+      ["125%", 25],
+      ["1px", 10],
+      ["100px", 60],
+      ["4em", 60]
+    ]) {
+      await page.evaluate((fontSize) => renderAppearance({ fontSize }), fontSize);
+      assert.equal(await page.locator("#appearance").evaluate((element) => parseFloat(getComputedStyle(element).fontSize)), expected, fontSize);
+      const preset = await page.locator("#appearance").evaluate((element) => [element.style.fontSize, element.dataset.byViewDefaultFontSize]);
+      assert.equal(preset[0], preset[1]);
+    }
+    await page.evaluate(() => {
+      document.body.style.fontSize = "1.5rem";
+      return renderAppearance({ fontSize: "1em" });
+    });
+    assert.equal(await page.locator("#appearance").evaluate((element) => getComputedStyle(element).fontSize), "30px", "em remains relative to the parent");
+    await page.evaluate(() => {
+      document.body.style.fontSize = "";
+      document.documentElement.style.fontSize = "24px";
+      return renderAppearance({ fontSize: "100px" });
+    });
+    assert.equal(await page.locator("#appearance").evaluate((element) => getComputedStyle(element).fontSize), "72px", "CSS values retain the rem limit when the root size changes");
+    await page.evaluate(() => {
+      document.documentElement.style.fontSize = "20px";
+    });
+    for (const [requested, expected] of [
+      [-1, 0.5],
+      [0, 0.5],
+      [0.25, 0.5],
+      [0.5, 0.5],
+      [3, 3],
+      [4, 3]
+    ]) {
+      await page.evaluate((fontSize) => renderAppearance({ fontSize }), requested);
+      assert.equal(await page.locator("#appearance").evaluate((element) => element.style.fontSize), `${expected}rem`);
+      assert.equal(await page.locator("#appearance").evaluate((element) => element.dataset.byViewDefaultFontSize), `${expected}rem`);
+    }
+    await page.evaluate(() => {
+      appearanceTarget.dataset.theme = "dark";
+      appearanceTarget.classList.remove("dark");
+      appearanceTarget.classList.add("light");
+      return renderAppearance({ palette: "high-contrast", toolbar: false });
+    });
+    assert.deepEqual(await page.locator("#appearance").evaluate((element) => [element.dataset.theme, element.classList.contains("dark"), getComputedStyle(element).colorScheme]), ["high-contrast", true, "dark"]);
+    await page.evaluate(() => {
+      appearanceTarget.dataset.theme = "dark";
+      return renderAppearance({ theme: "light", toolbar: false });
+    });
+    assert.deepEqual(await page.locator("#appearance").evaluate((element) => [element.dataset.theme, element.classList.contains("dark"), element.classList.contains("light")]), ["light", false, true]);
+    await page.evaluate(() => renderAppearance({ theme: "dark", palette: "ocean", fontSize: 1.125, toolbar: false }));
+    assert.deepEqual(await page.locator("#appearance").evaluate((element) => [element.dataset.theme, element.classList.contains("dark"), element.style.fontSize]), ["ocean", true, "1.125rem"]);
+    const preserved = await page.locator("#appearance").evaluate((element) => [element.className, element.dataset.theme, element.style.fontSize]);
+    await page.evaluate(() => renderAppearance());
+    assert.deepEqual(await page.locator("#appearance").evaluate((element) => [element.className, element.dataset.theme, element.style.fontSize]), preserved);
+    await page.evaluate(() => renderAppearance({ theme: null, palette: null, fontSize: null }));
+    assert.deepEqual(await page.locator("#appearance").evaluate((element) => [element.className, element.dataset.theme, element.style.fontSize]), preserved, "Blank exported appearance fields retain the container settings");
+    for (const options of [
+      { theme: "sepia" },
+      { palette: "dark" },
+      { palette: "bad name" },
+      { fontSize: NaN },
+      { fontSize: Infinity },
+      { fontSize: "wrong" },
+      { fontSize: "inherit" },
+      { fontSize: true },
+      { theme: "light", palette: "github", fontSize: "1.25" }
+    ]) {
+      const before = await page.locator("#appearance").evaluate((element) => element.outerHTML);
+      const name = await page.evaluate(async (options) => {
+        try {
+          await renderAppearance(options);
+        } catch (error) {
+          return error.name;
+        }
+      }, options);
+      assert.equal(name, "RangeError");
+      assert.equal(await page.locator("#appearance").evaluate((element) => element.outerHTML), before, "Invalid appearance must not replace the current document");
+    }
+    await page.evaluate(() => appearanceInstance.setPreview(true));
+    assert.equal(await page.locator("#appearance .byEDpreview").evaluate((element) => getComputedStyle(element).fontSize), "22.5px");
+    assert.equal(await page.locator("#neighbor").evaluate((element) => element.outerHTML), neighbor);
   } finally {
     await browser.close();
   }
