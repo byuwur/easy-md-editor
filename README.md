@@ -57,6 +57,7 @@ No database, network requests, autosave, or browser storage are built in.
 | Option             | Default                                  | Meaning                                                                                                                     |
 | ------------------ | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | `syntax`           | `"clean"`                                | `"clean"`, `"assisted"`, or `"source"`.                                                                                     |
+| `animations`       | `true`                                   | Brief control/disclosure motion. `true` enables it and `false` disables it, overriding the system motion preference.        |
 | `toolbar`          | `true`                                   | Show formatting tools; users can collapse them.                                                                             |
 | `shortcuts`        | `true`                                   | Enable Ctrl/Cmd+B, I, Z, Shift+Z, and Y.                                                                                    |
 | `codeHighlighting` | `true`                                   | Use easy-code-viewer for fenced-code colors while editing and in Preview.                                                   |
@@ -71,6 +72,8 @@ No database, network requests, autosave, or browser storage are built in.
 | `onMeasure`        | —                                        | Optional development callback receiving `{ operation, duration, ... }` samples in milliseconds.                             |
 
 For a smaller toolbar: `tools: ["heading", "bold", "italic", "link", "undo", "redo"]`.
+
+Use `editor.setAnimations(false)` to change motion without recreating the editor or resetting selection/history.
 
 ### Syntax and Preview
 
@@ -97,6 +100,7 @@ editor.getMarkdown();
 editor.setMarkdown("# Another document"); // Replaces the source and clears undo history.
 editor.setSyntaxMode("assisted");
 editor.setToolbar(false);
+editor.setAnimations(false);
 editor.setPreview(true);
 editor.setTheme("dark");
 editor.setPalette("github");
@@ -129,6 +133,8 @@ Initialization and `setMarkdown()` throw `TypeError` for unsupported source type
 Destroying an editor commits any active composition before cleanup, so `onChange` may run during teardown. Dispose the editor before removing its host, and keep application callbacks valid through that step. Duplicate script imports preserve the installed API.
 
 ## Themes
+
+Initial content appears immediately. Animations affect controls and deliberate show/hide actions; rows, tokens, and typing are not animated. Disclosure size/exit transitions progressively enhance browsers that support them.
 
 The outer document and inner surfaces have independent CSS backgrounds. Both follow the selected theme unless overridden. Set `--by-view-document-bg: #0000` to reveal the host page while keeping content panels and individual controls readable. `--by-view-container-bg` sets the shared background of those panels and controls; it also accepts alpha colors or `transparent`. The toolbar and credits have no background. These overrides survive theme changes.
 

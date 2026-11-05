@@ -136,7 +136,7 @@
   pointer-events: none;
   border-radius: 50%;
   background: currentColor;
-  transition: left 0.2s;
+  transition: left var(--by-view-motion-duration, 0s) ease-out;
 }
 .byEDtoolbar {
   padding: 0.5rem 0.75rem;
@@ -400,14 +400,6 @@
     opacity: 1;
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .byMDeditor *,
-  .byEDcontrols > .byVIEWthemeToggle::after {
-    scroll-behavior: auto !important;
-    transition: none !important;
-    animation: none !important;
-  }
-}
 @media print {
   .byEDgroup {
     content-visibility: visible;
@@ -437,4 +429,142 @@
   .byEDpreview tr {
     break-inside: avoid;
   }
+}
+
+/* --- MOTION --- */
+/* Initial document content is immediate; motion belongs to controls and disclosures. */
+.byMDeditor {
+  --by-view-motion-duration: 0s;
+}
+.byMDeditor.byVIEWmotion {
+  --by-view-motion-duration: 0.18s;
+}
+.byMDeditor :is(button, input, select, textarea, summary, a) {
+  transition:
+    background-color var(--by-view-motion-duration) ease,
+    color var(--by-view-motion-duration) ease,
+    border-color var(--by-view-motion-duration) ease,
+    box-shadow var(--by-view-motion-duration) ease,
+    opacity var(--by-view-motion-duration) ease,
+    translate var(--by-view-motion-duration) ease-out;
+}
+.byMDeditor.byVIEWmotion :is(button, summary):not(:disabled):active {
+  translate: 0 0.0625em;
+}
+.byMDeditor.byVIEWmotion details::details-content {
+  interpolate-size: allow-keywords;
+  block-size: 0;
+  opacity: 0;
+  overflow: clip;
+  transition:
+    block-size var(--by-view-motion-duration) ease,
+    opacity var(--by-view-motion-duration) ease,
+    content-visibility var(--by-view-motion-duration) allow-discrete;
+}
+.byMDeditor.byVIEWmotion details[open]::details-content {
+  block-size: auto;
+  opacity: 1;
+}
+/* Disabling motion also cancels host-page transitions inside this viewer. */
+.byMDeditor:not(.byVIEWmotion),
+.byMDeditor:not(.byVIEWmotion) *,
+.byMDeditor:not(.byVIEWmotion) *::before,
+.byMDeditor:not(.byVIEWmotion) *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* These surfaces are marked only by explicit mode/toolbar changes, never typing. */
+.byMDeditor.byVIEWmotion .byVIEWreveal:not([hidden]) {
+  transition:
+    opacity var(--by-view-motion-duration) ease,
+    translate var(--by-view-motion-duration) ease-out;
+  @starting-style {
+    opacity: 0;
+    translate: 0 0.2rem;
+  }
+}
+.byMDeditor .byEDsyntax {
+  transition: color var(--by-view-motion-duration) ease-out;
+}
+@supports (interpolate-size: allow-keywords) {
+  /* Only visited inline markers move; code fences keep their native text layout. */
+  .byMDeditor.byVIEWmotion[data-syntax="clean"] .byEDline.byEDvisited:not([data-type="fenceOpen"], [data-type="fenceClose"], [data-type="tableDelimiter"], [data-type="rule"]) .byEDsyntax {
+    display: inline-block;
+    interpolate-size: allow-keywords;
+    inline-size: 0;
+    opacity: 0;
+    overflow: clip;
+    vertical-align: baseline;
+    white-space: pre;
+    transition:
+      inline-size var(--by-view-motion-duration) ease,
+      opacity var(--by-view-motion-duration) ease-out;
+  }
+  .byMDeditor.byVIEWmotion[data-syntax="clean"] .byEDline.byEDvisited.is-active:not([data-type="fenceOpen"], [data-type="fenceClose"], [data-type="tableDelimiter"], [data-type="rule"]) .byEDsyntax {
+    inline-size: auto;
+    opacity: 1;
+  }
+}
+.byMDeditor.byVIEWmotion .byEDdialog {
+  opacity: 0;
+  translate: 0 0.2rem;
+  transition:
+    opacity var(--by-view-motion-duration) ease,
+    translate var(--by-view-motion-duration) ease,
+    display var(--by-view-motion-duration) allow-discrete,
+    overlay var(--by-view-motion-duration) allow-discrete;
+}
+.byMDeditor.byVIEWmotion .byEDdialog[open] {
+  opacity: 1;
+  translate: 0;
+  @starting-style {
+    opacity: 0;
+    translate: 0 0.2rem;
+  }
+}
+
+@starting-style {
+  .byMDeditor.byVIEWmotion[data-syntax="clean"] .byEDline.byEDvisited.is-active:not([data-type="fenceOpen"], [data-type="fenceClose"], [data-type="tableDelimiter"], [data-type="rule"]) .byEDsyntax {
+    inline-size: 0;
+    opacity: 0;
+  }
+}
+.byMDeditor.byVIEWmotion .byEDtoolbar.byVIEWreveal {
+  interpolate-size: allow-keywords;
+  block-size: auto;
+  overflow: clip;
+  transition:
+    block-size var(--by-view-motion-duration) ease,
+    opacity var(--by-view-motion-duration) ease,
+    display var(--by-view-motion-duration) allow-discrete;
+}
+.byMDeditor.byVIEWmotion .byEDtoolbar.byVIEWreveal[hidden] {
+  block-size: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* High Contrast switches colors immediately so intermediate colors cannot lose contrast. */
+.byMDeditor[data-theme="high-contrast"] :is(button, input, select, textarea, summary, a) {
+  transition-property: opacity, translate;
+}
+@media (forced-colors: active) {
+  .byMDeditor :is(button, input, select, textarea, summary, a) {
+    transition-property: opacity, translate;
+  }
+}
+
+@media print {
+  .byMDeditor,
+  .byMDeditor *,
+  .byMDeditor *::before,
+  .byMDeditor *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+.byMDeditor .byVIEWinfo {
+  transition: opacity var(--by-view-motion-duration) ease-out;
 }

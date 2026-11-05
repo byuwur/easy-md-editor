@@ -78,7 +78,7 @@
     if (typeof source !== "string") throw new TypeError("byMDeditor: Markdown must be a string or HTMLElement.");
     if (source.length > 2000000) throw new RangeError("byMDeditor: maximum document size is 2,000,000 characters.");
     instances.get(element)?.destroy();
-    options = { syntax: "clean", toolbar: true, shortcuts: true, codeHighlighting: true, label: "Document", placeholder: "Start writing…", historyLimit: 200, ...options };
+    options = { syntax: "clean", animations: true, toolbar: true, shortcuts: true, codeHighlighting: true, label: "Document", placeholder: "Start writing…", historyLimit: 200, ...options };
     options.historyLimit = Math.max(0, Math.min(1000, Math.trunc(Number(options.historyLimit)) || 0));
     let syntax = modes.includes(options.syntax) ? options.syntax : "clean";
     // Companion capabilities are captured at mount; loading a newer MD viewer requires reinitialization.
@@ -118,6 +118,7 @@
     const listen = (target, type, handler, extra = {}) => target.addEventListener(type, handler, { signal, ...extra });
     element.replaceChildren();
     element.classList.add("byMDeditor", "byMDdocument");
+    element.classList.toggle("byVIEWmotion", options.animations !== false);
     if (options.theme) element.dataset.theme = options.theme;
     if (!element.dataset.theme && !element.classList.contains("dark")) element.dataset.theme = "light";
     const bar = node("div", "byEDbar"),
@@ -326,6 +327,7 @@
       active?.view?.classList.remove("is-active");
       active = record;
       active?.view?.classList.add("is-active");
+      active?.view?.classList.add("byEDvisited");
     };
     /** Restore a directed source selection in either editing surface without replacing document content. */
     const restore = (next = position, focus = true) => {
@@ -1312,6 +1314,8 @@
         element.dataset.syntax = mode;
         picker.title = modeDescriptions[mode];
         raw.value = source;
+        raw.classList.add("byVIEWreveal");
+        surface.classList.add("byVIEWreveal");
         raw.hidden = mode !== "source" || previewing;
         surface.hidden = mode === "source" || previewing;
         if (mode !== "source" && dirty) build();
@@ -1322,6 +1326,7 @@
       },
       setToolbar(visible) {
         if (!alive) return;
+        toolbar.classList.add("byVIEWreveal");
         toolbar.hidden = !visible || previewing;
         toggle.setAttribute("aria-expanded", String(!toolbar.hidden));
         options.toolbar = Boolean(visible);
@@ -1336,6 +1341,9 @@
           return;
         }
         previewing = Boolean(visible);
+        preview.classList.add("byVIEWreveal");
+        surface.classList.add("byVIEWreveal");
+        raw.classList.add("byVIEWreveal");
         preview.hidden = !previewing;
         previewButton.setAttribute("aria-pressed", String(previewing));
         toggle.disabled = previewing;
@@ -1347,7 +1355,7 @@
           const started = metrics ? performance.now() : 0;
           preview.dataset.theme = element.dataset.theme || "monokai";
           preview.classList.toggle("dark", isDark());
-          global.byMDviewer(preview, source, { toolbar: false, codeHighlighting: options.codeHighlighting !== false && typeof global.byCODEviewer?.highlight === "function" });
+          global.byMDviewer(preview, source, { toolbar: false, animations: options.animations, codeHighlighting: options.codeHighlighting !== false && typeof global.byCODEviewer?.highlight === "function" });
           measure("preview", started);
           announce("Read-only preview.");
         } else {
@@ -1356,6 +1364,13 @@
           queueCode();
           announce("Editing document.");
         }
+      },
+      /** Change motion without rebuilding the document or disturbing its selection/history. */
+      setAnimations(enabled) {
+        if (!alive) return;
+        options.animations = Boolean(enabled);
+        element.classList.toggle("byVIEWmotion", options.animations);
+        preview.classList.toggle("byVIEWmotion", options.animations);
       },
       setTheme(mode) {
         if (!alive) return;
@@ -1412,7 +1427,7 @@
         if (instances.get(element) === api) {
           instances.delete(element);
           element.replaceChildren();
-          element.classList.remove("byMDeditor", "byMDdocument");
+          element.classList.remove("byMDeditor", "byMDdocument", "byVIEWmotion");
           element.removeAttribute("data-syntax");
         }
       }
@@ -1433,6 +1448,7 @@
     surface.hidden = syntax === "source";
     preview.hidden = true;
     api.setToolbar(options.toolbar);
+    toolbar.classList.remove("byVIEWreveal");
     if (options.palette) api.setPalette(options.palette);
     else {
       selectPalette(["light", "dark"].includes(element.dataset.theme) ? "monokai" : element.dataset.theme || "monokai");

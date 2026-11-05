@@ -24,7 +24,7 @@ async function install(page, viewer = true) {
     window.changes = [];
     window.render = (source, options = {}) => {
       changes.length = 0;
-      window.editor = byMDeditor(document.getElementById("editor"), source, { onChange: (value) => changes.push(value), ...options });
+      window.editor = byMDeditor(document.getElementById("editor"), source, { animations: false, onChange: (value) => changes.push(value), ...options });
     };
   });
 }
@@ -953,6 +953,93 @@ test("document and content backgrounds stay independent through theme and toolba
         .evaluate((element) => getComputedStyle(element).backgroundColor),
       "rgba(0, 0, 0, 0)"
     );
+  } finally {
+    await browser.close();
+  }
+});
+
+test("animation options preserve initial visibility and override system motion preferences", async () => {
+  const browser = await chromium.launch({ channel: process.env.BROWSER_CHANNEL || "chrome", executablePath: process.env.CHROMIUM_EXECUTABLE_PATH || undefined });
+  try {
+    const page = await browser.newPage({ reducedMotion: "reduce" });
+    await page.route("https://cdn.jsdelivr.net/**", (route) => (route.request().url().endsWith("fontawesome.min.css") ? route.fulfill({ body: "", contentType: "text/css" }) : route.abort()));
+    await page.setContent('<div id="motion-viewer" data-theme="light"></div>');
+    await page.addStyleTag({ path: path.join(__dirname, "../../easy-md-viewer/md.css") });
+    await page.addScriptTag({ path: path.join(__dirname, "../../easy-md-viewer/md.js") });
+    await page.addStyleTag({ path: path.join(__dirname, "../md.edit.css") });
+    await page.addScriptTag({ path: path.join(__dirname, "../md.edit.js") });
+    await page.evaluate(() => {
+      window.renderMotion = async (animations) => {
+        window.motionController = byMDeditor(document.getElementById("motion-viewer"), "# Heading\n\nUseful text.", { animations });
+        await motionController?.ready;
+      };
+    });
+    await page.evaluate(() => renderMotion());
+    const root = page.locator("#motion-viewer");
+    assert.equal(await root.evaluate((element) => element.classList.contains("byVIEWmotion")), true);
+    assert.equal(await root.evaluate((element) => getComputedStyle(element).opacity), "1");
+    assert.equal(await root.evaluate((element) => element.getAnimations({ subtree: true }).length), 0, "Initial content does not animate");
+    assert.equal(
+      await root
+        .locator("button")
+        .first()
+        .evaluate((element) => getComputedStyle(element).transitionDuration.split(",")[0]),
+      "0.18s"
+    );
+    const disclosure = await root.evaluateHandle((element) => {
+      const details = document.createElement("details");
+      details.id = "motion-disclosure";
+      details.innerHTML = "<summary>Details</summary><p>Already available content</p>";
+      element.append(details);
+      getComputedStyle(details, "::details-content").blockSize;
+      return details;
+    });
+    await disclosure.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    await page.waitForFunction(() => getComputedStyle(document.getElementById("motion-disclosure"), "::details-content").opacity === "0");
+    const opening = await disclosure.evaluate(async (details) => {
+      details.open = true;
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      return Number(getComputedStyle(details, "::details-content").opacity);
+    });
+    assert.ok(opening > 0 && opening < 1, "A deliberate disclosure eases in even with reduced motion requested");
+    await page.waitForFunction(() => getComputedStyle(document.getElementById("motion-disclosure"), "::details-content").opacity === "1");
+    await disclosure.evaluate((details) => {
+      details.open = false;
+    });
+    await page.waitForFunction(() => getComputedStyle(document.getElementById("motion-disclosure"), "::details-content").opacity === "0");
+    assert.equal(await disclosure.evaluate((details) => details.open), false);
+    const before = await page.evaluate(() => ({ markdown: motionController.getMarkdown(), selection: motionController.getSelection() }));
+    await page.evaluate(() => motionController.setAnimations(false));
+    assert.deepEqual(await page.evaluate(() => ({ markdown: motionController.getMarkdown(), selection: motionController.getSelection() })), before);
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+    assert.equal(await root.evaluate((element) => element.classList.contains("byVIEWmotion")), false);
+    assert.equal(
+      await root
+        .locator("button")
+        .first()
+        .evaluate((element) => getComputedStyle(element).transitionDuration),
+      "0s"
+    );
+    assert.equal(await root.evaluate((element) => element.getAnimations({ subtree: true }).length), 0);
+    await page.evaluate(() => {
+      motionController.setAnimations(true);
+      motionController.setSelection(2);
+      window.unchangedMotionLine = document.querySelectorAll(".byEDline")[2];
+    });
+    const syntax = root.locator(".byEDline.byEDvisited.is-active .byEDsyntax").first();
+    await syntax.waitFor();
+    assert.equal(await syntax.evaluate((element) => element.getAnimations().some((animation) => ["inline-size", "width"].includes(animation.transitionProperty))), true, "Only the active markers ease into place");
+    await syntax.evaluate((element) => Promise.allSettled(element.getAnimations().map((animation) => animation.finished)));
+    assert.deepEqual(await page.evaluate(() => motionController.getSelection()), { anchor: 2, focus: 2 });
+    await page.keyboard.type("New ");
+    assert.equal(await page.evaluate(() => motionController.getMarkdown()), before.markdown.replace("Heading", "New Heading"));
+    assert.equal(await page.evaluate(() => unchangedMotionLine === document.querySelectorAll(".byEDline")[2]), true);
+    await page.evaluate(() => motionController.command("undo"));
+    assert.equal(await page.evaluate(() => motionController.getMarkdown()), before.markdown);
+    await page.evaluate(() => motionController.setPreview(true));
+    await page.emulateMedia({ media: "print" });
+    assert.equal(await root.locator(".byEDpreview").evaluate((element) => getComputedStyle(element).opacity), "1", "Print never captures a partially faded document");
+    assert.equal(await root.evaluate((element) => element.getAnimations({ subtree: true }).length), 0);
   } finally {
     await browser.close();
   }
