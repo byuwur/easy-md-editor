@@ -695,15 +695,15 @@ test("playground edits documents and exports exact Markdown", async () => {
   try {
     const page = await browser.newPage({ acceptDownloads: true, viewport: { width: 1100, height: 800 } });
     await page.route("https://cdn.jsdelivr.net/**", async (route) => {
-      const pickerAsset = new URL(route.request().url()).pathname.match(/\/spa\.js@v20\.6\/((?:css|js)\/pickr\.min\.(?:css|js))$/)?.[1];
+      const pickerAsset = new URL(route.request().url()).pathname.match(/\/spa\.js@v20\.7\/((?:css|js)\/pickr\.min\.(?:css|js))$/)?.[1];
       if (pickerAsset) return route.fulfill({ path: path.join(__dirname, "../../spa.js", pickerAsset), contentType: pickerAsset.endsWith("css") ? "text/css" : "text/javascript" });
       if (route.request().url().endsWith("bootstrap.min.css")) {
-        const file = process.env.BOOTSTRAP_CSS_PATH || path.join(process.env.TEMP, "viewer-ecosystem-tests/bootstrap-v20.6.css");
+        const file = process.env.BOOTSTRAP_CSS_PATH || path.join(process.env.TEMP, "viewer-ecosystem-tests/bootstrap-v20.7.css");
         return route.fulfill({ body: await fs.readFile(file), contentType: "text/css" });
       }
       const companion = new URL(route.request().url()).pathname.match(/^\/gh\/byuwur\/(easy-(?:md|code)-viewer)@v\d+(?:\.\d+)*\/((?:md|code)\.(?:css|js))$/);
       if (companion) return route.fulfill({ path: path.join(root, "..", companion[1], companion[2]), contentType: companion[2].endsWith("css") ? "text/css" : "text/javascript" });
-      const asset = new URL(route.request().url()).pathname.match(/\/spa\.js@v20\.6\/(css\/(?:shards|fontawesome\.min)\.css|js\/bootstrap\.min\.js)$/)?.[1];
+      const asset = new URL(route.request().url()).pathname.match(/\/spa\.js@v20\.7\/(css\/(?:shards|fontawesome\.min)\.css|js\/bootstrap\.min\.js)$/)?.[1];
       if (asset) return route.fulfill({ body: await fs.readFile(path.join(root, "../spa.js", asset)), contentType: asset.endsWith("css") ? "text/css" : "text/javascript" });
       return route.abort();
     });
