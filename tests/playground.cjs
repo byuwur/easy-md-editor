@@ -152,6 +152,9 @@ test("playground edits documents and exports exact Markdown", async () => {
     await page.locator("#reset-appearance").click();
     assert.equal(await page.locator("#preview-bg").evaluate((field) => field.checkValidity()), true);
     const cdnHTML = await readStarter(page);
+    assert.match(cdnHTML, /^ {2}<head>$/m);
+    assert.match(cdnHTML, /^ {4}<script>$/m);
+    assert.match(cdnHTML, /^ {6}document\.addEventListener\("DOMContentLoaded", \(\) => \{$/m);
     const starterViewer = page.locator("#integration-code.byCODEdocument");
     assert.equal(await page.evaluate(() => byCODEviewer.VERSION), "1.5");
     assert.equal(await starterViewer.getAttribute("data-theme"), "dark");
