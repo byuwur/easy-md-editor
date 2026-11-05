@@ -23,7 +23,7 @@ Save `md.edit.js` and `md.edit.css` beside your HTML. Use the CDN for the compan
 <script src="md.edit.js" defer></script>
 ```
 
-Visual editing requires the MD viewer's `parseInline()` and `scanLine()` APIs; live code colors use CODE's `tokenize()` API. The playground pins its companions to numbered releases; documentation and exported examples use `@latest`. Use explicit release tags in deployed pages. In your own page, load the companions before creating an editor. An older or missing MD viewer leaves Source editing available until reinitialization; missing CODE leaves fenced code editable as plain text.
+Visual editing requires the MD viewer's `parseInline()` and `scanLine()` APIs; live code colors use CODE's `tokenize()` API. The playground pins its companions to numbered releases; documentation and exported examples use `@latest`. Use explicit release tags in deployed pages. In your own page, load the companions before creating an editor. An older or missing MD viewer logs a console warning and leaves Source editing available until reinitialization; missing CODE leaves fenced code editable as plain text.
 
 `md.edit.css` imports Font Awesome for the toolbar icons. Buttons keep readable labels when icons are unavailable; no extra HTML import is needed.
 

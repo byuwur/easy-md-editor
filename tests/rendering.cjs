@@ -667,6 +667,10 @@ test("without companions, source editing and formatting remain usable", async ()
   const browser = await launch();
   try {
     const page = await browser.newPage();
+    const warnings = [];
+    page.on("console", (message) => {
+      if (message.type() === "warning") warnings.push(message.text());
+    });
     await install(page, false);
     await page.evaluate(() => {
       render("Hello");
@@ -677,6 +681,8 @@ test("without companions, source editing and formatting remain usable", async ()
     assert.equal(await page.locator(".byEDsource").isVisible(), true);
     await page.evaluate(() => editor.setPreview(true));
     assert.equal(await page.locator(".byEDsource").isVisible(), true);
+    assert.equal(warnings.length, 1, "Missing MD is reported once per editor initialization");
+    assert.match(warnings[0], /easy-md-editor:.*easy-md-viewer.*Source editing remains available\. https:\/\/byuwur\.github\.io\/easy-md-viewer\//);
   } finally {
     await browser.close();
   }

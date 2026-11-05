@@ -83,7 +83,10 @@
     let syntax = modes.includes(options.syntax) ? options.syntax : "clean";
     // Companion capabilities are captured at mount; loading a newer MD viewer requires reinitialization.
     const rich = typeof global.byMDviewer?.parseInline === "function" && typeof global.byMDviewer?.scanLine === "function";
-    if (!rich) syntax = "source";
+    if (!rich) {
+      console.warn("easy-md-editor: Visual editing requires easy-md-viewer with parseInline() and scanLine(). Source editing remains available. https://byuwur.github.io/easy-md-viewer/");
+      syntax = "source";
+    }
     const abort = new AbortController(),
       signal = abort.signal;
     let alive = true,
