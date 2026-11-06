@@ -2,7 +2,7 @@
  * File: tests/rendering.cjs
  * Desc: Editor library contracts using real companions; playground checks live in playground.cjs.
  */
-/* --- DEPENDENCIES AND LOCAL FIXTURES --- */
+// --- DEPENDENCIES AND LOCAL FIXTURES ---
 const assert = require("node:assert/strict");
 const path = require("node:path");
 const fs = require("node:fs/promises");
@@ -34,7 +34,7 @@ async function install(page, viewer = true) {
   });
 }
 
-/* --- LOCALIZED CONTROLS --- */
+// --- LOCALIZED CONTROLS ---
 test("control languages preserve source, native editing, and instance state", async (t) => {
   const browser = await launch();
   try {
@@ -250,7 +250,7 @@ test("control languages preserve source, native editing, and instance state", as
   }
 });
 
-/* --- SOURCE, EDITING, AND LIFECYCLE --- */
+// --- SOURCE, EDITING, AND LIFECYCLE ---
 test("source-driven editor browser contracts", async (t) => {
   const browser = await launch();
   try {
@@ -920,7 +920,7 @@ test("source-driven editor browser contracts", async (t) => {
   }
 });
 
-/* --- COMPANION FALLBACK --- */
+// --- COMPANION FALLBACK ---
 test("without companions, source editing and formatting remain usable", async () => {
   const browser = await launch();
   try {
@@ -952,7 +952,7 @@ test("without companions, source editing and formatting remain usable", async ()
   }
 });
 
-/* --- SURFACES --- */
+// --- SURFACES ---
 test("document and content backgrounds stay independent through theme and toolbar changes", async () => {
   const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_EXECUTABLE_PATH || undefined, channel: process.env.BROWSER_CHANNEL || "chrome" });
   try {
@@ -1004,7 +1004,7 @@ test("document and content backgrounds stay independent through theme and toolba
   }
 });
 
-/* --- INTERACTION MOTION --- */
+// --- INTERACTION MOTION ---
 test("Clean markers animate closed after line breaks and local reparses", async () => {
   const browser = await launch();
   try {
@@ -1183,7 +1183,7 @@ test("animation options preserve initial visibility and override system motion p
   }
 });
 
-/* --- INITIAL APPEARANCE --- */
+// --- INITIAL APPEARANCE ---
 test("appearance options override markup and preserve independent viewer state", async () => {
   const browser = await chromium.launch({ channel: process.env.BROWSER_CHANNEL || undefined, executablePath: process.env.CHROMIUM_EXECUTABLE_PATH || undefined });
   try {

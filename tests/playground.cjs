@@ -19,7 +19,7 @@ const readStarter = async (page) => {
   return (await page.locator("#integration-code .byCODEtext").allTextContents()).join("\n");
 };
 
-/* --- PINNED PLAYGROUND DEPENDENCIES --- */
+// --- PINNED PLAYGROUND DEPENDENCIES ---
 let assetsPromise;
 const getAssets = () =>
   (assetsPromise ||= (async () => {
@@ -41,7 +41,7 @@ const getAssets = () =>
     );
   })());
 
-/* --- LOCAL COMPANIONS BEHIND PINNED CDN URLS --- */
+// --- LOCAL COMPANIONS BEHIND PINNED CDN URLS ---
 async function routeAssets(page, assets) {
   await page.route("https://cdn.jsdelivr.net/**", async (route) => {
     const url = new URL(route.request().url());
@@ -52,7 +52,7 @@ async function routeAssets(page, assets) {
   });
 }
 
-/* --- DOCUMENT ACTIONS AND EXPORTS --- */
+// --- DOCUMENT ACTIONS AND EXPORTS ---
 test("playground configures No-code and individual controls without recreating the document", async () => {
   const assets = await getAssets();
   const server = require("./serve.cjs");

@@ -555,7 +555,7 @@
         let fileRequest = 0,
           outputTimer;
 
-        /* --- DOCUMENT --- */
+        // --- DOCUMENT ---
         function updateOutput(markdown) {
           output.value = markdown;
           const bytes = new TextEncoder().encode(markdown).length;
@@ -573,7 +573,7 @@
         });
         updateOutput(sample);
         window.playgroundEditor = editor;
-        /* --- EDITOR CONFIGURATION --- */
+        // --- EDITOR CONFIGURATION ---
         const visibilityOptions = ["toolbarToggle", "syntaxSelect", "previewToggle", "themeToggle", "paletteSelect", "statusBar"];
         const modeSelect = document.getElementById("syntax-mode");
         const languageSelect = document.getElementById("editor-language");
@@ -682,7 +682,7 @@
           editor.setMarkdown(documents[activeSource].source);
         });
 
-        /* --- FILE ACTIONS --- */
+        // --- FILE ACTIONS ---
         function downloadText(text, filename, type) {
           const url = URL.createObjectURL(new Blob([text], { type }));
           const link = document.createElement("a");
@@ -729,7 +729,7 @@
           if (!wasPreview) editor.setPreview(false);
         });
 
-        /* --- HTML STARTER --- */
+        // --- HTML STARTER ---
         let integrationHTML = "";
         function renderIntegration(html) {
           if (html === integrationHTML) return;
@@ -825,7 +825,7 @@
           document.getElementById("integration-feedback").textContent = "Downloaded. The starter uses default editor settings.";
         });
 
-        /* --- WEBSITE THEME --- */
+        // --- WEBSITE THEME ---
         document.getElementById("site-theme").addEventListener("click", (event) => {
           const button = event.currentTarget;
           const theme = document.documentElement.dataset.bsTheme === "dark" ? "light" : "dark";

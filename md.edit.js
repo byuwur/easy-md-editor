@@ -6,13 +6,13 @@
  * MIT License (see LICENSE).
  */
 (function (global) {
-  /* --- INITIALIZATION --- */
+  // --- INITIALIZATION ---
   if (global.byMDeditor?.initialized) return;
 
-  /* --- METADATA --- */
+  // --- METADATA ---
   byMDeditor.VERSION = "1.5"; // 2026-11-05
 
-  /* --- CONSTANTS --- */
+  // --- CONSTANTS ---
   const tools = [
     ["undo", "rotate-left"],
     ["redo", "rotate-right"],
@@ -99,13 +99,13 @@
     }
   };
 
-  /* --- STATE --- */
+  // --- STATE ---
   const instances = new WeakMap();
   const warnedLanguages = new Set();
   const warnedPalettes = new Set();
   let segmenter;
 
-  /* --- HELPERS --- */
+  // --- HELPERS ---
   const node = (tag, className = "", text) => {
     const element = document.createElement(tag);
     element.className = className;
@@ -135,7 +135,7 @@
     return Math.max(0, Math.min(text.length, next));
   };
 
-  /* --- APPEARANCE --- */
+  // --- APPEARANCE ---
   const warnMissingThemes = (element, palette = element.dataset.theme) => {
     if (!Object.values(palettes).some((choices) => Object.hasOwn(choices, palette)) || ["monokai", "github", "solarized", "high-contrast"].includes(palette) || warnedPalettes.has(palette)) return;
     const document = element.ownerDocument;
@@ -144,7 +144,7 @@
     console.warn(`easy-md-editor: Palette "${palette}" requires md.themes.css. Import it after md.css. https://byuwur.github.io/easy-md-viewer/`);
   };
 
-  /** Explicit appearance options override markup; omitted values preserve the container's state. */
+  // Explicit appearance options override markup; omitted values preserve the container's state.
   const applyAppearance = (element, options) => {
     const { theme, palette, fontSize } = options;
     if (theme != null && !["light", "dark"].includes(theme)) throw new RangeError("Theme must be light or dark.");
@@ -165,7 +165,7 @@
     }
   };
 
-  /* --- LOCALIZATION --- */
+  // --- LOCALIZATION ---
   byMDeditor.locales = {
     en: {
       document: "Document",
@@ -777,7 +777,7 @@
     }
   };
 
-  /** Resolve regional tags against loaded dictionaries; automatic detection may fall back quietly. */
+  // Resolve regional tags against loaded dictionaries; automatic detection may fall back quietly.
   const resolveLanguage = (element, requested) => {
     if (typeof requested !== "string" || !requested.trim()) throw new RangeError("Language must be a language tag or auto.");
     const automatic = requested.toLowerCase() === "auto";
@@ -804,10 +804,10 @@
     return "en";
   };
 
-  /* --- PUBLIC API --- */
-  /** Mount an editor with caller-owned persistence; all selections use UTF-16 source offsets. */
+  // --- PUBLIC API ---
+  // Mount an editor with caller-owned persistence; all selections use UTF-16 source offsets.
   function byMDeditor(element, markdown, options = {}) {
-    /* --- OPTIONS AND INSTANCE STATE --- */
+    // --- OPTIONS AND INSTANCE STATE ---
     if (!(element instanceof HTMLElement)) throw new TypeError("byMDeditor: element must be an HTMLElement.");
     // Markdown owns the document. Editable DOM, line records, and Preview are derived views.
     let source = markdown instanceof HTMLElement ? markdown.textContent : (markdown ?? element.textContent);
@@ -880,7 +880,7 @@
     const measure = (operation, started, extra = {}) => metrics?.({ operation, duration: performance.now() - started, ...extra });
     const listen = (target, type, handler, extra = {}) => target.addEventListener(type, handler, { signal, ...extra });
 
-    /* --- LOCALIZATION --- */
+    // --- LOCALIZATION ---
     const languageText = {};
     for (const [key, englishText] of Object.entries(byMDeditor.locales.en)) {
       languageText[key] = String(translations[key] ?? byMDeditor.locales[language]?.[key] ?? englishText);
@@ -889,7 +889,7 @@
       announcement = key;
       status.textContent = languageText[key];
     };
-    /** Update only UI labels; source nodes, selection, composition, and history keep their owners. */
+    // Update only UI labels; source nodes, selection, composition, and history keep their owners.
     const translateControls = () => {
       for (const root of [bar, toolbar, dialog]) {
         if (!root) continue;
@@ -936,7 +936,7 @@
       }
     };
 
-    /* --- CONTROLS --- */
+    // --- CONTROLS ---
     element.replaceChildren();
     element.classList.add("byMDeditor", "byMDdocument");
     element.classList.toggle("byVIEWmotion", options.animations !== false);
@@ -1088,7 +1088,7 @@
       if (!toolbarFrame) toolbarFrame = requestAnimationFrame(updateToolbar);
     };
 
-    /* --- SOURCE MAPPING --- */
+    // --- SOURCE MAPPING ---
     const split = (text, from = 0) => {
       const result = [];
       const pattern = /\r\n|\r|\n/g;
@@ -1101,7 +1101,7 @@
       result.push({ text: text.slice(cursor), eol: "", from: from + cursor });
       return result;
     };
-    /** Find the physical line owning a source offset without scanning the entire document. */
+    // Find the physical line owning a source offset without scanning the entire document.
     const lineAt = (offset) => {
       let low = 0,
         high = lines.length - 1;
@@ -1116,7 +1116,7 @@
     const syncRawBreaks = () => {
       rawBreaks = [...source.matchAll(/\r\n/g)].map((match) => match.index);
     };
-    /** Translate textarea-normalized offsets to/from canonical source positions, accounting for CRLF pairs. */
+    // Translate textarea-normalized offsets to/from canonical source positions, accounting for CRLF pairs.
     const rawOffset = (offset, toSource = false) => {
       let low = 0,
         high = rawBreaks.length;
@@ -1139,7 +1139,7 @@
       else rawBreaks.splice(first, last - first, ...changed);
       for (let i = first + changed.length; i < rawBreaks.length; i++) rawBreaks[i] += delta;
     };
-    /** Associate rendered text nodes with source slices so selections never depend on HTML serialization. */
+    // Associate rendered text nodes with source slices so selections never depend on HTML serialization.
     const mappedText = (parent, record, from, to, className = "") => {
       if (to <= from) return;
       const text = document.createTextNode(record.text.slice(from, to));
@@ -1168,7 +1168,7 @@
       const record = lineMap.get(target);
       return record ? record.from : null;
     };
-    /** Translate a native DOM boundary into a source offset, including empty-line placeholder nodes. */
+    // Translate a native DOM boundary into a source offset, including empty-line placeholder nodes.
     const offsetOf = (target, offset) => {
       if (syntax === "no-code") {
         const readOnly = (target.nodeType === Node.ELEMENT_NODE ? target : target.parentElement)?.closest(".byEDunsupported");
@@ -1192,8 +1192,8 @@
       }
       return null;
     };
-    /* --- SELECTION --- */
-    /** Read the active mode's selection as directed UTF-16 source offsets; toolbar focus retains the last range. */
+    // --- SELECTION ---
+    // Read the active mode's selection as directed UTF-16 source offsets; toolbar focus retains the last range.
     const selection = () => {
       if (syntax === "source")
         return { anchor: rawOffset(raw.selectionDirection === "backward" ? raw.selectionEnd : raw.selectionStart, true), focus: rawOffset(raw.selectionDirection === "backward" ? raw.selectionStart : raw.selectionEnd, true) };
@@ -1228,7 +1228,7 @@
       active?.view?.classList.add("is-active");
       active?.view?.classList.add("byEDvisited");
     };
-    /** Restore a directed source selection in either editing surface without replacing document content. */
+    // Restore a directed source selection in either editing surface without replacing document content.
     const restore = (next = position, focus = true) => {
       fullSelection = null;
       position = { anchor: Math.max(0, Math.min(source.length, next.anchor)), focus: Math.max(0, Math.min(source.length, next.focus)) };
@@ -1264,7 +1264,7 @@
       }
     };
 
-    /* --- INCREMENTAL RENDERING --- */
+    // --- INCREMENTAL RENDERING ---
     const renderInline = (target, record, from, to) => {
       const value = record.text.slice(from, to);
       if (value.length > 8192 || record.meta.type === "source") {
@@ -1322,7 +1322,7 @@
       measure("parse", started, { characters: value.length, scope: "inline" });
       render(target, tokens);
     };
-    /** Keep existing inline nodes attached so CSS can finish a marker's closing transition after a reparse. */
+    // Keep existing inline nodes attached so CSS can finish a marker's closing transition after a reparse.
     const patchLineContent = (target, content, record) => {
       const retained = new WeakMap();
       const sync = (parent, replacement) => {
@@ -1355,7 +1355,7 @@
       sync(target, content);
       for (const point of record.points) point.node = retained.get(point.node) || point.node;
     };
-    /** Render one physical line; ambiguous source mappings deliberately retain literal Markdown. */
+    // Render one physical line; ambiguous source mappings deliberately retain literal Markdown.
     const renderLine = (record) => {
       const meta = record.meta,
         type = meta.type;
@@ -1449,13 +1449,13 @@
       if (preserveMotion) patchLineContent(target, view, record);
       if (active === record) target.classList.add("is-active");
     };
-    /** Carry the previous line's parser state forward and inspect the next line only for table headers. */
+    // Carry the previous line's parser state forward and inspect the next line only for table headers.
     const classify = (record, previous, next) => {
       const started = metrics ? performance.now() : 0;
       record.meta = global.byMDviewer.scanLine(record.text, previous?.meta.state, next?.text || "");
       measure("parse", started, { characters: record.text.length, scope: "line" });
     };
-    /** Reuse structural groups and editable children so unrelated edits retain DOM identity and selection. */
+    // Reuse structural groups and editable children so unrelated edits retain DOM identity and selection.
     const reconcile = () => {
       const nextGroups = [],
         used = new Set();
@@ -1504,7 +1504,7 @@
       groups = nextGroups;
     };
 
-    /** Rebuild the derived line/group index from canonical source after initialization or source replacement. */
+    // Rebuild the derived line/group index from canonical source after initialization or source replacement.
     const build = () => {
       renderedNoCode = syntax === "no-code";
       textMap = new WeakMap();
@@ -1522,7 +1522,7 @@
       surface.dataset.empty = String(!source);
       queueCode();
     };
-    /** Replace affected lines, shift later offsets, and reclassify only until fence/table context converges. */
+    // Replace affected lines, shift later offsets, and reclassify only until fence/table context converges.
     const patch = (from, to, inserted) => {
       const started = metrics ? performance.now() : 0;
       const first = lineAt(from),
@@ -1561,7 +1561,7 @@
       measure("patch", started, { lines: replacement.length });
     };
 
-    /* --- CODE HIGHLIGHTING --- */
+    // --- CODE HIGHLIGHTING ---
     const paintCodeLine = (record, parts) => {
       if (!record?.text.length) return false;
       const children = [...record.view.childNodes];
@@ -1579,7 +1579,7 @@
       for (const part of parts) mappedText(record.view, record, part.from, part.to, part.type === "plain" ? "" : `byCODEtoken byCODE${part.type}`);
       return true;
     };
-    /** Consume CODE tokens in short frames and restore selection only if coloring moved its DOM boundary. */
+    // Consume CODE tokens in short frames and restore selection only if coloring moved its DOM boundary.
     const colorCode = () => {
       codeFrame = 0;
       if (!alive || composing || dirty || previewing || syntax === "source") return;
@@ -1636,7 +1636,7 @@
       measure("highlight", started);
       if (codeJob || codeQueue.length) codeFrame = requestAnimationFrame(colorCode);
     };
-    /** Cancel obsolete timers, frames, and the current iterator before another highlight pass takes ownership. */
+    // Cancel obsolete timers, frames, and the current iterator before another highlight pass takes ownership.
     const cancelCode = () => {
       clearTimeout(codeTimer);
       cancelAnimationFrame(codeFrame);
@@ -1645,7 +1645,7 @@
       codeJob = null;
       codeQueue = [];
     };
-    /** Debounce code coloring independently of text input and skip it while IME owns the active DOM. */
+    // Debounce code coloring independently of text input and skip it while IME owns the active DOM.
     const queueCode = () => {
       cancelCode();
       if (options.codeHighlighting === false || typeof global.byCODEviewer?.tokenize !== "function") return;
@@ -1657,8 +1657,8 @@
       }, 80);
     };
 
-    /* --- TRANSACTIONS AND HISTORY --- */
-    /** Accept an unchanged native text node after input while updating its source offsets and history data. */
+    // --- TRANSACTIONS AND HISTORY ---
+    // Accept an unchanged native text node after input while updating its source offsets and history data.
     const acceptNativeText = (edit) => {
       const { record, point, from, to, inserted } = edit,
         delta = inserted.length - (to - from),
@@ -1683,7 +1683,7 @@
         );
     };
     // All committed edits pass here so source, ranges, undo history, and callbacks stay in agreement.
-    /** Commit one source edit, update derived views and undo state, then notify the application synchronously. */
+    // Commit one source edit, update derived views and undo state, then notify the application synchronously.
     const change = (from, to, inserted, next, type = "command", remember = true, native = null) => {
       if (!alive || previewing) return false;
       if (remember && syntax !== "source" && from === to && inserted && !/^[#\s]/.test(inserted)) {
@@ -1783,13 +1783,13 @@
       options.onChange?.(source);
       return true;
     };
-    /** Replay the recorded source delta and directed selection without recording a second history entry. */
+    // Replay the recorded source delta and directed selection without recording a second history entry.
     const undo = (redo = false) => {
       if ((redo && historyIndex >= history.length) || (!redo && historyIndex === 0)) return;
       const entry = history[redo ? historyIndex++ : --historyIndex];
       change(entry.from, entry.from + (redo ? entry.removed.length : entry.inserted.length), redo ? entry.inserted : entry.removed, redo ? entry.after : entry.before, "history", false);
     };
-    /** Commit only the browser-owned composition delta before normal rendering and history resume. */
+    // Commit only the browser-owned composition delta before normal rendering and history resume.
     const finishComposition = () => {
       if (!composing) return;
       const session = composing;
@@ -1812,7 +1812,7 @@
       change(start, end, inserted, { anchor: start + inserted.length, focus: start + inserted.length }, "composition", true, { before: session.before });
       queueCode();
     };
-    /** Reconcile native input through the source transaction; HTML is never converted back into Markdown. */
+    // Reconcile native input through the source transaction; HTML is never converted back into Markdown.
     const acceptNativeInput = () => {
       if (composing || !alive || previewing) return;
       if (nativeEdit) {
@@ -1854,7 +1854,7 @@
       }
     };
 
-    /* --- FORMATTING --- */
+    // --- FORMATTING ---
     const formattingAt = (offset) => {
       if (syntax !== "source" && !dirty) return lines[lineAt(offset)];
       if (!rich) return null;
@@ -1979,7 +1979,7 @@
       if (name === "horizontalRule") return insertBlock("---", from, to, name);
       return false;
     };
-    /** Insert a block with surrounding Markdown line boundaries while preserving the document's newline style. */
+    // Insert a block with surrounding Markdown line boundaries while preserving the document's newline style.
     const insertBlock = (value, from, to, name) => {
       const left = source.slice(Math.max(0, from - 4), from).replace(/\r\n?/g, "\n"),
         right = source.slice(to, to + 4).replace(/\r\n?/g, "\n");
@@ -1987,7 +1987,7 @@
       const after = eol.repeat(Math.max(0, 2 - right.match(/^\n*/)[0].length));
       return change(from, to, before + value + after, { anchor: from + before.length, focus: from + before.length + value.length }, name);
     };
-    /** Own one insertion dialog at a time and retain the source selection while focus is inside it. */
+    // Own one insertion dialog at a time and retain the source selection while focus is inside it.
     const openDialog = (name) => {
       if (dialog) return;
       savedPosition = selection();
@@ -2067,7 +2067,7 @@
       Object.values(fields)[0].focus();
     };
 
-    /* --- INPUT --- */
+    // --- INPUT ---
     const beforeInput = (event) => {
       if (composing || event.isComposing || !event.cancelable) return;
       const started = metrics ? performance.now() : 0;
@@ -2321,7 +2321,7 @@
         }
       });
     }
-    /* --- SELECTION AND TOOLBAR EVENTS --- */
+    // --- SELECTION AND TOOLBAR EVENTS ---
     listen(document, "selectionchange", () => {
       if (!alive || previewing || composing || !element.contains(document.activeElement)) return;
       const started = metrics ? performance.now() : 0;
@@ -2355,13 +2355,13 @@
       buttons[index]?.focus();
     });
 
-    /* --- MODES AND LIFECYCLE --- */
+    // --- MODES AND LIFECYCLE ---
     const api = {
-      /** Return the last committed Markdown; active IME text commits on compositionend. */
+      // Return the last committed Markdown; active IME text commits on compositionend.
       getMarkdown() {
         return source;
       },
-      /** Replace source, reset history, and notify onChange even while Preview is visible. */
+      // Replace source, reset history, and notify onChange even while Preview is visible.
       setMarkdown(value) {
         if (!alive) return;
         if (typeof value !== "string") throw new TypeError("byMDeditor.setMarkdown: value must be a string.");
@@ -2382,7 +2382,7 @@
         scheduleToolbar();
         options.onChange?.(source);
       },
-      /** Change presentation while retaining source and the directed selection. */
+      // Change presentation while retaining source and the directed selection.
       setSyntaxMode(mode) {
         if (!alive) return;
         if (!modes.includes(mode)) throw new RangeError("Syntax mode must be no-code, clean, assisted, or source.");
@@ -2416,7 +2416,7 @@
         toggle.setAttribute("aria-expanded", String(!toolbar.hidden));
         options.toolbar = Boolean(visible);
       },
-      /** Change control visibility without replacing the document, selection, or history. */
+      // Change control visibility without replacing the document, selection, or history.
       setControls(visibility = {}) {
         if (!alive) return;
         for (const [name, control] of Object.entries(controlVisibility)) {
@@ -2428,7 +2428,7 @@
         controls.hidden = palettePicker.hidden && previewButton.hidden && themeButton.hidden;
         bar.hidden = toggle.hidden && picker.hidden && controls.hidden;
       },
-      /** Render the actual MD viewer on demand; returning to editing restores its saved selection. */
+      // Render the actual MD viewer on demand; returning to editing restores its saved selection.
       setPreview(visible) {
         if (!alive) return;
         finishComposition();
@@ -2462,7 +2462,7 @@
           announce("editingDocument");
         }
       },
-      /** Change motion without rebuilding the document or disturbing its selection/history. */
+      // Change motion without rebuilding the document or disturbing its selection/history.
       setAnimations(enabled) {
         if (!alive) return;
         options.animations = Boolean(enabled);
@@ -2477,7 +2477,7 @@
       getLanguage() {
         return language;
       },
-      /** Change the UI language without rebuilding the document or ending native composition. */
+      // Change the UI language without rebuilding the document or ending native composition.
       setLanguage(value) {
         if (!alive) return;
         language = resolveLanguage(element, value);
@@ -2516,7 +2516,7 @@
       setSelection(anchor, focus = anchor) {
         if (alive) restore({ anchor, focus });
       },
-      /** Commit composition, cancel owned work, and clear the host only while this instance owns it. */
+      // Commit composition, cancel owned work, and clear the host only while this instance owns it.
       destroy() {
         if (!alive) return;
         // Commit browser-owned IME text before releasing listeners; this may call onChange during teardown.
@@ -2550,7 +2550,7 @@
         }
       }
     };
-    /* --- MOUNT --- */
+    // --- MOUNT ---
     instances.set(element, api);
     translateControls();
     syncRawBreaks();
@@ -2577,7 +2577,7 @@
     updateToolbar();
     return api;
   }
-  /* --- EXPORT --- */
+  // --- EXPORT ---
   global.byMDeditor = byMDeditor;
   byMDeditor.initialized = true;
 })(typeof window !== "undefined" ? window : this);

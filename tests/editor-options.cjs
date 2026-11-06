@@ -7,7 +7,7 @@ const path = require("node:path");
 const test = require("node:test");
 const { chromium } = require("playwright");
 
-/* --- LOCAL LIBRARY FIXTURE --- */
+// --- LOCAL LIBRARY FIXTURE ---
 test("No-code editing and control visibility", async (t) => {
   const browser = await chromium.launch({ channel: process.env.BROWSER_CHANNEL || "chrome", executablePath: process.env.CHROMIUM_EXECUTABLE_PATH || undefined });
   try {
@@ -26,7 +26,7 @@ test("No-code editing and control visibility", async (t) => {
       };
     });
 
-    /* --- SYNTAX VISIBILITY AND SOURCE OWNERSHIP --- */
+    // --- SYNTAX VISIBILITY AND SOURCE OWNERSHIP ---
     await t.test("active headings, inline formats, lists, tables and fences keep syntax hidden", async () => {
       const source = "# Heading\r\n\r\nA **bold** and *italic* [link](https://example.com).\r\n\r\n- [ ] Task\r\n\r\n| Name | Value |\r\n| --- | --- |\r\n| One | Two |\r\n\r\n~~~js\r\nconst value = 1;\r\n~~~";
       await page.evaluate((source) => render(source), source);
@@ -43,7 +43,7 @@ test("No-code editing and control visibility", async (t) => {
       assert.equal(await page.evaluate(() => editor.getMarkdown()), source);
     });
 
-    /* --- TOOLBAR, CARET, AND HISTORY --- */
+    // --- TOOLBAR, CARET, AND HISTORY ---
     await t.test("toolbar formatting edits visible text and shares undo with Source", async () => {
       await page.evaluate(() => {
         render("Hello world");
@@ -441,7 +441,7 @@ test("No-code editing and control visibility", async (t) => {
       assert.equal(await page.evaluate(() => editor.getMarkdown()), source);
     });
 
-    /* --- OPTIONAL CONTROLS --- */
+    // --- OPTIONAL CONTROLS ---
     const selectors = {
       toolbarToggle: '[aria-label="Formatting"]',
       syntaxSelect: '[aria-label="Syntax visibility"]',
