@@ -910,6 +910,36 @@
     const announce = (text) => {
       status.textContent = text;
     };
+    const formattingAt = (offset) => {
+      if (syntax !== "source" && !dirty) return lines[lineAt(offset)];
+      if (!rich) return null;
+      const from = offset ? Math.max(source.lastIndexOf("\n", offset - 1), source.lastIndexOf("\r", offset - 1)) + 1 : 0;
+      const text = source.slice(from, from + 8193).split(/[\r\n]/, 1)[0];
+      // Match the visual renderer's inline limit, including in Source mode.
+      if (text.length > 8192) return null;
+      const formats = [];
+      const collect = (tokens) => {
+        for (const token of tokens) {
+          formats.push(token);
+          if (token.children) collect(token.children);
+        }
+      };
+      collect(global.byMDviewer.parseInline(text));
+      return { from, formats };
+    };
+    const hasWrapper = (from, to, marker) => {
+      if (source.slice(Math.max(0, from - marker.length), from) !== marker || source.slice(to, to + marker.length) !== marker) return false;
+      if (marker !== "*") return true;
+      // The parser-free Source fallback must not treat Bold's two stars as Italic.
+      const starRun = (offset) => {
+        let start = offset,
+          end = offset;
+        while (source[start - 1] === "*") start--;
+        while (source[end] === "*") end++;
+        return end - start;
+      };
+      return starRun(from) % 2 === 1 && starRun(to) % 2 === 1;
+    };
     const updateToolbar = () => {
       toolbarFrame = 0;
       if (!alive) return;
@@ -924,12 +954,13 @@
       if (!dirty && lines.length) heading.value = String(lines[lineAt(position.focus)].meta.level || 0);
       const from = Math.min(position.anchor, position.focus),
         to = Math.max(position.anchor, position.focus);
+      // Source input stays plain; parse it only when a formatting command needs the grammar.
+      const formatting = syntax === "source" ? null : formattingAt(from);
       for (const [name, marker] of Object.entries(wraps)) {
         const tokenType = { bold: "strong", italic: "em", strikethrough: "del", inlineCode: "code" }[name];
-        const record = !dirty && lines[lineAt(from)];
-        const pressed =
-          (source.slice(Math.max(0, from - marker.length), from) === marker && source.slice(to, to + marker.length) === marker) ||
-          Boolean(record?.formats?.some((token) => (token.type === tokenType || (token.type === "strongEm" && ["strong", "em"].includes(tokenType))) && record.from + token.bodyFrom <= from && record.from + token.bodyTo >= to));
+        const pressed = formatting
+          ? formatting.formats.some((token) => (token.type === tokenType || (token.type === "strongEm" && ["strong", "em"].includes(tokenType))) && formatting.from + token.bodyFrom <= from && formatting.from + token.bodyTo >= to)
+          : hasWrapper(from, to, marker);
         const button = commandButtons.get(name);
         if (button && button.getAttribute("aria-pressed") !== String(pressed)) button.setAttribute("aria-pressed", String(pressed));
       }
@@ -1151,24 +1182,31 @@
           announce("Select text within one paragraph or table cell to apply inline formatting.");
           return false;
         }
-        if (from === to && syntax !== "source" && !dirty) {
-          const record = lines[lineAt(from)],
-            type = { bold: "strong", italic: "em", strikethrough: "del", inlineCode: "code" }[name];
-          const token = record.formats.find((item) => (item.type === type || (item.type === "strongEm" && ["strong", "em"].includes(type))) && record.from + item.bodyFrom <= from && record.from + item.bodyTo >= from);
+        const formatting = formattingAt(from);
+        if (formatting) {
+          const type = { bold: "strong", italic: "em", strikethrough: "del", inlineCode: "code" }[name];
+          const token = formatting.formats.find((item) => {
+            if (item.type !== type && !(item.type === "strongEm" && ["strong", "em"].includes(type))) return false;
+            const bodyFrom = formatting.from + item.bodyFrom,
+              bodyTo = formatting.from + item.bodyTo;
+            return from === to ? syntax !== "source" && bodyFrom <= from && bodyTo >= from : (bodyFrom === from && bodyTo === to) || (formatting.from + item.from === from && formatting.from + item.to === to);
+          });
           if (token) {
-            const start = record.from + token.from,
-              end = record.from + token.to,
-              body = record.from + token.bodyFrom;
+            const start = formatting.from + token.from,
+              end = formatting.from + token.to,
+              body = formatting.from + token.bodyFrom,
+              text = source.slice(body, formatting.from + token.bodyTo);
             const remaining = token.type === "strongEm" ? source.slice(start, start + (name === "bold" ? 1 : 2)) : "";
-            const caret = from - (body - start) + remaining.length;
-            return change(start, end, remaining + source.slice(body, record.from + token.bodyTo) + remaining, { anchor: caret, focus: caret }, name);
+            const anchor = start + remaining.length + Math.max(0, Math.min(text.length, position.anchor - body)),
+              focus = start + remaining.length + Math.max(0, Math.min(text.length, position.focus - body));
+            return change(start, end, remaining + text + remaining, { anchor, focus }, name);
           }
         }
         if (name === "inlineCode" && selected.includes("`")) marker = "`".repeat(Math.max(...[...selected.matchAll(/`+/g)].map((match) => match[0].length)) + 1);
-        if (source.slice(from - marker.length, from) === marker && source.slice(to, to + marker.length) === marker)
-          return change(from - marker.length, to + marker.length, selected, { anchor: from - marker.length, focus: to - marker.length }, name);
-        if (selected.startsWith(marker) && selected.endsWith(marker) && selected.length >= marker.length * 2) return change(from, to, selected.slice(marker.length, -marker.length), { anchor: from, focus: to - marker.length * 2 }, name);
-        const body = selected || (syntax === "no-code" ? "Text" : "");
+        if (!formatting && hasWrapper(from, to, marker)) return change(from - marker.length, to + marker.length, selected, { anchor: from - marker.length, focus: to - marker.length }, name);
+        if (!formatting && selected.length >= marker.length * 2 && hasWrapper(from + marker.length, to - marker.length, marker))
+          return change(from, to, selected.slice(marker.length, -marker.length), { anchor: from, focus: to - marker.length * 2 }, name);
+        const body = selected || (syntax === "no-code" ? "text" : "");
         return change(from, to, marker + body + marker, { anchor: from + marker.length, focus: from + marker.length + body.length }, name);
       }
       if (["heading", "paragraph", "bulletList", "orderedList", "checklist", "blockquote"].includes(name)) {

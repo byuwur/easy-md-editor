@@ -292,6 +292,62 @@ test("No-code editing and control visibility", async (t) => {
         assert.equal(await page.evaluate(() => editor.getMarkdown()), source);
       }
     });
+    await t.test("selected bold and italic combine and toggle independently in either order", async () => {
+      for (const syntax of ["no-code", "clean", "assisted", "source"]) {
+        for (const order of [
+          ["bold", "italic"],
+          ["italic", "bold"]
+        ]) {
+          await page.evaluate((syntax) => {
+            render("word", { syntax });
+            editor.setSelection(0, 4);
+          }, syntax);
+          await page.locator(`[data-command="${order[0]}"]`).click();
+          await page.waitForFunction((active) => ["bold", "italic"].every((name) => document.querySelector(`[data-command="${name}"]`).getAttribute("aria-pressed") === String(name === active)), order[0]);
+          await page.locator(`[data-command="${order[1]}"]`).click();
+          assert.equal(await page.evaluate(() => editor.getMarkdown()), "***word***", `${syntax}: ${order.join(" then ")}`);
+          await page.waitForFunction(() => ["bold", "italic"].every((name) => document.querySelector(`[data-command="${name}"]`).getAttribute("aria-pressed") === "true"));
+          await page.locator('[data-command="bold"]').click();
+          assert.equal(await page.evaluate(() => editor.getMarkdown()), "*word*");
+          await page.locator('[data-command="italic"]').click();
+          assert.equal(await page.evaluate(() => editor.getMarkdown()), "word");
+          await page.evaluate(() => {
+            editor.command("undo");
+            editor.command("undo");
+          });
+          assert.equal(await page.evaluate(() => editor.getMarkdown()), "***word***");
+        }
+      }
+    });
+    await t.test("whole selections and alternate delimiters preserve the other format", async () => {
+      for (const syntax of ["no-code", "source"]) {
+        for (const source of ["**word**", "__word__"]) {
+          await page.evaluate(
+            ({ source, syntax }) => {
+              render(source, { syntax });
+              editor.setSelection(0, source.length);
+            },
+            { source, syntax }
+          );
+          await page.locator('[data-command="italic"]').click();
+          assert.equal(await page.evaluate(() => editor.getMarkdown()), `*${source}*`, `${syntax}: ${source}`);
+        }
+        await page.evaluate((syntax) => {
+          render("___word___", { syntax });
+          editor.setSelection(10, 0);
+          editor.command("italic");
+        }, syntax);
+        assert.equal(await page.evaluate(() => editor.getMarkdown()), "__word__");
+        assert.deepEqual(await page.evaluate(() => editor.getSelection()), { anchor: 6, focus: 2 });
+        await page.locator('[data-command="bold"]').click();
+        assert.equal(await page.evaluate(() => editor.getMarkdown()), "word");
+        await page.evaluate(() => {
+          editor.command("undo");
+          editor.command("undo");
+        });
+        assert.equal(await page.evaluate(() => editor.getMarkdown()), "___word___");
+      }
+    });
     await t.test("combined bold and italic report both states and toggle independently", async () => {
       await page.evaluate(() => {
         render("***word***");
