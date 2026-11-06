@@ -12,6 +12,159 @@
   /* --- METADATA --- */
   byMDeditor.VERSION = "1.5"; // 2026-11-05
 
+  /* --- CONSTANTS --- */
+  const tools = [
+    ["undo", "rotate-left"],
+    ["redo", "rotate-right"],
+    ["bold", "bold"],
+    ["italic", "italic"],
+    ["strikethrough", "strikethrough"],
+    ["inlineCode", "code"],
+    ["bulletList", "list-ul"],
+    ["orderedList", "list-ol"],
+    ["checklist", "list-check"],
+    ["link", "link"],
+    ["image", "image"],
+    ["table", "table"],
+    ["codeBlock", "file-code"],
+    ["blockquote", "quote-left"],
+    ["horizontalRule", "minus"]
+  ];
+  const wraps = { bold: "**", italic: "*", strikethrough: "~~", inlineCode: "`" };
+  const modes = ["no-code", "clean", "assisted", "source"];
+  const modeDescriptions = {
+    "no-code": "descriptionNoCode",
+    clean: "descriptionClean",
+    assisted: "descriptionAssisted",
+    source: "descriptionSource"
+  };
+  const palettes = {
+    paletteEssentials: {
+      monokai: "Monokai",
+      github: "GitHub",
+      solarized: "Solarized",
+      "high-contrast": "High Contrast"
+    },
+    paletteEditorClassics: {
+      dracula: "Dracula",
+      darcula: "Darcula",
+      nord: "Nord",
+      catppuccin: "Catppuccin",
+      "catppuccin-frappe": "Catppuccin Frappé",
+      "catppuccin-macchiato": "Catppuccin Macchiato",
+      "rose-pine": "Rosé Pine",
+      "rose-pine-moon": "Rosé Pine Moon",
+      gruvbox: "Gruvbox",
+      "gruvbox-material": "Gruvbox Material",
+      "tokyo-night": "Tokyo Night",
+      "tokyo-storm": "Tokyo Storm",
+      "tokyo-moon": "Tokyo Moon",
+      one: "One",
+      material: "Material",
+      "material-ocean": "Material Ocean",
+      "night-owl": "Night Owl",
+      synthwave: "Synthwave",
+      ayu: "Ayu",
+      everforest: "Everforest",
+      kanagawa: "Kanagawa",
+      selenized: "Selenized",
+      vscode: "VS Code",
+      "monokai-dimmed": "Monokai Dimmed"
+    },
+    paletteAppInspired: {
+      discord: "Discord",
+      slack: "Slack"
+    },
+    paletteColorful: {
+      bonyur: "BONYUR",
+      sakura: "Sakura",
+      bubblegum: "Bubblegum",
+      candy: "Candy",
+      "rose-gold": "Rose Gold",
+      lavender: "Lavender",
+      cyberpunk: "Cyberpunk",
+      sunset: "Sunset",
+      volcano: "Volcano",
+      amber: "Amber",
+      terminal: "Terminal"
+    },
+    paletteReadingNature: {
+      paper: "Paper",
+      ink: "Ink",
+      ocean: "Ocean",
+      forest: "Forest",
+      mint: "Mint",
+      ice: "Ice",
+      sepia: "Sepia"
+    }
+  };
+
+  /* --- STATE --- */
+  const instances = new WeakMap();
+  const warnedLanguages = new Set();
+  const warnedPalettes = new Set();
+  let segmenter;
+
+  /* --- HELPERS --- */
+  const node = (tag, className = "", text) => {
+    const element = document.createElement(tag);
+    element.className = className;
+    if (text !== undefined) element.textContent = text;
+    return element;
+  };
+  const stateKey = (state) => `${state?.fence?.marker || ""}${state?.fence?.length || 0}:${state?.table || 0}`;
+  const groupKind = (type) => {
+    if (["tableHeader", "tableDelimiter", "tableRow"].includes(type)) return "table";
+    if (["fenceOpen", "fenceClose", "code"].includes(type)) return "fence";
+    if (["bullet", "task"].includes(type)) return "bullet";
+    if (type === "ordered") return "ordered";
+    return "single";
+  };
+  const boundary = (text, index, direction) => {
+    if (global.Intl?.Segmenter) {
+      segmenter ||= new Intl.Segmenter(undefined, { granularity: "grapheme" });
+      const start = Math.max(0, index - 64),
+        end = Math.min(text.length, index + 64);
+      const offsets = [...segmenter.segment(text.slice(start, end))].map((part) => start + part.index);
+      offsets.push(end);
+      return direction < 0 ? (offsets.filter((offset) => offset < index).at(-1) ?? 0) : (offsets.find((offset) => offset > index) ?? text.length);
+    }
+    let next = index + direction;
+    if (direction < 0 && /[\uDC00-\uDFFF]/.test(text[next] || "") && /[\uD800-\uDBFF]/.test(text[next - 1] || "")) next--;
+    if (direction > 0 && /[\uD800-\uDBFF]/.test(text[index] || "") && /[\uDC00-\uDFFF]/.test(text[next] || "")) next++;
+    return Math.max(0, Math.min(text.length, next));
+  };
+
+  /* --- APPEARANCE --- */
+  const warnMissingThemes = (element, palette = element.dataset.theme) => {
+    if (!Object.values(palettes).some((choices) => Object.hasOwn(choices, palette)) || ["monokai", "github", "solarized", "high-contrast"].includes(palette) || warnedPalettes.has(palette)) return;
+    const document = element.ownerDocument;
+    if (document.defaultView.getComputedStyle(document.documentElement).getPropertyValue("--by-md-themes-loaded").trim() === "1") return;
+    warnedPalettes.add(palette);
+    console.warn(`easy-md-editor: Palette "${palette}" requires md.themes.css. Import it after md.css. https://byuwur.github.io/easy-md-viewer/`);
+  };
+
+  /** Explicit appearance options override markup; omitted values preserve the container's state. */
+  const applyAppearance = (element, options) => {
+    const { theme, palette, fontSize } = options;
+    if (theme != null && !["light", "dark"].includes(theme)) throw new RangeError("Theme must be light or dark.");
+    if (palette != null && (typeof palette !== "string" || !/^[a-z][\w-]*$/i.test(palette) || ["light", "dark"].includes(palette))) throw new RangeError("Palette must be a CSS theme name; use theme for light or dark.");
+    warnMissingThemes(element, palette ?? element.dataset.theme);
+    const size = typeof fontSize === "number" ? `${Math.max(0.5, Math.min(3, fontSize))}rem` : typeof fontSize === "string" ? `clamp(0.5rem, ${fontSize}, 3rem)` : "";
+    if (fontSize != null && (typeof fontSize === "number" ? !Number.isFinite(fontSize) : typeof fontSize !== "string" || !CSS.supports("font-size", size))) throw new RangeError("Font size must be a finite multiplier or a CSS size.");
+    if (theme != null || palette != null) {
+      const mode = theme ?? (["light", "dark"].includes(element.dataset.theme) ? element.dataset.theme : element.classList.contains("dark") ? "dark" : "light");
+      element.classList.toggle("light", mode === "light");
+      element.classList.toggle("dark", mode === "dark");
+      if (palette != null) element.dataset.theme = palette;
+      else if (["light", "dark"].includes(element.dataset.theme)) element.dataset.theme = mode;
+    }
+    if (fontSize != null) {
+      element.style.fontSize = size;
+      element.dataset.byViewDefaultFontSize = element.style.fontSize;
+    }
+  };
+
   /* --- LOCALIZATION --- */
   byMDeditor.locales = {
     en: {
@@ -624,159 +777,6 @@
     }
   };
 
-  /* --- CONSTANTS --- */
-  const tools = [
-    ["undo", "rotate-left"],
-    ["redo", "rotate-right"],
-    ["bold", "bold"],
-    ["italic", "italic"],
-    ["strikethrough", "strikethrough"],
-    ["inlineCode", "code"],
-    ["bulletList", "list-ul"],
-    ["orderedList", "list-ol"],
-    ["checklist", "list-check"],
-    ["link", "link"],
-    ["image", "image"],
-    ["table", "table"],
-    ["codeBlock", "file-code"],
-    ["blockquote", "quote-left"],
-    ["horizontalRule", "minus"]
-  ];
-  const wraps = { bold: "**", italic: "*", strikethrough: "~~", inlineCode: "`" };
-  const modes = ["no-code", "clean", "assisted", "source"];
-  const modeDescriptions = {
-    "no-code": "descriptionNoCode",
-    clean: "descriptionClean",
-    assisted: "descriptionAssisted",
-    source: "descriptionSource"
-  };
-  const palettes = {
-    paletteEssentials: {
-      monokai: "Monokai",
-      github: "GitHub",
-      solarized: "Solarized",
-      "high-contrast": "High Contrast"
-    },
-    paletteEditorClassics: {
-      dracula: "Dracula",
-      darcula: "Darcula",
-      nord: "Nord",
-      catppuccin: "Catppuccin",
-      "catppuccin-frappe": "Catppuccin Frappé",
-      "catppuccin-macchiato": "Catppuccin Macchiato",
-      "rose-pine": "Rosé Pine",
-      "rose-pine-moon": "Rosé Pine Moon",
-      gruvbox: "Gruvbox",
-      "gruvbox-material": "Gruvbox Material",
-      "tokyo-night": "Tokyo Night",
-      "tokyo-storm": "Tokyo Storm",
-      "tokyo-moon": "Tokyo Moon",
-      one: "One",
-      material: "Material",
-      "material-ocean": "Material Ocean",
-      "night-owl": "Night Owl",
-      synthwave: "Synthwave",
-      ayu: "Ayu",
-      everforest: "Everforest",
-      kanagawa: "Kanagawa",
-      selenized: "Selenized",
-      vscode: "VS Code",
-      "monokai-dimmed": "Monokai Dimmed"
-    },
-    paletteAppInspired: {
-      discord: "Discord",
-      slack: "Slack"
-    },
-    paletteColorful: {
-      bonyur: "BONYUR",
-      sakura: "Sakura",
-      bubblegum: "Bubblegum",
-      candy: "Candy",
-      "rose-gold": "Rose Gold",
-      lavender: "Lavender",
-      cyberpunk: "Cyberpunk",
-      sunset: "Sunset",
-      volcano: "Volcano",
-      amber: "Amber",
-      terminal: "Terminal"
-    },
-    paletteReadingNature: {
-      paper: "Paper",
-      ink: "Ink",
-      ocean: "Ocean",
-      forest: "Forest",
-      mint: "Mint",
-      ice: "Ice",
-      sepia: "Sepia"
-    }
-  };
-
-  /* --- STATE --- */
-  const instances = new WeakMap();
-  const warnedLanguages = new Set();
-
-  /* --- HELPERS --- */
-  const node = (tag, className = "", text) => {
-    const element = document.createElement(tag);
-    element.className = className;
-    if (text !== undefined) element.textContent = text;
-    return element;
-  };
-  let segmenter;
-  const stateKey = (state) => `${state?.fence?.marker || ""}${state?.fence?.length || 0}:${state?.table || 0}`;
-  const groupKind = (type) => {
-    if (["tableHeader", "tableDelimiter", "tableRow"].includes(type)) return "table";
-    if (["fenceOpen", "fenceClose", "code"].includes(type)) return "fence";
-    if (["bullet", "task"].includes(type)) return "bullet";
-    if (type === "ordered") return "ordered";
-    return "single";
-  };
-  const boundary = (text, index, direction) => {
-    if (global.Intl?.Segmenter) {
-      segmenter ||= new Intl.Segmenter(undefined, { granularity: "grapheme" });
-      const start = Math.max(0, index - 64),
-        end = Math.min(text.length, index + 64);
-      const offsets = [...segmenter.segment(text.slice(start, end))].map((part) => start + part.index);
-      offsets.push(end);
-      return direction < 0 ? (offsets.filter((offset) => offset < index).at(-1) ?? 0) : (offsets.find((offset) => offset > index) ?? text.length);
-    }
-    let next = index + direction;
-    if (direction < 0 && /[\uDC00-\uDFFF]/.test(text[next] || "") && /[\uD800-\uDBFF]/.test(text[next - 1] || "")) next--;
-    if (direction > 0 && /[\uD800-\uDBFF]/.test(text[index] || "") && /[\uDC00-\uDFFF]/.test(text[next] || "")) next++;
-    return Math.max(0, Math.min(text.length, next));
-  };
-
-  /* --- APPEARANCE --- */
-  const warnedPalettes = new Set();
-  const warnMissingThemes = (element, palette = element.dataset.theme) => {
-    if (!Object.values(palettes).some((choices) => Object.hasOwn(choices, palette)) || ["monokai", "github", "solarized", "high-contrast"].includes(palette) || warnedPalettes.has(palette)) return;
-    const document = element.ownerDocument;
-    if (document.defaultView.getComputedStyle(document.documentElement).getPropertyValue("--by-md-themes-loaded").trim() === "1") return;
-    warnedPalettes.add(palette);
-    console.warn(`easy-md-editor: Palette "${palette}" requires md.themes.css. Import it after md.css. https://byuwur.github.io/easy-md-viewer/`);
-  };
-
-  /** Explicit appearance options override markup; omitted values preserve the container's state. */
-  const applyAppearance = (element, options) => {
-    const { theme, palette, fontSize } = options;
-    if (theme != null && !["light", "dark"].includes(theme)) throw new RangeError("Theme must be light or dark.");
-    if (palette != null && (typeof palette !== "string" || !/^[a-z][\w-]*$/i.test(palette) || ["light", "dark"].includes(palette))) throw new RangeError("Palette must be a CSS theme name; use theme for light or dark.");
-    warnMissingThemes(element, palette ?? element.dataset.theme);
-    const size = typeof fontSize === "number" ? `${Math.max(0.5, Math.min(3, fontSize))}rem` : typeof fontSize === "string" ? `clamp(0.5rem, ${fontSize}, 3rem)` : "";
-    if (fontSize != null && (typeof fontSize === "number" ? !Number.isFinite(fontSize) : typeof fontSize !== "string" || !CSS.supports("font-size", size))) throw new RangeError("Font size must be a finite multiplier or a CSS size.");
-    if (theme != null || palette != null) {
-      const mode = theme ?? (["light", "dark"].includes(element.dataset.theme) ? element.dataset.theme : element.classList.contains("dark") ? "dark" : "light");
-      element.classList.toggle("light", mode === "light");
-      element.classList.toggle("dark", mode === "dark");
-      if (palette != null) element.dataset.theme = palette;
-      else if (["light", "dark"].includes(element.dataset.theme)) element.dataset.theme = mode;
-    }
-    if (fontSize != null) {
-      element.style.fontSize = size;
-      element.dataset.byViewDefaultFontSize = element.style.fontSize;
-    }
-  };
-
   /** Resolve regional tags against loaded dictionaries; automatic detection may fall back quietly. */
   const resolveLanguage = (element, requested) => {
     if (typeof requested !== "string" || !requested.trim()) throw new RangeError("Language must be a language tag or auto.");
@@ -807,6 +807,7 @@
   /* --- PUBLIC API --- */
   /** Mount an editor with caller-owned persistence; all selections use UTF-16 source offsets. */
   function byMDeditor(element, markdown, options = {}) {
+    /* --- OPTIONS AND INSTANCE STATE --- */
     if (!(element instanceof HTMLElement)) throw new TypeError("byMDeditor: element must be an HTMLElement.");
     // Markdown owns the document. Editable DOM, line records, and Preview are derived views.
     let source = markdown instanceof HTMLElement ? markdown.textContent : (markdown ?? element.textContent);
@@ -855,7 +856,8 @@
       nativeEdit = null,
       dialog = null,
       dialogAbort = null,
-      active = null;
+      active = null,
+      announcement = null;
     let lines = [],
       groups = [],
       position = { anchor: 0, focus: 0 },
@@ -878,10 +880,63 @@
     const measure = (operation, started, extra = {}) => metrics?.({ operation, duration: performance.now() - started, ...extra });
     const listen = (target, type, handler, extra = {}) => target.addEventListener(type, handler, { signal, ...extra });
 
+    /* --- LOCALIZATION --- */
     const languageText = {};
     for (const [key, englishText] of Object.entries(byMDeditor.locales.en)) {
       languageText[key] = String(translations[key] ?? byMDeditor.locales[language]?.[key] ?? englishText);
     }
+    const announce = (key) => {
+      announcement = key;
+      status.textContent = languageText[key];
+    };
+    /** Update only UI labels; source nodes, selection, composition, and history keep their owners. */
+    const translateControls = () => {
+      for (const root of [bar, toolbar, dialog]) {
+        if (!root) continue;
+        root.lang = language;
+        for (const text of root.querySelectorAll("[data-message]")) {
+          const key = text.dataset.message;
+          let message = languageText[key];
+          if (key === "heading") message = message.replaceAll("{level}", text.value);
+          if (key === "customPalette") message = message.replaceAll("{palette}", text.value);
+          text.textContent = message;
+        }
+        for (const control of root.querySelectorAll("[data-message-label]")) {
+          control.title = languageText[control.dataset.messageLabel];
+          control.setAttribute("aria-label", control.title);
+        }
+      }
+      status.lang = language;
+      if (announcement) status.textContent = languageText[announcement];
+      surface.setAttribute("aria-label", options.label ?? languageText.document);
+      surface.dataset.placeholder = options.placeholder ?? languageText.placeholder;
+      raw.setAttribute(
+        "aria-label",
+        languageText.sourceLabel.replaceAll("{document}", () => options.label ?? languageText.document)
+      );
+      raw.placeholder = options.placeholder ?? languageText.placeholder;
+      toolbar.setAttribute("aria-label", languageText.documentFormatting);
+      picker.setAttribute("aria-label", languageText.syntaxVisibility);
+      picker.title = languageText[modeDescriptions[syntax]];
+      palettePicker.setAttribute("aria-label", languageText.colorPalette);
+      for (const group of palettePicker.querySelectorAll("optgroup")) group.label = languageText[group.dataset.messageGroup];
+      heading.setAttribute("aria-label", languageText.paragraphStyle);
+      themeButton.title = languageText[isDark() ? "lightTheme" : "darkTheme"];
+      themeButton.setAttribute("aria-label", themeButton.title);
+      for (const record of lines) {
+        if (record.meta.type === "task")
+          record.view.querySelector(".byEDtask")?.setAttribute(
+            "aria-label",
+            languageText.completeTask.replaceAll("{task}", () => record.text.slice(record.meta.bodyFrom) || languageText.task)
+          );
+        if (record.meta.type === "source") {
+          const readOnly = record.view.querySelector(".byEDunsupported");
+          if (readOnly) readOnly.title = languageText.readOnlyBlock;
+        }
+      }
+    };
+
+    /* --- CONTROLS --- */
     element.replaceChildren();
     element.classList.add("byMDeditor", "byMDdocument");
     element.classList.toggle("byVIEWmotion", options.animations !== false);
@@ -1004,6 +1059,35 @@
     const controlVisibility = { toolbarToggle: toggle, syntaxSelect: picker, previewToggle: previewButton, themeToggle: themeButton, paletteSelect: palettePicker, statusBar: status };
     const isDark = () => element.dataset.theme === "dark" || (element.dataset.theme !== "light" && element.classList.contains("dark"));
 
+    const updateToolbar = () => {
+      toolbarFrame = 0;
+      if (!alive) return;
+      commandButtons.get("undo")?.toggleAttribute("disabled", historyIndex === 0);
+      commandButtons.get("redo")?.toggleAttribute("disabled", historyIndex === history.length);
+      const controls = [...toolbar.querySelectorAll("button:not(:disabled), select")];
+      const entry = controls.find((control) => control.tabIndex === 0) || controls[0];
+      for (const control of toolbar.querySelectorAll("button, select")) {
+        const index = control === entry ? 0 : -1;
+        if (control.tabIndex !== index) control.tabIndex = index;
+      }
+      if (!dirty && lines.length) heading.value = String(lines[lineAt(position.focus)].meta.level || 0);
+      const from = Math.min(position.anchor, position.focus),
+        to = Math.max(position.anchor, position.focus);
+      // Source input stays plain; parse it only when a formatting command needs the grammar.
+      const formatting = syntax === "source" ? null : formattingAt(from);
+      for (const [name, marker] of Object.entries(wraps)) {
+        const tokenType = { bold: "strong", italic: "em", strikethrough: "del", inlineCode: "code" }[name];
+        const pressed = formatting
+          ? formatting.formats.some((token) => (token.type === tokenType || (token.type === "strongEm" && ["strong", "em"].includes(tokenType))) && formatting.from + token.bodyFrom <= from && formatting.from + token.bodyTo >= to)
+          : hasWrapper(from, to, marker);
+        const button = commandButtons.get(name);
+        if (button && button.getAttribute("aria-pressed") !== String(pressed)) button.setAttribute("aria-pressed", String(pressed));
+      }
+    };
+    const scheduleToolbar = () => {
+      if (!toolbarFrame) toolbarFrame = requestAnimationFrame(updateToolbar);
+    };
+
     /* --- SOURCE MAPPING --- */
     const split = (text, from = 0) => {
       const result = [];
@@ -1108,8 +1192,8 @@
       }
       return null;
     };
-    /** Read the active mode's selection as directed UTF-16 source offsets; toolbar focus retains the last range. */
     /* --- SELECTION --- */
+    /** Read the active mode's selection as directed UTF-16 source offsets; toolbar focus retains the last range. */
     const selection = () => {
       if (syntax === "source")
         return { anchor: rawOffset(raw.selectionDirection === "backward" ? raw.selectionEnd : raw.selectionStart, true), focus: rawOffset(raw.selectionDirection === "backward" ? raw.selectionStart : raw.selectionEnd, true) };
@@ -1420,6 +1504,63 @@
       groups = nextGroups;
     };
 
+    /** Rebuild the derived line/group index from canonical source after initialization or source replacement. */
+    const build = () => {
+      renderedNoCode = syntax === "no-code";
+      textMap = new WeakMap();
+      lineMap = new WeakMap();
+      active = null;
+      lines = split(source);
+      surface.replaceChildren();
+      groups = [];
+      for (let i = 0; i < lines.length; i++) {
+        classify(lines[i], lines[i - 1], lines[i + 1]);
+        renderLine(lines[i]);
+      }
+      reconcile();
+      dirty = false;
+      surface.dataset.empty = String(!source);
+      queueCode();
+    };
+    /** Replace affected lines, shift later offsets, and reclassify only until fence/table context converges. */
+    const patch = (from, to, inserted) => {
+      const started = metrics ? performance.now() : 0;
+      const first = lineAt(from),
+        last = lineAt(to),
+        original = lines[first];
+      const combined = original.text.slice(0, from - original.from) + inserted + lines[last].text.slice(to - lines[last].from) + lines[last].eol;
+      const replacement = split(combined, original.from);
+      if (lines[last].eol) replacement.pop();
+      const deleted = lines.slice(first, last + 1);
+      if (replacement.length > 10000) lines = lines.slice(0, first).concat(replacement, lines.slice(last + 1));
+      else lines.splice(first, last - first + 1, ...replacement);
+      for (let i = 0; i < Math.min(deleted.length, replacement.length); i++) {
+        replacement[i].view = deleted[i].view;
+        replacement[i].group = deleted[i].group;
+        replacement[i].meta = deleted[i].meta;
+        if (active === deleted[i]) active = replacement[i];
+      }
+      for (const record of deleted.slice(replacement.length)) record.view.remove();
+      const delta = inserted.length - (to - from);
+      for (let i = first + replacement.length; i < lines.length; i++) lines[i].from += delta;
+      let structural = deleted.length !== replacement.length;
+      for (let i = Math.max(0, first - 1); i < lines.length; i++) {
+        const record = lines[i],
+          old = record.meta,
+          previousKey = stateKey(old?.state);
+        classify(record, lines[i - 1], lines[i + 1]);
+        const changed = i >= first && i < first + replacement.length;
+        if (changed || JSON.stringify(old) !== JSON.stringify(record.meta)) {
+          structural ||= old?.type !== record.meta.type;
+          renderLine(record);
+        }
+        // Reclassification can stop once fence/table context converges beyond the edited lines.
+        if (i >= first + replacement.length && previousKey === stateKey(record.meta.state)) break;
+      }
+      if (structural || replacement.some((record) => !record.view.parentNode)) reconcile();
+      measure("patch", started, { lines: replacement.length });
+    };
+
     /* --- CODE HIGHLIGHTING --- */
     const paintCodeLine = (record, parts) => {
       if (!record?.text.length) return false;
@@ -1516,175 +1657,7 @@
       }, 80);
     };
 
-    /** Rebuild the derived line/group index from canonical source after initialization or source replacement. */
-    const build = () => {
-      renderedNoCode = syntax === "no-code";
-      textMap = new WeakMap();
-      lineMap = new WeakMap();
-      active = null;
-      lines = split(source);
-      surface.replaceChildren();
-      groups = [];
-      for (let i = 0; i < lines.length; i++) {
-        classify(lines[i], lines[i - 1], lines[i + 1]);
-        renderLine(lines[i]);
-      }
-      reconcile();
-      dirty = false;
-      surface.dataset.empty = String(!source);
-      queueCode();
-    };
-    /** Replace affected lines, shift later offsets, and reclassify only until fence/table context converges. */
-    const patch = (from, to, inserted) => {
-      const started = metrics ? performance.now() : 0;
-      const first = lineAt(from),
-        last = lineAt(to),
-        original = lines[first];
-      const combined = original.text.slice(0, from - original.from) + inserted + lines[last].text.slice(to - lines[last].from) + lines[last].eol;
-      const replacement = split(combined, original.from);
-      if (lines[last].eol) replacement.pop();
-      const deleted = lines.slice(first, last + 1);
-      if (replacement.length > 10000) lines = lines.slice(0, first).concat(replacement, lines.slice(last + 1));
-      else lines.splice(first, last - first + 1, ...replacement);
-      for (let i = 0; i < Math.min(deleted.length, replacement.length); i++) {
-        replacement[i].view = deleted[i].view;
-        replacement[i].group = deleted[i].group;
-        replacement[i].meta = deleted[i].meta;
-        if (active === deleted[i]) active = replacement[i];
-      }
-      for (const record of deleted.slice(replacement.length)) record.view.remove();
-      const delta = inserted.length - (to - from);
-      for (let i = first + replacement.length; i < lines.length; i++) lines[i].from += delta;
-      let structural = deleted.length !== replacement.length;
-      for (let i = Math.max(0, first - 1); i < lines.length; i++) {
-        const record = lines[i],
-          old = record.meta,
-          previousKey = stateKey(old?.state);
-        classify(record, lines[i - 1], lines[i + 1]);
-        const changed = i >= first && i < first + replacement.length;
-        if (changed || JSON.stringify(old) !== JSON.stringify(record.meta)) {
-          structural ||= old?.type !== record.meta.type;
-          renderLine(record);
-        }
-        // Reclassification can stop once fence/table context converges beyond the edited lines.
-        if (i >= first + replacement.length && previousKey === stateKey(record.meta.state)) break;
-      }
-      if (structural || replacement.some((record) => !record.view.parentNode)) reconcile();
-      measure("patch", started, { lines: replacement.length });
-    };
-
     /* --- TRANSACTIONS AND HISTORY --- */
-    let announcement = null;
-    const announce = (key) => {
-      announcement = key;
-      status.textContent = languageText[key];
-    };
-    /** Update only UI labels; source nodes, selection, composition, and history keep their owners. */
-    const translateControls = () => {
-      for (const root of [bar, toolbar, dialog]) {
-        if (!root) continue;
-        root.lang = language;
-        for (const text of root.querySelectorAll("[data-message]")) {
-          const key = text.dataset.message;
-          let message = languageText[key];
-          if (key === "heading") message = message.replaceAll("{level}", text.value);
-          if (key === "customPalette") message = message.replaceAll("{palette}", text.value);
-          text.textContent = message;
-        }
-        for (const control of root.querySelectorAll("[data-message-label]")) {
-          control.title = languageText[control.dataset.messageLabel];
-          control.setAttribute("aria-label", control.title);
-        }
-      }
-      status.lang = language;
-      if (announcement) status.textContent = languageText[announcement];
-      surface.setAttribute("aria-label", options.label ?? languageText.document);
-      surface.dataset.placeholder = options.placeholder ?? languageText.placeholder;
-      raw.setAttribute(
-        "aria-label",
-        languageText.sourceLabel.replaceAll("{document}", () => options.label ?? languageText.document)
-      );
-      raw.placeholder = options.placeholder ?? languageText.placeholder;
-      toolbar.setAttribute("aria-label", languageText.documentFormatting);
-      picker.setAttribute("aria-label", languageText.syntaxVisibility);
-      picker.title = languageText[modeDescriptions[syntax]];
-      palettePicker.setAttribute("aria-label", languageText.colorPalette);
-      for (const group of palettePicker.querySelectorAll("optgroup")) group.label = languageText[group.dataset.messageGroup];
-      heading.setAttribute("aria-label", languageText.paragraphStyle);
-      themeButton.title = languageText[isDark() ? "lightTheme" : "darkTheme"];
-      themeButton.setAttribute("aria-label", themeButton.title);
-      for (const record of lines) {
-        if (record.meta.type === "task")
-          record.view.querySelector(".byEDtask")?.setAttribute(
-            "aria-label",
-            languageText.completeTask.replaceAll("{task}", () => record.text.slice(record.meta.bodyFrom) || languageText.task)
-          );
-        if (record.meta.type === "source") {
-          const readOnly = record.view.querySelector(".byEDunsupported");
-          if (readOnly) readOnly.title = languageText.readOnlyBlock;
-        }
-      }
-    };
-
-    const formattingAt = (offset) => {
-      if (syntax !== "source" && !dirty) return lines[lineAt(offset)];
-      if (!rich) return null;
-      const from = offset ? Math.max(source.lastIndexOf("\n", offset - 1), source.lastIndexOf("\r", offset - 1)) + 1 : 0;
-      const text = source.slice(from, from + 8193).split(/[\r\n]/, 1)[0];
-      // Match the visual renderer's inline limit, including in Source mode.
-      if (text.length > 8192) return null;
-      const formats = [];
-      const collect = (tokens) => {
-        for (const token of tokens) {
-          formats.push(token);
-          if (token.children) collect(token.children);
-        }
-      };
-      collect(global.byMDviewer.parseInline(text));
-      return { from, formats };
-    };
-    const hasWrapper = (from, to, marker) => {
-      if (source.slice(Math.max(0, from - marker.length), from) !== marker || source.slice(to, to + marker.length) !== marker) return false;
-      if (marker !== "*") return true;
-      // The parser-free Source fallback must not treat Bold's two stars as Italic.
-      const starRun = (offset) => {
-        let start = offset,
-          end = offset;
-        while (source[start - 1] === "*") start--;
-        while (source[end] === "*") end++;
-        return end - start;
-      };
-      return starRun(from) % 2 === 1 && starRun(to) % 2 === 1;
-    };
-    const updateToolbar = () => {
-      toolbarFrame = 0;
-      if (!alive) return;
-      commandButtons.get("undo")?.toggleAttribute("disabled", historyIndex === 0);
-      commandButtons.get("redo")?.toggleAttribute("disabled", historyIndex === history.length);
-      const controls = [...toolbar.querySelectorAll("button:not(:disabled), select")];
-      const entry = controls.find((control) => control.tabIndex === 0) || controls[0];
-      for (const control of toolbar.querySelectorAll("button, select")) {
-        const index = control === entry ? 0 : -1;
-        if (control.tabIndex !== index) control.tabIndex = index;
-      }
-      if (!dirty && lines.length) heading.value = String(lines[lineAt(position.focus)].meta.level || 0);
-      const from = Math.min(position.anchor, position.focus),
-        to = Math.max(position.anchor, position.focus);
-      // Source input stays plain; parse it only when a formatting command needs the grammar.
-      const formatting = syntax === "source" ? null : formattingAt(from);
-      for (const [name, marker] of Object.entries(wraps)) {
-        const tokenType = { bold: "strong", italic: "em", strikethrough: "del", inlineCode: "code" }[name];
-        const pressed = formatting
-          ? formatting.formats.some((token) => (token.type === tokenType || (token.type === "strongEm" && ["strong", "em"].includes(tokenType))) && formatting.from + token.bodyFrom <= from && formatting.from + token.bodyTo >= to)
-          : hasWrapper(from, to, marker);
-        const button = commandButtons.get(name);
-        if (button && button.getAttribute("aria-pressed") !== String(pressed)) button.setAttribute("aria-pressed", String(pressed));
-      }
-    };
-    const scheduleToolbar = () => {
-      if (!toolbarFrame) toolbarFrame = requestAnimationFrame(updateToolbar);
-    };
-
     /** Accept an unchanged native text node after input while updating its source offsets and history data. */
     const acceptNativeText = (edit) => {
       const { record, point, from, to, inserted } = edit,
@@ -1882,6 +1855,36 @@
     };
 
     /* --- FORMATTING --- */
+    const formattingAt = (offset) => {
+      if (syntax !== "source" && !dirty) return lines[lineAt(offset)];
+      if (!rich) return null;
+      const from = offset ? Math.max(source.lastIndexOf("\n", offset - 1), source.lastIndexOf("\r", offset - 1)) + 1 : 0;
+      const text = source.slice(from, from + 8193).split(/[\r\n]/, 1)[0];
+      // Match the visual renderer's inline limit, including in Source mode.
+      if (text.length > 8192) return null;
+      const formats = [];
+      const collect = (tokens) => {
+        for (const token of tokens) {
+          formats.push(token);
+          if (token.children) collect(token.children);
+        }
+      };
+      collect(global.byMDviewer.parseInline(text));
+      return { from, formats };
+    };
+    const hasWrapper = (from, to, marker) => {
+      if (source.slice(Math.max(0, from - marker.length), from) !== marker || source.slice(to, to + marker.length) !== marker) return false;
+      if (marker !== "*") return true;
+      // The parser-free Source fallback must not treat Bold's two stars as Italic.
+      const starRun = (offset) => {
+        let start = offset,
+          end = offset;
+        while (source[start - 1] === "*") start--;
+        while (source[end] === "*") end++;
+        return end - start;
+      };
+      return starRun(from) % 2 === 1 && starRun(to) % 2 === 1;
+    };
     const command = (name, value) => {
       if (!alive || previewing) return false;
       finishComposition();
