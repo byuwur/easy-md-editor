@@ -34,6 +34,222 @@ async function install(page, viewer = true) {
   });
 }
 
+/* --- LOCALIZED CONTROLS --- */
+test("control languages preserve source, native editing, and instance state", async (t) => {
+  const browser = await launch();
+  try {
+    const page = await browser.newPage({ locale: "pt-BR" });
+    const errors = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await install(page);
+    await t.test("core languages work without extra imports and unknown languages warn once", async () => {
+      const warnings = [];
+      page.on("console", (message) => {
+        if (message.type() === "warning") warnings.push(message.text());
+      });
+      await page.evaluate(() => {
+        document.documentElement.lang = "nl-NL";
+        render("Original");
+        document.documentElement.removeAttribute("lang");
+        editor.setLanguage("nl-NL");
+        editor.setLanguage("nl-NL");
+      });
+      assert.equal(await page.evaluate(() => editor.getLanguage()), "en");
+      assert.equal(await page.getByRole("button", { name: "Formatting", exact: true }).count(), 1);
+      assert.equal(warnings.length, 1, "Automatic fallback does not warn; explicit fallback warns once");
+      assert.match(warnings[0], /Add a dictionary to byMDeditor\.locales/);
+      await page.evaluate(() => editor.setLanguage("es-MX"));
+      assert.equal(await page.evaluate(() => editor.getLanguage()), "es");
+      await page.addScriptTag({ path: path.join(root, "md.edit.js") });
+      assert.equal(await page.evaluate(() => editor.getLanguage()), "es", "Duplicate core imports retain dictionaries and instances");
+    });
+    await t.test("all eight dictionaries have complete messages and matching placeholders", async () => {
+      const locales = await page.evaluate(() => byMDeditor.locales);
+      assert.deepEqual(Object.keys(locales), ["en", "es", "pt", "fr", "de", "it", "ja", "zh"]);
+      const source = "# Heading\n\n- [ ] Write\n\n  - Nested\n\n~~~js\nconst value = 1;\n~~~";
+      for (const [code, messages] of Object.entries(locales)) {
+        assert.deepEqual(Object.keys(messages).sort(), Object.keys(locales.en).sort(), code);
+        for (const [key, value] of Object.entries(messages)) {
+          assert.equal(typeof value, "string");
+          assert.ok(value.length, `${code}.${key}`);
+          assert.deepEqual((value.match(/\{\w+\}/g) || []).sort(), (locales.en[key].match(/\{\w+\}/g) || []).sort(), `${code}.${key}`);
+        }
+        await page.evaluate(({ source, code }) => render(source, { language: code, syntax: "no-code", theme: "light", palette: "monokai" }), { source, code });
+        assert.equal(await page.locator('[data-control="toolbar"]').getAttribute("aria-label"), messages.formatting);
+        assert.equal(await page.locator('[data-command="bold"]').getAttribute("title"), messages.bold);
+        assert.equal(await page.locator('[data-command="bold"] span').textContent(), messages.bold);
+        assert.equal(await page.locator('[data-control="syntax"] option[value="no-code"]').textContent(), messages.modeNoCode);
+        assert.equal(await page.locator('[data-control="syntax"]').getAttribute("title"), messages.descriptionNoCode);
+        assert.equal(await page.locator('.byEDtoolbar option[value="2"]').textContent(), messages.heading.replace("{level}", "2"));
+        assert.equal(await page.locator(".byEDcontrols optgroup").first().getAttribute("label"), messages.paletteEssentials);
+        assert.equal(await page.locator(".byEDtask").getAttribute("aria-label"), messages.completeTask.replace("{task}", "Write"));
+        assert.equal(await page.locator(".byEDunsupported").getAttribute("title"), messages.readOnlyBlock);
+        assert.equal(await page.locator(".byEDsurface").getAttribute("data-placeholder"), messages.placeholder);
+        assert.equal(await page.locator(".byEDbar").getAttribute("lang"), code);
+        await page.locator(".byVIEWthemeToggle").click();
+        assert.equal(await page.locator(".byVIEWthemeToggle").getAttribute("aria-label"), messages.lightTheme);
+        await page.locator('[data-command="table"]').click();
+        assert.equal(await page.locator("dialog h2").textContent(), messages.insertTable);
+        assert.equal(await page.locator("dialog label span").first().textContent(), messages.dataRows);
+        assert.equal(await page.locator("dialog button[type=submit]").textContent(), messages.insert);
+        assert.equal(await page.locator("dialog").getAttribute("lang"), code);
+        await page.keyboard.press("Escape");
+        assert.equal(await page.evaluate(() => editor.getMarkdown()), source);
+        assert.deepEqual(await page.evaluate(() => changes), []);
+      }
+    });
+    await t.test("automatic and regional tags resolve locally with independent instances", async () => {
+      await page.evaluate(() => render("Original"));
+      assert.equal(await page.evaluate(() => editor.getLanguage()), "pt", "Uses browser locale without a lang attribute");
+      await page.evaluate(() => {
+        document.documentElement.lang = "fr-CA";
+        document.getElementById("editor").lang = "es-MX";
+        editor.setLanguage("auto");
+        window.otherEditor = byMDeditor(document.getElementById("other"), "Other", { language: "de-DE" });
+      });
+      assert.equal(await page.evaluate(() => editor.getLanguage()), "es");
+      assert.equal(await page.locator('#other [data-command="bold"]').getAttribute("aria-label"), "Fett");
+      await page.evaluate(() => {
+        document.getElementById("editor").removeAttribute("lang");
+        editor.setLanguage("auto");
+      });
+      assert.equal(await page.evaluate(() => editor.getLanguage()), "fr");
+      await page.evaluate(() => editor.setLanguage("zh-Hans-CN"));
+      assert.equal(await page.evaluate(() => editor.getLanguage()), "zh");
+      assert.equal(await page.evaluate(() => otherEditor.getLanguage()), "de");
+      await page.evaluate(() => {
+        otherEditor.destroy();
+        document.documentElement.removeAttribute("lang");
+      });
+    });
+    await t.test("live switching retains nodes, selection, history, and open dialog values", async () => {
+      await page.evaluate(() => {
+        render("Hello\n\n- [ ] Write", { language: "en", palette: "github" });
+        editor.setSelection(0, 5);
+        editor.command("bold");
+        editor.setSelection(3, 5);
+        window.beforeLanguage = { source: editor.getMarkdown(), selection: editor.getSelection(), changes: changes.length, line: document.querySelector(".byEDline"), task: document.querySelector(".byEDtask") };
+        editor.setLanguage("ja");
+      });
+      assert.deepEqual(
+        await page.evaluate(() => [
+          editor.getMarkdown() === beforeLanguage.source,
+          JSON.stringify(editor.getSelection()) === JSON.stringify(beforeLanguage.selection),
+          changes.length === beforeLanguage.changes,
+          document.querySelector(".byEDline") === beforeLanguage.line
+        ]),
+        [true, true, true, true]
+      );
+      assert.equal(await page.locator(".byEDtask").getAttribute("aria-label"), "「Write」を完了");
+      assert.equal(await page.evaluate(() => document.querySelector(".byEDtask") === beforeLanguage.task), true);
+      assert.equal(await page.locator(".byEDcontrols select").inputValue(), "github");
+      await page.locator('[data-command="link"]').click();
+      await page.locator('dialog input[name="url"]').fill("https://example.com");
+      await page.locator('dialog input[name="label"]').fill("Application text");
+      await page.evaluate(() => {
+        window.dialogInput = document.activeElement;
+        editor.setLanguage("de");
+      });
+      assert.equal(await page.locator("dialog h2").textContent(), "Link einfügen");
+      assert.equal(await page.locator('dialog input[name="url"]').inputValue(), "https://example.com");
+      assert.equal(await page.locator('dialog input[name="label"]').inputValue(), "Application text");
+      assert.equal(await page.evaluate(() => document.activeElement === dialogInput), true);
+      await page.keyboard.press("Escape");
+      await page.evaluate(() => editor.command("undo"));
+      assert.equal(await page.evaluate(() => editor.getMarkdown()), "Hello\n\n- [ ] Write");
+      await page.evaluate(() => editor.setPreview(true));
+      await page.evaluate(() => {
+        window.previewNode = document.querySelector(".byEDpreview p");
+        editor.setLanguage("it");
+      });
+      assert.equal(await page.evaluate(() => document.querySelector(".byEDpreview p") === previewNode), true);
+      assert.equal(await page.locator(".byEDstatus").textContent(), "Anteprima di sola lettura.");
+      await page.evaluate(() => editor.setPreview(false));
+      assert.equal(await page.locator(".byEDstatus").textContent(), "Modifica del documento.");
+    });
+    await t.test("custom text stays plain text and missing dictionary keys use English", async () => {
+      await page.evaluate(() => {
+        byMDeditor.locales["en-GB"] = { formatting: "Format text" };
+        render("Hello", { language: "en-GB", label: "Notes", placeholder: "Your notes", translations: { bold: "<img src=x onerror=alert(1)>" } });
+      });
+      assert.equal(await page.locator('[data-control="toolbar"]').textContent(), "Format text");
+      assert.equal(await page.locator('[data-command="italic"]').getAttribute("aria-label"), "Italic");
+      assert.equal(await page.locator('[data-command="bold"] span').textContent(), "<img src=x onerror=alert(1)>");
+      assert.equal(await page.locator('[data-command="bold"] img').count(), 0);
+      await page.evaluate(() => editor.setLanguage("fr"));
+      assert.equal(await page.locator(".byEDsurface").getAttribute("aria-label"), "Notes");
+      assert.equal(await page.locator(".byEDsurface").getAttribute("data-placeholder"), "Your notes");
+      assert.equal(await page.locator(".byEDsource").getAttribute("aria-label"), "Notes — Source Markdown");
+      assert.equal(await page.locator('[data-command="bold"]').getAttribute("aria-label"), "<img src=x onerror=alert(1)>");
+      await page.evaluate(() => {
+        render("- [ ] Price $&", { language: "en", label: "Notes $&", translations: { sourceLabel: "{document} / {document}", completeTask: "{task} / {task}" } });
+      });
+      assert.equal(await page.locator(".byEDsource").getAttribute("aria-label"), "Notes $& / Notes $&");
+      assert.equal(await page.locator(".byEDtask").getAttribute("aria-label"), "Price $& / Price $&");
+      await page.evaluate(() => editor.setLanguage("fr"));
+      assert.equal(await page.locator(".byEDsource").getAttribute("aria-label"), "Notes $& / Notes $&");
+      assert.equal(await page.locator(".byEDtask").getAttribute("aria-label"), "Price $& / Price $&");
+      await page.evaluate(() => {
+        render("", { language: "es", syntax: "no-code" });
+        editor.command("table", { rows: 1, columns: 2 });
+      });
+      assert.match(await page.evaluate(() => editor.getMarkdown()), /\| Columna 1 \| Columna 2 \|/);
+      await page.evaluate(() => editor.setLanguage("ja"));
+      assert.match(await page.evaluate(() => editor.getMarkdown()), /Columna 1/, "Switching does not translate existing document text");
+    });
+    await t.test("locale validation leaves the existing editor and language intact", async () => {
+      for (const options of [{ language: "not a tag" }, { language: "" }, { language: 12 }, { translations: [] }, { translations: { bold: 5 } }]) {
+        const result = await page.evaluate((options) => {
+          const current = document.getElementById("editor").innerHTML;
+          try {
+            byMDeditor(document.getElementById("editor"), "Replacement", options);
+          } catch (error) {
+            return [error.name, current === document.getElementById("editor").innerHTML];
+          }
+        }, options);
+        assert.deepEqual(result, [options.translations ? "TypeError" : "RangeError", true]);
+      }
+      assert.deepEqual(
+        await page.evaluate(() => {
+          const before = editor.getLanguage();
+          try {
+            editor.setLanguage("not a tag");
+          } catch (error) {
+            return [error.name, editor.getLanguage() === before];
+          }
+        }),
+        ["RangeError", true]
+      );
+    });
+    await t.test("switching languages leaves IME text under browser ownership", async () => {
+      const result = await page.evaluate(() => {
+        render("Hello ", { language: "en" });
+        editor.setSelection(6);
+        const surface = document.querySelector(".byEDsurface"),
+          text = surface.querySelector(".byEDline").firstChild;
+        surface.dispatchEvent(new CompositionEvent("compositionstart", { bubbles: true }));
+        text.appendData("日本語");
+        surface.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertCompositionText", isComposing: true, data: "日本語" }));
+        editor.setLanguage("ja");
+        const during = { source: editor.getMarkdown(), nodeRetained: text === surface.querySelector(".byEDline").firstChild, changes: changes.length };
+        surface.dispatchEvent(new CompositionEvent("compositionend", { bubbles: true, data: "日本語" }));
+        return { during, source: editor.getMarkdown(), changes: changes.length };
+      });
+      assert.deepEqual(result, { during: { source: "Hello ", nodeRetained: true, changes: 0 }, source: "Hello 日本語", changes: 1 });
+    });
+    await t.test("long labels wrap inside a narrow editor", async () => {
+      await page.setViewportSize({ width: 360, height: 800 });
+      for (const code of ["de", "ja", "zh"]) {
+        await page.evaluate((language) => render("Hello", { language }), code);
+        assert.equal(await page.locator("#editor").evaluate((element) => element.scrollWidth <= element.clientWidth), true, code);
+      }
+    });
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});
+
 /* --- SOURCE, EDITING, AND LIFECYCLE --- */
 test("source-driven editor browser contracts", async (t) => {
   const browser = await launch();
@@ -720,6 +936,12 @@ test("without companions, source editing and formatting remain usable", async ()
       editor.command("bold");
     });
     assert.equal(await page.evaluate(() => editor.getMarkdown()), "**Hello**");
+    await page.locator('[data-command="italic"]').click();
+    assert.equal(await page.evaluate(() => editor.getMarkdown()), "***Hello***");
+    await page.locator('[data-command="bold"]').click();
+    assert.equal(await page.evaluate(() => editor.getMarkdown()), "*Hello*");
+    await page.locator('[data-command="italic"]').click();
+    assert.equal(await page.evaluate(() => editor.getMarkdown()), "Hello");
     assert.equal(await page.locator(".byEDsource").isVisible(), true);
     await page.evaluate(() => editor.setPreview(true));
     assert.equal(await page.locator(".byEDsource").isVisible(), true);

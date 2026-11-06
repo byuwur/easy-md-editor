@@ -57,6 +57,8 @@ No database, network requests, autosave, or browser storage are built in.
 | Option             | Default                                  | Meaning                                                                                                                     |
 | ------------------ | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | `syntax`           | `"clean"`                                | `"no-code"`, `"clean"`, `"assisted"`, or `"source"`.                                                                        |
+| `language`         | `"auto"`                                 | Controls language; a language tag such as `"es"`, or automatic detection.                                                   |
+| `translations`     | `{}`                                     | Per-instance text overrides, using the keys in `byMDeditor.locales.en`.                                                     |
 | `animations`       | `true`                                   | Brief interaction motion and shared-surface background fades; overrides the system motion preference.                       |
 | `appearAnimation`  | `false`                                  | Fade and gently move the editor in when `animations` is enabled.                                                            |
 | `toolbar`          | `true`                                   | Show formatting tools; users can collapse them.                                                                             |
@@ -71,8 +73,8 @@ No database, network requests, autosave, or browser storage are built in.
 | `palette`          | Container palette, otherwise `"monokai"` | `"monokai"`, `"github"`, `"solarized"`, `"high-contrast"`, or a custom CSS theme name.                                      |
 | `fontSize`         | Container size                           | Number in rem or a CSS size such as `"1.25em"` or `"20px"`; bounded to `0.5rem`–`3rem`.                                     |
 | `paletteSelect`    | `true`                                   | Show the palette selector; themes remain available through the API when hidden.                                             |
-| `label`            | `"Document"`                             | Accessible name for the editable document.                                                                                  |
-| `placeholder`      | `"Start writing…"`                       | Hint for an empty editing surface.                                                                                          |
+| `label`            | Localized “Document”                     | Accessible name for the editable document; an explicit value survives language changes.                                     |
+| `placeholder`      | Localized “Start writing…”               | Hint for an empty editing surface; an explicit value survives language changes.                                             |
 | `tools`            | All tools                                | Array of command names, plus `"heading"` for the paragraph-style selector.                                                  |
 | `historyLimit`     | `200`                                    | Maximum undo entries, clamped to 0 to 1000. History also has a two-million-character budget; one large entry may exceed it. |
 | `onChange`         | —                                        | Called with the complete Markdown after a committed edit or `setMarkdown()`.                                                |
@@ -117,6 +119,8 @@ editor.setAppearAnimation(true); // Requires animations to be enabled.
 editor.setPreview(true);
 editor.setTheme("dark");
 editor.setPalette("github");
+editor.getLanguage(); // Resolved language tag.
+editor.setLanguage("es");
 editor.focus();
 editor.destroy();
 ```
@@ -145,7 +149,38 @@ editor.destroy();
 
 Initialization and `setMarkdown()` throw `TypeError` for unsupported source types and `RangeError` above the document-size limit. `setSyntaxMode()`, `setTheme()`, and `setPalette()` throw `RangeError` for invalid names. `command()` returns `false` when an operation is unavailable, including in Preview; a command that opens a dialog may return before insertion. There is no asynchronous `ready` controller.
 
+`language` and `setLanguage()` reject malformed language tags with `RangeError`. `translations` must be an object of string values; invalid overrides throw `TypeError` before replacing an existing editor.
+
 Destroying an editor commits any active composition before cleanup, so `onChange` may run during teardown. Dispose the editor before removing its host, and keep application callbacks valid through that step. Duplicate script imports preserve the installed API.
+
+## Languages
+
+All eight control languages and required messages are built into `md.edit.js`; no language pack is needed.
+
+| Language  | Tag  |
+| --------- | ---- |
+| English   | `en` |
+| Español   | `es` |
+| Português | `pt` |
+| Français  | `fr` |
+| Deutsch   | `de` |
+| Italiano  | `it` |
+| 日本語    | `ja` |
+| 简体中文  | `zh` |
+
+`language: "auto"` uses the nearest ancestor's `lang` attribute, then the browser language. Regional tags fall back to their base language (`es-MX` → `es`, `pt-BR` → `pt`). Unavailable languages use English; explicitly requesting one also warns that its dictionary is missing. Nothing is downloaded automatically.
+
+```javascript
+const editor = byMDeditor(target, markdown, {
+  language: "es",
+  translations: { formatting: "Formato del texto", preview: "Vista final" }
+});
+editor.setLanguage("fr");
+```
+
+Language changes update buttons, tooltips, dialog labels, placeholders, and accessibility messages. Markdown, selection, undo history, open dialog values, and active IME composition stay intact; `onChange` is not called. Existing document text and code-language identifiers are never translated. Explicit `label`, `placeholder`, and `translations` values remain application-owned.
+
+Register a custom dictionary on `byMDeditor.locales` before mounting an editor, or before calling `setLanguage()`. Keys match `byMDeditor.locales.en`; missing messages fall back to English. Templates use `{document}`, `{level}`, `{palette}`, `{task}`, and `{number}` where applicable. Messages are plain text, never HTML.
 
 ## Themes
 

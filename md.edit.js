@@ -12,40 +12,652 @@
   /* --- METADATA --- */
   byMDeditor.VERSION = "1.5"; // 2026-11-05
 
+  /* --- LOCALIZATION --- */
+  byMDeditor.locales = {
+    en: {
+      document: "Document",
+      placeholder: "Start writing…",
+      sourceLabel: "{document} — Markdown source",
+      documentFormatting: "Document formatting",
+      formatting: "Formatting",
+      syntaxVisibility: "Syntax visibility",
+      modeNoCode: "No-code",
+      modeClean: "Clean",
+      modeAssisted: "Assisted",
+      modeSource: "Source",
+      descriptionNoCode: "Keep Markdown syntax hidden while editing. Use the toolbar to format text.",
+      descriptionClean: "Hide Markdown syntax outside the active line or code block.",
+      descriptionAssisted: "Keep Markdown syntax visible beside formatted text.",
+      descriptionSource: "Edit the complete Markdown source as plain text.",
+      colorPalette: "Color palette",
+      paletteEssentials: "Essentials",
+      paletteEditorClassics: "Editor classics",
+      paletteAppInspired: "App inspired",
+      paletteColorful: "Colorful",
+      paletteReadingNature: "Reading & nature",
+      customPalette: "Custom ({palette})",
+      preview: "Preview",
+      paragraphStyle: "Paragraph style",
+      paragraph: "Paragraph",
+      heading: "Heading {level}",
+      lightTheme: "Switch to light theme",
+      darkTheme: "Switch to dark theme",
+      undo: "Undo",
+      redo: "Redo",
+      bold: "Bold",
+      italic: "Italic",
+      strikethrough: "Strike",
+      inlineCode: "Code",
+      bulletList: "Bullets",
+      orderedList: "Numbered",
+      checklist: "Checklist",
+      link: "Link",
+      image: "Image",
+      table: "Table",
+      codeBlock: "Code block",
+      blockquote: "Quote",
+      horizontalRule: "Divider",
+      readOnlyBlock: "Edit this block in Source mode.",
+      completeTask: "Complete {task}",
+      task: "task",
+      oneTableCell: "Edit one table cell at a time. Use Tab to move between cells.",
+      hiddenFences: "Code fences stay hidden. Use Source mode to change the block structure.",
+      documentLimit: "This document has reached the two-million-character limit.",
+      inlineSelection: "Select text within one paragraph or table cell to apply inline formatting.",
+      paragraphOutsideTable: "Paragraph styles apply outside tables. Edit cell text directly.",
+      validUrl: "Use a web, email, or relative URL.",
+      text: "Text",
+      imageDescription: "Image description",
+      linkText: "Link text",
+      column: "Column {number}",
+      insertTable: "Insert table",
+      insertLink: "Insert link",
+      insertImage: "Insert image",
+      insertCodeBlock: "Insert code block",
+      dataRows: "Data rows",
+      columns: "Columns",
+      codeLanguage: "Language (optional)",
+      imageUrl: "Image URL",
+      url: "URL",
+      cancel: "Cancel",
+      insert: "Insert",
+      oneTableLine: "Markdown table cells use one line. Press Enter for the next row, or Tab for the next cell.",
+      pasteTableLine: "Paste one line into a table cell, or use Source for multiple rows.",
+      pasteText: "Paste text here, or use Image to insert an image URL.",
+      visualNeedsParser: "Visual editing requires the updated easy-md-viewer parser. Source editing remains available.",
+      previewNeedsViewer: "Load easy-md-viewer to enable Preview.",
+      readOnlyPreview: "Read-only preview.",
+      editingDocument: "Editing document.",
+      sourceOnlyWarning: "Visual editing needs easy-md-viewer with parseInline() and scanLine(). You can edit Markdown in Source mode."
+    },
+    es: {
+      document: "Documento",
+      placeholder: "Empieza a escribir…",
+      sourceLabel: "{document} — Fuente Markdown",
+      documentFormatting: "Formato del documento",
+      formatting: "Formato",
+      syntaxVisibility: "Visibilidad de la sintaxis",
+      modeNoCode: "Sin código",
+      modeClean: "Limpio",
+      modeAssisted: "Asistido",
+      modeSource: "Fuente",
+      descriptionNoCode: "Oculta la sintaxis Markdown al editar. Usa la barra de herramientas para dar formato al texto.",
+      descriptionClean: "Oculta la sintaxis Markdown fuera de la línea o el bloque de código activos.",
+      descriptionAssisted: "Muestra la sintaxis Markdown junto al texto con formato.",
+      descriptionSource: "Edita todo el código fuente Markdown como texto sin formato.",
+      colorPalette: "Paleta de colores",
+      paletteEssentials: "Esenciales",
+      paletteEditorClassics: "Clásicos de editores",
+      paletteAppInspired: "Inspirados en aplicaciones",
+      paletteColorful: "Coloridos",
+      paletteReadingNature: "Lectura y naturaleza",
+      customPalette: "Personalizado ({palette})",
+      preview: "Vista previa",
+      paragraphStyle: "Estilo de párrafo",
+      paragraph: "Párrafo",
+      heading: "Título {level}",
+      lightTheme: "Cambiar al tema claro",
+      darkTheme: "Cambiar al tema oscuro",
+      undo: "Deshacer",
+      redo: "Rehacer",
+      bold: "Negrita",
+      italic: "Cursiva",
+      strikethrough: "Tachado",
+      inlineCode: "Código",
+      bulletList: "Viñetas",
+      orderedList: "Numerada",
+      checklist: "Lista de tareas",
+      link: "Enlace",
+      image: "Imagen",
+      table: "Tabla",
+      codeBlock: "Bloque de código",
+      blockquote: "Cita",
+      horizontalRule: "Separador",
+      readOnlyBlock: "Edita este bloque en el modo Fuente.",
+      completeTask: "Completar {task}",
+      task: "tarea",
+      oneTableCell: "Edita una celda a la vez. Usa Tab para moverte entre celdas.",
+      hiddenFences: "Los delimitadores de código permanecen ocultos. Usa el modo Fuente para cambiar la estructura del bloque.",
+      documentLimit: "Este documento ha alcanzado el límite de dos millones de caracteres.",
+      inlineSelection: "Selecciona texto dentro de un mismo párrafo o celda para aplicar formato en línea.",
+      paragraphOutsideTable: "Los estilos de párrafo se aplican fuera de las tablas. Edita el texto de las celdas directamente.",
+      validUrl: "Usa una URL web, de correo electrónico o relativa.",
+      text: "Texto",
+      imageDescription: "Descripción de la imagen",
+      linkText: "Texto del enlace",
+      column: "Columna {number}",
+      insertTable: "Insertar tabla",
+      insertLink: "Insertar enlace",
+      insertImage: "Insertar imagen",
+      insertCodeBlock: "Insertar bloque de código",
+      dataRows: "Filas de datos",
+      columns: "Columnas",
+      codeLanguage: "Lenguaje (opcional)",
+      imageUrl: "URL de la imagen",
+      url: "URL",
+      cancel: "Cancelar",
+      insert: "Insertar",
+      oneTableLine: "Las celdas Markdown usan una sola línea. Pulsa Enter para pasar a la siguiente fila o Tab para la siguiente celda.",
+      pasteTableLine: "Pega una sola línea en una celda o usa Fuente para varias filas.",
+      pasteText: "Pega texto aquí o usa Imagen para insertar la URL de una imagen.",
+      visualNeedsParser: "La edición visual requiere el analizador actualizado de easy-md-viewer. Puedes seguir editando en Fuente.",
+      previewNeedsViewer: "Carga easy-md-viewer para habilitar la vista previa.",
+      readOnlyPreview: "Vista previa de solo lectura.",
+      editingDocument: "Editando el documento.",
+      sourceOnlyWarning: "La edición visual necesita easy-md-viewer con parseInline() y scanLine(). Puedes editar Markdown en el modo Fuente."
+    },
+    pt: {
+      document: "Documento",
+      placeholder: "Comece a escrever…",
+      sourceLabel: "{document} — Código-fonte Markdown",
+      documentFormatting: "Formatação do documento",
+      formatting: "Formatação",
+      syntaxVisibility: "Visibilidade da sintaxe",
+      modeNoCode: "Sem código",
+      modeClean: "Limpo",
+      modeAssisted: "Assistido",
+      modeSource: "Fonte",
+      descriptionNoCode: "Oculta a sintaxe Markdown durante a edição. Use a barra de ferramentas para formatar o texto.",
+      descriptionClean: "Oculta a sintaxe Markdown fora da linha ou do bloco de código ativo.",
+      descriptionAssisted: "Mostra a sintaxe Markdown ao lado do texto formatado.",
+      descriptionSource: "Edita todo o código-fonte Markdown como texto simples.",
+      colorPalette: "Paleta de cores",
+      paletteEssentials: "Essenciais",
+      paletteEditorClassics: "Clássicos de editores",
+      paletteAppInspired: "Inspirados em aplicativos",
+      paletteColorful: "Coloridos",
+      paletteReadingNature: "Leitura e natureza",
+      customPalette: "Personalizado ({palette})",
+      preview: "Prévia",
+      paragraphStyle: "Estilo do parágrafo",
+      paragraph: "Parágrafo",
+      heading: "Título {level}",
+      lightTheme: "Mudar para o tema claro",
+      darkTheme: "Mudar para o tema escuro",
+      undo: "Desfazer",
+      redo: "Refazer",
+      bold: "Negrito",
+      italic: "Itálico",
+      strikethrough: "Tachado",
+      inlineCode: "Código",
+      bulletList: "Marcadores",
+      orderedList: "Numerada",
+      checklist: "Lista de tarefas",
+      link: "Link",
+      image: "Imagem",
+      table: "Tabela",
+      codeBlock: "Bloco de código",
+      blockquote: "Citação",
+      horizontalRule: "Divisor",
+      readOnlyBlock: "Edite este bloco no modo Fonte.",
+      completeTask: "Concluir {task}",
+      task: "tarefa",
+      oneTableCell: "Edite uma célula por vez. Use Tab para navegar entre as células.",
+      hiddenFences: "Os delimitadores de código ficam ocultos. Use o modo Fonte para alterar a estrutura do bloco.",
+      documentLimit: "Este documento atingiu o limite de dois milhões de caracteres.",
+      inlineSelection: "Selecione texto dentro de um único parágrafo ou célula para aplicar formatação em linha.",
+      paragraphOutsideTable: "Os estilos de parágrafo se aplicam fora das tabelas. Edite o texto das células diretamente.",
+      validUrl: "Use uma URL da web, de e-mail ou relativa.",
+      text: "Texto",
+      imageDescription: "Descrição da imagem",
+      linkText: "Texto do link",
+      column: "Coluna {number}",
+      insertTable: "Inserir tabela",
+      insertLink: "Inserir link",
+      insertImage: "Inserir imagem",
+      insertCodeBlock: "Inserir bloco de código",
+      dataRows: "Linhas de dados",
+      columns: "Colunas",
+      codeLanguage: "Linguagem (opcional)",
+      imageUrl: "URL da imagem",
+      url: "URL",
+      cancel: "Cancelar",
+      insert: "Inserir",
+      oneTableLine: "As células Markdown usam uma só linha. Pressione Enter para ir à próxima linha ou Tab para a próxima célula.",
+      pasteTableLine: "Cole uma só linha em uma célula ou use Fonte para várias linhas da tabela.",
+      pasteText: "Cole texto aqui ou use Imagem para inserir a URL de uma imagem.",
+      visualNeedsParser: "A edição visual requer o analisador atualizado do easy-md-viewer. A edição em Fonte continua disponível.",
+      previewNeedsViewer: "Carregue easy-md-viewer para habilitar a prévia.",
+      readOnlyPreview: "Prévia somente para leitura.",
+      editingDocument: "Editando o documento.",
+      sourceOnlyWarning: "A edição visual precisa do easy-md-viewer com parseInline() e scanLine(). Você pode editar Markdown no modo Fonte."
+    },
+    fr: {
+      document: "Document",
+      placeholder: "Commencez à écrire…",
+      sourceLabel: "{document} — Source Markdown",
+      documentFormatting: "Mise en forme du document",
+      formatting: "Mise en forme",
+      syntaxVisibility: "Visibilité de la syntaxe",
+      modeNoCode: "Sans code",
+      modeClean: "Épuré",
+      modeAssisted: "Assisté",
+      modeSource: "Source",
+      descriptionNoCode: "Masque la syntaxe Markdown pendant la rédaction. Utilisez la barre d’outils pour mettre le texte en forme.",
+      descriptionClean: "Masque la syntaxe Markdown hors de la ligne ou du bloc de code actif.",
+      descriptionAssisted: "Affiche la syntaxe Markdown à côté du texte mis en forme.",
+      descriptionSource: "Modifie toute la source Markdown en texte brut.",
+      colorPalette: "Palette de couleurs",
+      paletteEssentials: "Essentielles",
+      paletteEditorClassics: "Classiques des éditeurs",
+      paletteAppInspired: "Inspirées des applications",
+      paletteColorful: "Colorées",
+      paletteReadingNature: "Lecture et nature",
+      customPalette: "Personnalisée ({palette})",
+      preview: "Aperçu",
+      paragraphStyle: "Style de paragraphe",
+      paragraph: "Paragraphe",
+      heading: "Titre {level}",
+      lightTheme: "Passer au thème clair",
+      darkTheme: "Passer au thème sombre",
+      undo: "Annuler",
+      redo: "Rétablir",
+      bold: "Gras",
+      italic: "Italique",
+      strikethrough: "Barré",
+      inlineCode: "Code",
+      bulletList: "Puces",
+      orderedList: "Numérotation",
+      checklist: "Liste de tâches",
+      link: "Lien",
+      image: "Image",
+      table: "Tableau",
+      codeBlock: "Bloc de code",
+      blockquote: "Citation",
+      horizontalRule: "Séparateur",
+      readOnlyBlock: "Modifiez ce bloc en mode Source.",
+      completeTask: "Terminer {task}",
+      task: "la tâche",
+      oneTableCell: "Modifiez une cellule à la fois. Utilisez Tab pour passer d’une cellule à l’autre.",
+      hiddenFences: "Les délimiteurs de code restent masqués. Utilisez le mode Source pour modifier la structure du bloc.",
+      documentLimit: "Ce document a atteint la limite de deux millions de caractères.",
+      inlineSelection: "Sélectionnez du texte dans un même paragraphe ou une même cellule pour appliquer une mise en forme en ligne.",
+      paragraphOutsideTable: "Les styles de paragraphe s’appliquent hors des tableaux. Modifiez directement le texte des cellules.",
+      validUrl: "Utilisez une URL web, de courriel ou relative.",
+      text: "Texte",
+      imageDescription: "Description de l’image",
+      linkText: "Texte du lien",
+      column: "Colonne {number}",
+      insertTable: "Insérer un tableau",
+      insertLink: "Insérer un lien",
+      insertImage: "Insérer une image",
+      insertCodeBlock: "Insérer un bloc de code",
+      dataRows: "Lignes de données",
+      columns: "Colonnes",
+      codeLanguage: "Langage (facultatif)",
+      imageUrl: "URL de l’image",
+      url: "URL",
+      cancel: "Annuler",
+      insert: "Insérer",
+      oneTableLine: "Une cellule Markdown tient sur une ligne. Appuyez sur Entrée pour passer à la ligne suivante ou sur Tab pour la cellule suivante.",
+      pasteTableLine: "Collez une seule ligne dans une cellule ou utilisez Source pour plusieurs lignes du tableau.",
+      pasteText: "Collez du texte ici ou utilisez Image pour insérer l’URL d’une image.",
+      visualNeedsParser: "L’édition visuelle nécessite l’analyseur à jour d’easy-md-viewer. L’édition en mode Source reste disponible.",
+      previewNeedsViewer: "Chargez easy-md-viewer pour activer l’aperçu.",
+      readOnlyPreview: "Aperçu en lecture seule.",
+      editingDocument: "Modification du document.",
+      sourceOnlyWarning: "L’édition visuelle nécessite easy-md-viewer avec parseInline() et scanLine(). Vous pouvez modifier le Markdown en mode Source."
+    },
+    de: {
+      document: "Dokument",
+      placeholder: "Beginne zu schreiben…",
+      sourceLabel: "{document} — Markdown-Quelltext",
+      documentFormatting: "Dokumentformatierung",
+      formatting: "Formatierung",
+      syntaxVisibility: "Sichtbarkeit der Syntax",
+      modeNoCode: "Ohne Code",
+      modeClean: "Bereinigt",
+      modeAssisted: "Unterstützt",
+      modeSource: "Quelltext",
+      descriptionNoCode: "Blendet die Markdown-Syntax beim Bearbeiten aus. Formatiere den Text mit der Werkzeugleiste.",
+      descriptionClean: "Blendet Markdown-Syntax außerhalb der aktiven Zeile oder des aktiven Codeblocks aus.",
+      descriptionAssisted: "Zeigt die Markdown-Syntax neben dem formatierten Text an.",
+      descriptionSource: "Bearbeitet den gesamten Markdown-Quelltext als reinen Text.",
+      colorPalette: "Farbpalette",
+      paletteEssentials: "Grundauswahl",
+      paletteEditorClassics: "Editor-Klassiker",
+      paletteAppInspired: "Von Apps inspiriert",
+      paletteColorful: "Farbenfroh",
+      paletteReadingNature: "Lesen und Natur",
+      customPalette: "Benutzerdefiniert ({palette})",
+      preview: "Vorschau",
+      paragraphStyle: "Absatzstil",
+      paragraph: "Absatz",
+      heading: "Überschrift {level}",
+      lightTheme: "Zum hellen Design wechseln",
+      darkTheme: "Zum dunklen Design wechseln",
+      undo: "Rückgängig",
+      redo: "Wiederholen",
+      bold: "Fett",
+      italic: "Kursiv",
+      strikethrough: "Durchgestrichen",
+      inlineCode: "Code",
+      bulletList: "Aufzählung",
+      orderedList: "Nummerierung",
+      checklist: "Checkliste",
+      link: "Link",
+      image: "Bild",
+      table: "Tabelle",
+      codeBlock: "Codeblock",
+      blockquote: "Zitat",
+      horizontalRule: "Trennlinie",
+      readOnlyBlock: "Bearbeite diesen Block im Quelltextmodus.",
+      completeTask: "{task} abschließen",
+      task: "Aufgabe",
+      oneTableCell: "Bearbeite eine Zelle nach der anderen. Mit Tab wechselst du zwischen den Zellen.",
+      hiddenFences: "Codebegrenzungen bleiben ausgeblendet. Ändere die Blockstruktur im Quelltextmodus.",
+      documentLimit: "Dieses Dokument hat die Grenze von zwei Millionen Zeichen erreicht.",
+      inlineSelection: "Wähle Text innerhalb eines Absatzes oder einer Tabellenzelle für die Inline-Formatierung aus.",
+      paragraphOutsideTable: "Absatzstile gelten außerhalb von Tabellen. Bearbeite den Zellentext direkt.",
+      validUrl: "Verwende eine Web-, E-Mail- oder relative URL.",
+      text: "Text",
+      imageDescription: "Bildbeschreibung",
+      linkText: "Linktext",
+      column: "Spalte {number}",
+      insertTable: "Tabelle einfügen",
+      insertLink: "Link einfügen",
+      insertImage: "Bild einfügen",
+      insertCodeBlock: "Codeblock einfügen",
+      dataRows: "Datenzeilen",
+      columns: "Spalten",
+      codeLanguage: "Programmiersprache (optional)",
+      imageUrl: "Bild-URL",
+      url: "URL",
+      cancel: "Abbrechen",
+      insert: "Einfügen",
+      oneTableLine: "Markdown-Tabellenzellen bestehen aus einer Zeile. Mit Eingabe wechselst du zur nächsten Zeile, mit Tab zur nächsten Zelle.",
+      pasteTableLine: "Füge eine Zeile in eine Tabellenzelle ein oder verwende den Quelltextmodus für mehrere Tabellenzeilen.",
+      pasteText: "Füge hier Text ein oder verwende Bild, um eine Bild-URL einzufügen.",
+      visualNeedsParser: "Die visuelle Bearbeitung benötigt den aktuellen Parser von easy-md-viewer. Die Quelltextbearbeitung bleibt verfügbar.",
+      previewNeedsViewer: "Lade easy-md-viewer, um die Vorschau zu aktivieren.",
+      readOnlyPreview: "Schreibgeschützte Vorschau.",
+      editingDocument: "Dokument wird bearbeitet.",
+      sourceOnlyWarning: "Die visuelle Bearbeitung benötigt easy-md-viewer mit parseInline() und scanLine(). Du kannst Markdown im Quelltextmodus bearbeiten."
+    },
+    it: {
+      document: "Documento",
+      placeholder: "Inizia a scrivere…",
+      sourceLabel: "{document} — Sorgente Markdown",
+      documentFormatting: "Formattazione del documento",
+      formatting: "Formattazione",
+      syntaxVisibility: "Visibilità della sintassi",
+      modeNoCode: "Senza codice",
+      modeClean: "Pulito",
+      modeAssisted: "Assistito",
+      modeSource: "Sorgente",
+      descriptionNoCode: "Nascondi la sintassi Markdown durante la scrittura. Usa la barra degli strumenti per formattare il testo.",
+      descriptionClean: "Nascondi la sintassi Markdown fuori dalla riga o dal blocco di codice attivo.",
+      descriptionAssisted: "Mostra la sintassi Markdown accanto al testo formattato.",
+      descriptionSource: "Modifica l’intero sorgente Markdown come testo semplice.",
+      colorPalette: "Palette di colori",
+      paletteEssentials: "Essenziali",
+      paletteEditorClassics: "Classici degli editor",
+      paletteAppInspired: "Ispirate alle app",
+      paletteColorful: "Colorate",
+      paletteReadingNature: "Lettura e natura",
+      customPalette: "Personalizzata ({palette})",
+      preview: "Anteprima",
+      paragraphStyle: "Stile del paragrafo",
+      paragraph: "Paragrafo",
+      heading: "Titolo {level}",
+      lightTheme: "Passa al tema chiaro",
+      darkTheme: "Passa al tema scuro",
+      undo: "Annulla",
+      redo: "Ripeti",
+      bold: "Grassetto",
+      italic: "Corsivo",
+      strikethrough: "Barrato",
+      inlineCode: "Codice",
+      bulletList: "Elenco puntato",
+      orderedList: "Elenco numerato",
+      checklist: "Elenco di attività",
+      link: "Collegamento",
+      image: "Immagine",
+      table: "Tabella",
+      codeBlock: "Blocco di codice",
+      blockquote: "Citazione",
+      horizontalRule: "Separatore",
+      readOnlyBlock: "Modifica questo blocco in modalità Sorgente.",
+      completeTask: "Completa {task}",
+      task: "attività",
+      oneTableCell: "Modifica una cella alla volta. Usa Tab per passare da una cella all’altra.",
+      hiddenFences: "I delimitatori del codice restano nascosti. Usa la modalità Sorgente per cambiare la struttura del blocco.",
+      documentLimit: "Questo documento ha raggiunto il limite di due milioni di caratteri.",
+      inlineSelection: "Seleziona il testo all’interno di un paragrafo o di una cella per applicare la formattazione in linea.",
+      paragraphOutsideTable: "Gli stili di paragrafo si applicano fuori dalle tabelle. Modifica direttamente il testo delle celle.",
+      validUrl: "Usa un URL web, email o relativo.",
+      text: "Testo",
+      imageDescription: "Descrizione dell’immagine",
+      linkText: "Testo del collegamento",
+      column: "Colonna {number}",
+      insertTable: "Inserisci tabella",
+      insertLink: "Inserisci collegamento",
+      insertImage: "Inserisci immagine",
+      insertCodeBlock: "Inserisci blocco di codice",
+      dataRows: "Righe di dati",
+      columns: "Colonne",
+      codeLanguage: "Linguaggio (facoltativo)",
+      imageUrl: "URL dell’immagine",
+      url: "URL",
+      cancel: "Annulla",
+      insert: "Inserisci",
+      oneTableLine: "Le celle Markdown occupano una sola riga. Premi Invio per la riga successiva o Tab per la cella successiva.",
+      pasteTableLine: "Incolla una sola riga in una cella o usa Sorgente per più righe della tabella.",
+      pasteText: "Incolla il testo qui o usa Immagine per inserire l’URL di un’immagine.",
+      visualNeedsParser: "La modifica visuale richiede il parser aggiornato di easy-md-viewer. La modifica in Sorgente resta disponibile.",
+      previewNeedsViewer: "Carica easy-md-viewer per abilitare l’anteprima.",
+      readOnlyPreview: "Anteprima di sola lettura.",
+      editingDocument: "Modifica del documento.",
+      sourceOnlyWarning: "La modifica visuale richiede easy-md-viewer con parseInline() e scanLine(). Puoi modificare Markdown in modalità Sorgente."
+    },
+    ja: {
+      document: "ドキュメント",
+      placeholder: "書き始めましょう…",
+      sourceLabel: "{document} — Markdownソース",
+      documentFormatting: "ドキュメントの書式設定",
+      formatting: "書式設定",
+      syntaxVisibility: "構文の表示",
+      modeNoCode: "構文非表示",
+      modeClean: "クリーン",
+      modeAssisted: "アシスト",
+      modeSource: "ソース",
+      descriptionNoCode: "編集中もMarkdownの記号を非表示にします。ツールバーで書式を設定できます。",
+      descriptionClean: "編集中の行やコードブロック以外ではMarkdownの記号を非表示にします。",
+      descriptionAssisted: "書式付きのテキストとともにMarkdownの記号を表示します。",
+      descriptionSource: "Markdownソース全体をプレーンテキストとして編集します。",
+      colorPalette: "カラーパレット",
+      paletteEssentials: "基本",
+      paletteEditorClassics: "定番のエディター",
+      paletteAppInspired: "アプリ風",
+      paletteColorful: "カラフル",
+      paletteReadingNature: "読書と自然",
+      customPalette: "カスタム（{palette}）",
+      preview: "プレビュー",
+      paragraphStyle: "段落のスタイル",
+      paragraph: "段落",
+      heading: "見出し{level}",
+      lightTheme: "ライトテーマに切り替え",
+      darkTheme: "ダークテーマに切り替え",
+      undo: "元に戻す",
+      redo: "やり直す",
+      bold: "太字",
+      italic: "斜体",
+      strikethrough: "取り消し線",
+      inlineCode: "コード",
+      bulletList: "箇条書き",
+      orderedList: "番号付きリスト",
+      checklist: "チェックリスト",
+      link: "リンク",
+      image: "画像",
+      table: "表",
+      codeBlock: "コードブロック",
+      blockquote: "引用",
+      horizontalRule: "区切り線",
+      readOnlyBlock: "このブロックはソースモードで編集できます。",
+      completeTask: "「{task}」を完了",
+      task: "タスク",
+      oneTableCell: "表のセルは1つずつ編集してください。Tabキーでセルを移動できます。",
+      hiddenFences: "コードの区切り記号は非表示です。ブロックの構造はソースモードで変更できます。",
+      documentLimit: "ドキュメントが200万文字の上限に達しました。",
+      inlineSelection: "同じ段落または表のセル内でテキストを選択して、書式を設定してください。",
+      paragraphOutsideTable: "段落スタイルは表の外に適用されます。セルのテキストは直接編集してください。",
+      validUrl: "ウェブ、メール、または相対URLを使用してください。",
+      text: "テキスト",
+      imageDescription: "画像の説明",
+      linkText: "リンクのテキスト",
+      column: "列{number}",
+      insertTable: "表を挿入",
+      insertLink: "リンクを挿入",
+      insertImage: "画像を挿入",
+      insertCodeBlock: "コードブロックを挿入",
+      dataRows: "データの行数",
+      columns: "列数",
+      codeLanguage: "プログラミング言語（任意）",
+      imageUrl: "画像のURL",
+      url: "URL",
+      cancel: "キャンセル",
+      insert: "挿入",
+      oneTableLine: "Markdownの表のセルは1行です。Enterで次の行、Tabで次のセルに移動します。",
+      pasteTableLine: "セルには1行だけ貼り付けてください。複数行にはソースモードを使用してください。",
+      pasteText: "ここにテキストを貼り付けるか、「画像」で画像のURLを挿入してください。",
+      visualNeedsParser: "ビジュアル編集には最新版のeasy-md-viewerパーサーが必要です。ソース編集は引き続き使用できます。",
+      previewNeedsViewer: "プレビューにはeasy-md-viewerを読み込んでください。",
+      readOnlyPreview: "読み取り専用のプレビューです。",
+      editingDocument: "ドキュメントを編集中です。",
+      sourceOnlyWarning: "ビジュアル編集にはparseInline()とscanLine()を備えたeasy-md-viewerが必要です。ソースモードでMarkdownを編集できます。"
+    },
+    zh: {
+      document: "文档",
+      placeholder: "开始写作…",
+      sourceLabel: "{document} — Markdown源码",
+      documentFormatting: "文档格式",
+      formatting: "格式",
+      syntaxVisibility: "语法显示",
+      modeNoCode: "隐藏语法",
+      modeClean: "简洁",
+      modeAssisted: "辅助",
+      modeSource: "源码",
+      descriptionNoCode: "编辑时隐藏Markdown语法。使用工具栏设置文本格式。",
+      descriptionClean: "隐藏当前行或代码块以外的Markdown语法。",
+      descriptionAssisted: "在带格式的文本旁显示Markdown语法。",
+      descriptionSource: "以纯文本形式编辑完整的Markdown源码。",
+      colorPalette: "配色方案",
+      paletteEssentials: "基础",
+      paletteEditorClassics: "经典编辑器",
+      paletteAppInspired: "应用风格",
+      paletteColorful: "多彩",
+      paletteReadingNature: "阅读与自然",
+      customPalette: "自定义（{palette}）",
+      preview: "预览",
+      paragraphStyle: "段落样式",
+      paragraph: "正文",
+      heading: "{level}级标题",
+      lightTheme: "切换到浅色主题",
+      darkTheme: "切换到深色主题",
+      undo: "撤销",
+      redo: "重做",
+      bold: "粗体",
+      italic: "斜体",
+      strikethrough: "删除线",
+      inlineCode: "代码",
+      bulletList: "无序列表",
+      orderedList: "有序列表",
+      checklist: "任务列表",
+      link: "链接",
+      image: "图片",
+      table: "表格",
+      codeBlock: "代码块",
+      blockquote: "引用",
+      horizontalRule: "分隔线",
+      readOnlyBlock: "请在源码模式下编辑此块。",
+      completeTask: "完成{task}",
+      task: "任务",
+      oneTableCell: "请一次编辑一个单元格。使用Tab键在单元格之间移动。",
+      hiddenFences: "代码围栏保持隐藏。请使用源码模式更改代码块结构。",
+      documentLimit: "文档已达到两百万字符的上限。",
+      inlineSelection: "请在同一段落或表格单元格内选择文本，再设置行内格式。",
+      paragraphOutsideTable: "段落样式只适用于表格之外。请直接编辑单元格文本。",
+      validUrl: "请使用网页、电子邮件或相对URL。",
+      text: "文本",
+      imageDescription: "图片说明",
+      linkText: "链接文本",
+      column: "第{number}列",
+      insertTable: "插入表格",
+      insertLink: "插入链接",
+      insertImage: "插入图片",
+      insertCodeBlock: "插入代码块",
+      dataRows: "数据行数",
+      columns: "列数",
+      codeLanguage: "编程语言（可选）",
+      imageUrl: "图片URL",
+      url: "URL",
+      cancel: "取消",
+      insert: "插入",
+      oneTableLine: "Markdown表格的单元格只能有一行。按Enter移至下一行，按Tab移至下一个单元格。",
+      pasteTableLine: "请在单元格中粘贴单行文本，或使用源码模式粘贴多行表格。",
+      pasteText: "在此处粘贴文本，或使用“图片”插入图片URL。",
+      visualNeedsParser: "可视化编辑需要最新版easy-md-viewer解析器。源码编辑仍然可用。",
+      previewNeedsViewer: "请加载easy-md-viewer以启用预览。",
+      readOnlyPreview: "只读预览。",
+      editingDocument: "正在编辑文档。",
+      sourceOnlyWarning: "可视化编辑需要支持parseInline()和scanLine()的easy-md-viewer。您可以在源码模式下编辑Markdown。"
+    }
+  };
+
   /* --- CONSTANTS --- */
   const tools = [
-    ["undo", "Undo", "rotate-left"],
-    ["redo", "Redo", "rotate-right"],
-    ["bold", "Bold", "bold"],
-    ["italic", "Italic", "italic"],
-    ["strikethrough", "Strike", "strikethrough"],
-    ["inlineCode", "Code", "code"],
-    ["bulletList", "Bullets", "list-ul"],
-    ["orderedList", "Numbered", "list-ol"],
-    ["checklist", "Checklist", "list-check"],
-    ["link", "Link", "link"],
-    ["image", "Image", "image"],
-    ["table", "Table", "table"],
-    ["codeBlock", "Code block", "file-code"],
-    ["blockquote", "Quote", "quote-left"],
-    ["horizontalRule", "Divider", "minus"]
+    ["undo", "rotate-left"],
+    ["redo", "rotate-right"],
+    ["bold", "bold"],
+    ["italic", "italic"],
+    ["strikethrough", "strikethrough"],
+    ["inlineCode", "code"],
+    ["bulletList", "list-ul"],
+    ["orderedList", "list-ol"],
+    ["checklist", "list-check"],
+    ["link", "link"],
+    ["image", "image"],
+    ["table", "table"],
+    ["codeBlock", "file-code"],
+    ["blockquote", "quote-left"],
+    ["horizontalRule", "minus"]
   ];
   const wraps = { bold: "**", italic: "*", strikethrough: "~~", inlineCode: "`" };
   const modes = ["no-code", "clean", "assisted", "source"];
   const modeDescriptions = {
-    "no-code": "Keep Markdown syntax hidden while editing. Use the toolbar to format text.",
-    clean: "Hide Markdown syntax outside the active line or code block.",
-    assisted: "Keep Markdown syntax visible beside formatted text.",
-    source: "Edit the complete Markdown source as plain text."
+    "no-code": "descriptionNoCode",
+    clean: "descriptionClean",
+    assisted: "descriptionAssisted",
+    source: "descriptionSource"
   };
   const palettes = {
-    Essentials: {
+    paletteEssentials: {
       monokai: "Monokai",
       github: "GitHub",
       solarized: "Solarized",
       "high-contrast": "High Contrast"
     },
-    "Editor classics": {
+    paletteEditorClassics: {
       dracula: "Dracula",
       darcula: "Darcula",
       nord: "Nord",
@@ -71,11 +683,11 @@
       vscode: "VS Code",
       "monokai-dimmed": "Monokai Dimmed"
     },
-    "App inspired": {
+    paletteAppInspired: {
       discord: "Discord",
       slack: "Slack"
     },
-    Colorful: {
+    paletteColorful: {
       bonyur: "BONYUR",
       sakura: "Sakura",
       bubblegum: "Bubblegum",
@@ -88,7 +700,7 @@
       amber: "Amber",
       terminal: "Terminal"
     },
-    "Reading & nature": {
+    paletteReadingNature: {
       paper: "Paper",
       ink: "Ink",
       ocean: "Ocean",
@@ -101,6 +713,7 @@
 
   /* --- STATE --- */
   const instances = new WeakMap();
+  const warnedLanguages = new Set();
 
   /* --- HELPERS --- */
   const node = (tag, className = "", text) => {
@@ -164,6 +777,33 @@
     }
   };
 
+  /** Resolve regional tags against loaded dictionaries; automatic detection may fall back quietly. */
+  const resolveLanguage = (element, requested) => {
+    if (typeof requested !== "string" || !requested.trim()) throw new RangeError("Language must be a language tag or auto.");
+    const automatic = requested.toLowerCase() === "auto";
+    const tag = automatic ? element.closest("[lang]")?.getAttribute("lang") || global.navigator?.language || "en" : requested;
+    let canonical;
+    try {
+      canonical = Intl.getCanonicalLocales(tag)[0].toLowerCase();
+    } catch {
+      if (!automatic) throw new RangeError("Language must be a valid language tag or auto.");
+      canonical = "en";
+    }
+    let candidate = canonical;
+    const available = Object.keys(byMDeditor.locales);
+    while (candidate) {
+      const matched = available.find((code) => code.toLowerCase() === candidate);
+      if (matched) return matched;
+      const split = candidate.lastIndexOf("-");
+      candidate = split < 0 ? "" : candidate.slice(0, split);
+    }
+    if (!automatic && !warnedLanguages.has(canonical)) {
+      warnedLanguages.add(canonical);
+      console.warn(`easy-md-editor: Translations for "${canonical}" are unavailable. Add a dictionary to byMDeditor.locales. Using English.`);
+    }
+    return "en";
+  };
+
   /* --- PUBLIC API --- */
   /** Mount an editor with caller-owned persistence; all selections use UTF-16 source offsets. */
   function byMDeditor(element, markdown, options = {}) {
@@ -172,11 +812,15 @@
     let source = markdown instanceof HTMLElement ? markdown.textContent : (markdown ?? element.textContent);
     if (typeof source !== "string") throw new TypeError("byMDeditor: Markdown must be a string or HTMLElement.");
     if (source.length > 2000000) throw new RangeError("byMDeditor: maximum document size is 2,000,000 characters.");
+    let language = resolveLanguage(element, options.language ?? "auto");
+    const translations = options.translations ?? {};
+    if (typeof translations !== "object" || Array.isArray(translations) || Object.values(translations).some((value) => typeof value !== "string")) throw new TypeError("Translations must be an object of text labels.");
     applyAppearance(element, options);
     const painted = element.classList.contains("byVIEWready");
     instances.get(element)?.destroy();
     options = {
       syntax: "clean",
+      language: "auto",
       animations: true,
       appearAnimation: false,
       toolbar: true,
@@ -188,8 +832,8 @@
       statusBar: true,
       shortcuts: true,
       codeHighlighting: true,
-      label: "Document",
-      placeholder: "Start writing…",
+      label: null,
+      placeholder: null,
       historyLimit: 200,
       ...options
     };
@@ -233,6 +877,11 @@
     const metrics = options.onMeasure ? options.onMeasure : null;
     const measure = (operation, started, extra = {}) => metrics?.({ operation, duration: performance.now() - started, ...extra });
     const listen = (target, type, handler, extra = {}) => target.addEventListener(type, handler, { signal, ...extra });
+
+    const languageText = {};
+    for (const [key, englishText] of Object.entries(byMDeditor.locales.en)) {
+      languageText[key] = String(translations[key] ?? byMDeditor.locales[language]?.[key] ?? englishText);
+    }
     element.replaceChildren();
     element.classList.add("byMDeditor", "byMDdocument");
     element.classList.toggle("byVIEWmotion", options.animations !== false);
@@ -258,39 +907,52 @@
     surface.contentEditable = "true";
     surface.setAttribute("role", "textbox");
     surface.setAttribute("aria-multiline", "true");
-    surface.setAttribute("aria-label", options.label);
-    surface.dataset.placeholder = options.placeholder;
-    raw.setAttribute("aria-label", `${options.label} — Markdown source`);
+    surface.setAttribute("aria-label", options.label ?? languageText.document);
+    surface.dataset.placeholder = options.placeholder ?? languageText.placeholder;
+    raw.setAttribute(
+      "aria-label",
+      languageText.sourceLabel.replaceAll("{document}", () => options.label ?? languageText.document)
+    );
+    raw.placeholder = options.placeholder ?? languageText.placeholder;
     raw.spellcheck = true;
     toolbar.setAttribute("role", "toolbar");
-    toolbar.setAttribute("aria-label", "Document formatting");
-    const button = (label, icon, action, parent = toolbar) => {
+    toolbar.setAttribute("aria-label", languageText.documentFormatting);
+    const button = (key, icon, action, parent = toolbar) => {
+      const label = languageText[key];
       const result = node("button", "byEDbutton");
       result.type = "button";
       const glyph = node("i", `fa-solid fa-${icon}`);
       glyph.setAttribute("aria-hidden", "true");
-      result.append(glyph, node("span", "", label));
+      const caption = node("span", "", label);
+      caption.dataset.message = key;
+      result.append(glyph, caption);
+      result.dataset.messageLabel = key;
       result.setAttribute("aria-label", label);
       result.title = label;
       listen(result, "click", action);
       parent.appendChild(result);
       return result;
     };
-    const toggle = button("Formatting", "sliders", () => api.setToolbar(toolbar.hidden), bar);
+    const toggle = button("formatting", "sliders", () => api.setToolbar(toolbar.hidden), bar);
+    toggle.dataset.control = "toolbar";
     const picker = node("select", "byEDselect");
-    picker.setAttribute("aria-label", "Syntax visibility");
+    picker.dataset.control = "syntax";
+    picker.setAttribute("aria-label", languageText.syntaxVisibility);
     for (const mode of modes) {
-      const option = node("option", "", { "no-code": "No-code", clean: "Clean", assisted: "Assisted", source: "Source" }[mode]);
+      const key = { "no-code": "modeNoCode", clean: "modeClean", assisted: "modeAssisted", source: "modeSource" }[mode];
+      const option = node("option", "", languageText[key]);
+      option.dataset.message = key;
       option.value = mode;
       option.disabled = !rich && mode !== "source";
       picker.append(option);
     }
     listen(picker, "change", () => api.setSyntaxMode(picker.value));
     const palettePicker = node("select", "byEDselect");
-    palettePicker.setAttribute("aria-label", "Color palette");
+    palettePicker.setAttribute("aria-label", languageText.colorPalette);
     for (const [label, choices] of Object.entries(palettes)) {
       const group = node("optgroup");
-      group.label = label;
+      group.dataset.messageGroup = label;
+      group.label = languageText[label];
       for (const [value, caption] of Object.entries(choices)) {
         const option = node("option", "", caption);
         option.value = value;
@@ -300,7 +962,8 @@
     }
     const selectPalette = (palette) => {
       if (![...palettePicker.options].some((option) => option.value === palette)) {
-        const option = node("option", "", `Custom (${palette})`);
+        const option = node("option", "", languageText.customPalette.replaceAll("{palette}", palette));
+        option.dataset.message = "customPalette";
         option.value = palette;
         palettePicker.append(option);
       }
@@ -308,7 +971,7 @@
     };
     listen(palettePicker, "change", () => api.setPalette(palettePicker.value));
     controls.append(palettePicker);
-    const previewButton = button("Preview", "eye", () => api.setPreview(!previewing), controls);
+    const previewButton = button("preview", "eye", () => api.setPreview(!previewing), controls);
     previewButton.setAttribute("aria-pressed", "false");
     const themeButton = node("button", "byVIEWthemeToggle");
     themeButton.type = "button";
@@ -318,9 +981,10 @@
     controls.append(themeButton);
     bar.append(picker, controls);
     const heading = node("select", "byEDselect");
-    heading.setAttribute("aria-label", "Paragraph style");
+    heading.setAttribute("aria-label", languageText.paragraphStyle);
     for (let level = 0; level <= 6; level++) {
-      const option = node("option", "", level ? `Heading ${level}` : "Paragraph");
+      const option = node("option", "", level ? languageText.heading.replaceAll("{level}", String(level)) : languageText.paragraph);
+      option.dataset.message = level ? "heading" : "paragraph";
       option.value = String(level);
       heading.append(option);
     }
@@ -329,9 +993,9 @@
     });
     if (!options.tools || options.tools.includes("heading")) toolbar.appendChild(heading);
     const commandButtons = new Map();
-    for (const [name, label, icon] of tools) {
+    for (const [name, icon] of tools) {
       if (options.tools && !options.tools.includes(name)) continue;
-      const control = button(label, icon, () => (["link", "image", "table", "codeBlock"].includes(name) ? openDialog(name) : api.command(name)));
+      const control = button(name, icon, () => (["link", "image", "table", "codeBlock"].includes(name) ? openDialog(name) : api.command(name)));
       control.dataset.command = name;
       commandButtons.set(name, control);
       if (wraps[name]) control.setAttribute("aria-pressed", "false");
@@ -665,7 +1329,7 @@
         mappedText(view, record, 0, record.text.length, "byEDunsupportedSource");
         const readOnly = node("div", "byEDunsupported");
         readOnly.contentEditable = "false";
-        readOnly.title = "Edit this block in Source mode.";
+        readOnly.title = languageText.readOnlyBlock;
         view.append(readOnly);
         global.byMDviewer(readOnly, record.text, { toolbar: false, statusBar: false, animations: false, codeHighlighting: false });
         // The editor owns the palette; this fragment inherits it instead of starting a nested theme.
@@ -679,7 +1343,10 @@
           box.type = "checkbox";
           box.checked = meta.checked;
           box.contentEditable = "false";
-          box.setAttribute("aria-label", `Complete ${record.text.slice(meta.bodyFrom) || "task"}`);
+          box.setAttribute(
+            "aria-label",
+            languageText.completeTask.replaceAll("{task}", () => record.text.slice(meta.bodyFrom) || languageText.task)
+          );
           view.append(box);
         }
         const hardBreak = record.text.slice(meta.bodyFrom, meta.bodyTo).match(/\\+$/);
@@ -907,9 +1574,58 @@
     };
 
     /* --- TRANSACTIONS AND HISTORY --- */
-    const announce = (text) => {
-      status.textContent = text;
+    let announcement = null;
+    const announce = (key) => {
+      announcement = key;
+      status.textContent = languageText[key];
     };
+    /** Update only UI labels; source nodes, selection, composition, and history keep their owners. */
+    const translateControls = () => {
+      for (const root of [bar, toolbar, dialog]) {
+        if (!root) continue;
+        root.lang = language;
+        for (const text of root.querySelectorAll("[data-message]")) {
+          const key = text.dataset.message;
+          let message = languageText[key];
+          if (key === "heading") message = message.replaceAll("{level}", text.value);
+          if (key === "customPalette") message = message.replaceAll("{palette}", text.value);
+          text.textContent = message;
+        }
+        for (const control of root.querySelectorAll("[data-message-label]")) {
+          control.title = languageText[control.dataset.messageLabel];
+          control.setAttribute("aria-label", control.title);
+        }
+      }
+      status.lang = language;
+      if (announcement) status.textContent = languageText[announcement];
+      surface.setAttribute("aria-label", options.label ?? languageText.document);
+      surface.dataset.placeholder = options.placeholder ?? languageText.placeholder;
+      raw.setAttribute(
+        "aria-label",
+        languageText.sourceLabel.replaceAll("{document}", () => options.label ?? languageText.document)
+      );
+      raw.placeholder = options.placeholder ?? languageText.placeholder;
+      toolbar.setAttribute("aria-label", languageText.documentFormatting);
+      picker.setAttribute("aria-label", languageText.syntaxVisibility);
+      picker.title = languageText[modeDescriptions[syntax]];
+      palettePicker.setAttribute("aria-label", languageText.colorPalette);
+      for (const group of palettePicker.querySelectorAll("optgroup")) group.label = languageText[group.dataset.messageGroup];
+      heading.setAttribute("aria-label", languageText.paragraphStyle);
+      themeButton.title = languageText[isDark() ? "lightTheme" : "darkTheme"];
+      themeButton.setAttribute("aria-label", themeButton.title);
+      for (const record of lines) {
+        if (record.meta.type === "task")
+          record.view.querySelector(".byEDtask")?.setAttribute(
+            "aria-label",
+            languageText.completeTask.replaceAll("{task}", () => record.text.slice(record.meta.bodyFrom) || languageText.task)
+          );
+        if (record.meta.type === "source") {
+          const readOnly = record.view.querySelector(".byEDunsupported");
+          if (readOnly) readOnly.title = languageText.readOnlyBlock;
+        }
+      }
+    };
+
     const formattingAt = (offset) => {
       if (syntax !== "source" && !dirty) return lines[lineAt(offset)];
       if (!rich) return null;
@@ -968,6 +1684,7 @@
     const scheduleToolbar = () => {
       if (!toolbarFrame) toolbarFrame = requestAnimationFrame(updateToolbar);
     };
+
     /** Accept an unchanged native text node after input while updating its source offsets and history data. */
     const acceptNativeText = (edit) => {
       const { record, point, from, to, inserted } = edit,
@@ -986,7 +1703,11 @@
       const index = lineAt(from);
       for (let i = index + 1; i < lines.length; i++) lines[i].from += delta;
       record.meta = edit.meta;
-      if (record.meta.type === "task") record.view.querySelector(".byEDtask").setAttribute("aria-label", `Complete ${record.text.slice(record.meta.bodyFrom) || "task"}`);
+      if (record.meta.type === "task")
+        record.view.querySelector(".byEDtask").setAttribute(
+          "aria-label",
+          languageText.completeTask.replaceAll("{task}", () => record.text.slice(record.meta.bodyFrom) || languageText.task)
+        );
     };
     // All committed edits pass here so source, ranges, undo history, and callbacks stay in agreement.
     /** Commit one source edit, update derived views and undo state, then notify the application synchronously. */
@@ -1006,7 +1727,7 @@
           last = lineAt(to),
           record = lines[first];
         if (record.meta.type === "source") {
-          announce("Edit this block in Source mode.");
+          announce("readOnlyBlock");
           return false;
         }
         if (record.meta.cells && (first !== last || !record.meta.cells.some((cell) => from >= record.from + cell.from && to <= record.from + cell.to))) {
@@ -1014,7 +1735,7 @@
           const startPoint = first === last ? record.points.find((point) => from >= record.from + point.from && from <= record.from + point.to && point.node.parentElement.closest(".byEDcell")) : null;
           const cell = startPoint?.node.parentElement.closest(".byEDcell");
           if (!cell || !record.points.some((point) => to >= record.from + point.from && to <= record.from + point.to && cell.contains(point.node))) {
-            announce("Edit one table cell at a time. Use Tab to move between cells.");
+            announce("oneTableCell");
             return false;
           }
         }
@@ -1029,7 +1750,7 @@
             inserted += opening.eol || eol;
             break;
           }
-          announce("Code fences stay hidden. Use Source mode to change the block structure.");
+          announce("hiddenFences");
           return false;
         }
       }
@@ -1043,7 +1764,7 @@
         }
       }
       if (source.length - (to - from) + inserted.length > 2000000) {
-        announce("This document has reached the two-million-character limit.");
+        announce("documentLimit");
         return false;
       }
       const started = metrics ? performance.now() : 0;
@@ -1172,14 +1893,14 @@
         return true;
       }
       if (syntax === "no-code" && lines[lineAt(from)]?.meta.type === "source") {
-        announce("Edit this block in Source mode.");
+        announce("readOnlyBlock");
         return false;
       }
       if (wraps[name]) {
         let marker = wraps[name];
         const selected = source.slice(from, to);
         if (/[\r\n]/.test(selected) || (syntax !== "source" && lines[lineAt(from)]?.meta.cells?.some((cell) => from - lines[lineAt(from)].from <= cell.to && to - lines[lineAt(from)].from > cell.to))) {
-          announce("Select text within one paragraph or table cell to apply inline formatting.");
+          announce("inlineSelection");
           return false;
         }
         const formatting = formattingAt(from);
@@ -1206,7 +1927,7 @@
         if (!formatting && hasWrapper(from, to, marker)) return change(from - marker.length, to + marker.length, selected, { anchor: from - marker.length, focus: to - marker.length }, name);
         if (!formatting && selected.length >= marker.length * 2 && hasWrapper(from + marker.length, to - marker.length, marker))
           return change(from, to, selected.slice(marker.length, -marker.length), { anchor: from, focus: to - marker.length * 2 }, name);
-        const body = selected || (syntax === "no-code" ? "text" : "");
+        const body = selected || (syntax === "no-code" ? languageText.text : "");
         return change(from, to, marker + body + marker, { anchor: from + marker.length, focus: from + marker.length + body.length }, name);
       }
       if (["heading", "paragraph", "bulletList", "orderedList", "checklist", "blockquote"].includes(name)) {
@@ -1214,7 +1935,7 @@
         const remainder = source.slice(to).search(/[\r\n]/);
         const end = remainder < 0 ? source.length : to + remainder;
         if (syntax !== "source" && lines[lineAt(from)].meta.cells) {
-          announce("Paragraph styles apply outside tables. Edit cell text directly.");
+          announce("paragraphOutsideTable");
           return false;
         }
         const prefix = name === "heading" && Number(value) > 0 ? "#".repeat(Math.min(6, Math.max(1, Number(value)))) + " " : { bulletList: "- ", orderedList: "1. ", checklist: "- [ ] ", blockquote: "> " }[name] || "";
@@ -1228,10 +1949,10 @@
       if (name === "link" || name === "image") {
         if (!value?.url) return openDialog(name);
         if (/^[\s\u0000-\u0020]*(?:javascript|data|vbscript):/i.test(value.url.replace(/[\u0000-\u0020]/g, ""))) {
-          announce("Use a web, email, or relative URL.");
+          announce("validUrl");
           return false;
         }
-        const label = source.slice(from, to) || value.label || (name === "image" ? "Image description" : "Link text");
+        const label = source.slice(from, to) || value.label || languageText[name === "image" ? "imageDescription" : "linkText"];
         const url = value.url.replace(/\(/g, "%28").replace(/\)/g, "%29").replace(/\s/g, "%20");
         const opening = name === "image" ? "![" : "[";
         return change(from, to, `${opening}${label}](${url})`, { anchor: from + opening.length, focus: from + opening.length + label.length }, name);
@@ -1240,7 +1961,7 @@
         if (!value) return openDialog("table");
         const rows = Math.min(100, Math.max(1, Math.trunc(Number(value.rows) || 2))),
           columns = Math.min(20, Math.max(1, Math.trunc(Number(value.columns) || 2)));
-        const header = `| ${Array.from({ length: columns }, (_, i) => `Column ${i + 1}`).join(" | ")} |`;
+        const header = `| ${Array.from({ length: columns }, (_, i) => languageText.column.replaceAll("{number}", String(i + 1))).join(" | ")} |`;
         const separator = `| ${Array(columns).fill("---").join(" | ")} |`;
         const row = `| ${Array(columns).fill(" ").join(" | ")} |`;
         return insertBlock([header, separator, ...Array(rows).fill(row)].join(eol), from, to, name);
@@ -1272,14 +1993,16 @@
       dialog = node("dialog", "byEDdialog");
       const form = node("form");
       form.method = "dialog";
-      const title = node("h2", "", { table: "Insert table", link: "Insert link", image: "Insert image", codeBlock: "Insert code block" }[name]);
+      const titleKey = { table: "insertTable", link: "insertLink", image: "insertImage", codeBlock: "insertCodeBlock" }[name];
+      const title = node("h2", "", languageText[titleKey]);
+      title.dataset.message = titleKey;
       const titleId = `byEDdialog-${Math.random().toString(36).slice(2)}`;
       title.id = titleId;
       dialog.setAttribute("aria-labelledby", titleId);
       form.append(title);
       const fields = {};
       const field = (key, label, type, value, max) => {
-        const wrapper = node("label", "byEDfield", label),
+        const wrapper = node("label", "byEDfield"),
           input = node("input");
         input.name = key;
         input.type = type;
@@ -1289,28 +2012,33 @@
           input.min = "1";
           input.max = String(max);
         }
-        wrapper.append(input);
+        const caption = node("span", "", languageText[label]);
+        caption.dataset.message = label;
+        wrapper.append(caption, input);
         form.append(wrapper);
         fields[key] = input;
       };
       if (name === "table") {
-        field("rows", "Data rows", "number", "2", 100);
-        field("columns", "Columns", "number", "2", 20);
+        field("rows", "dataRows", "number", "2", 100);
+        field("columns", "columns", "number", "2", 20);
       } else if (name === "codeBlock") {
-        field("language", "Language (optional)", "text", "javascript");
+        field("language", "codeLanguage", "text", "javascript");
         fields.language.required = false;
       } else {
-        field("url", name === "image" ? "Image URL" : "URL", "text", "https://");
-        field("label", name === "image" ? "Image description" : "Link text", "text", source.slice(Math.min(savedPosition.anchor, savedPosition.focus), Math.max(savedPosition.anchor, savedPosition.focus)));
+        field("url", name === "image" ? "imageUrl" : "url", "text", "https://");
+        field("label", name === "image" ? "imageDescription" : "linkText", "text", source.slice(Math.min(savedPosition.anchor, savedPosition.focus), Math.max(savedPosition.anchor, savedPosition.focus)));
       }
       const actions = node("div", "byEDdialogActions"),
-        cancel = node("button", "", "Cancel"),
-        submit = node("button", "", "Insert");
+        cancel = node("button", "", languageText.cancel),
+        submit = node("button", "", languageText.insert);
+      cancel.dataset.message = "cancel";
+      submit.dataset.message = "insert";
       cancel.type = "button";
       submit.type = "submit";
       actions.append(cancel, submit);
       form.append(actions);
       dialog.append(form);
+      dialog.lang = language;
       element.append(dialog);
       const close = () => {
         const current = dialog;
@@ -1345,7 +2073,7 @@
       position = selection();
       if (syntax === "no-code" && position.anchor === position.focus && lines[lineAt(position.focus)]?.meta.type === "source") {
         event.preventDefault();
-        announce("Edit this block in Source mode.");
+        announce("readOnlyBlock");
         return;
       }
       let from = Math.min(position.anchor, position.focus),
@@ -1439,7 +2167,7 @@
           if (meta.cells) {
             event.preventDefault();
             if (type === "insertLineBreak") {
-              announce("Markdown table cells use one line. Press Enter for the next row, or Tab for the next cell.");
+              announce("oneTableLine");
               return;
             }
             const column = Math.max(
@@ -1522,7 +2250,7 @@
           to = Math.max(position.anchor, position.focus);
         if (syntax !== "source" && lines[lineAt(from)].meta.cells) {
           if (/[\r\n]/.test(text)) {
-            announce("Paste one line into a table cell, or use Source for multiple rows.");
+            announce("pasteTableLine");
             return;
           }
           change(
@@ -1553,7 +2281,7 @@
       });
       listen(target, "drop", (event) => {
         event.preventDefault();
-        announce("Paste text here, or use Image to insert an image URL.");
+        announce("pasteText");
       });
       listen(target, "keydown", (event) => {
         if (event.isComposing || composing) return;
@@ -1656,7 +2384,7 @@
         if (!alive) return;
         if (!modes.includes(mode)) throw new RangeError("Syntax mode must be no-code, clean, assisted, or source.");
         if (mode !== "source" && !rich) {
-          announce("Visual editing requires the updated easy-md-viewer parser. Source editing remains available.");
+          announce("visualNeedsParser");
           return;
         }
         finishComposition();
@@ -1666,7 +2394,7 @@
         syntax = mode;
         picker.value = mode;
         element.dataset.syntax = mode;
-        picker.title = modeDescriptions[mode];
+        picker.title = languageText[modeDescriptions[mode]];
         raw.value = source;
         raw.classList.add("byVIEWreveal");
         surface.classList.add("byVIEWreveal");
@@ -1703,7 +2431,7 @@
         finishComposition();
         if (!previewing) savedPosition = selection();
         if (visible && typeof global.byMDviewer !== "function") {
-          announce("Load easy-md-viewer to enable Preview.");
+          announce("previewNeedsViewer");
           return;
         }
         previewing = Boolean(visible);
@@ -1723,12 +2451,12 @@
           preview.classList.toggle("dark", isDark());
           global.byMDviewer(preview, source, { toolbar: false, animations: options.animations, codeHighlighting: options.codeHighlighting !== false && typeof global.byCODEviewer?.highlight === "function" });
           measure("preview", started);
-          announce("Read-only preview.");
+          announce("readOnlyPreview");
         } else {
           if (dirty && syntax !== "source") build();
           restore(savedPosition);
           queueCode();
-          announce("Editing document.");
+          announce("editingDocument");
         }
       },
       /** Change motion without rebuilding the document or disturbing its selection/history. */
@@ -1743,13 +2471,26 @@
         options.appearAnimation = Boolean(enabled);
         element.classList.toggle("byVIEWappear", options.appearAnimation);
       },
+      getLanguage() {
+        return language;
+      },
+      /** Change the UI language without rebuilding the document or ending native composition. */
+      setLanguage(value) {
+        if (!alive) return;
+        language = resolveLanguage(element, value);
+        options.language = value;
+        for (const [key, englishText] of Object.entries(byMDeditor.locales.en)) {
+          languageText[key] = String(translations[key] ?? byMDeditor.locales[language]?.[key] ?? englishText);
+        }
+        translateControls();
+      },
       setTheme(mode) {
         if (!alive) return;
         if (!["light", "dark"].includes(mode)) throw new RangeError("Theme must be light or dark.");
         if (["light", "dark"].includes(element.dataset.theme || "")) element.dataset.theme = mode;
         element.classList.toggle("dark", mode === "dark");
         element.classList.toggle("light", mode === "light");
-        themeButton.title = `Switch to ${mode === "dark" ? "light" : "dark"} theme`;
+        themeButton.title = languageText[mode === "dark" ? "lightTheme" : "darkTheme"];
         themeButton.setAttribute("aria-label", themeButton.title);
         if (previewing) api.setPreview(true);
       },
@@ -1808,15 +2549,16 @@
     };
     /* --- MOUNT --- */
     instances.set(element, api);
+    translateControls();
     syncRawBreaks();
     if (rich && syntax !== "source") build();
     else {
       dirty = true;
-      if (!rich) announce("Visual editing needs easy-md-viewer with parseInline() and scanLine(). You can edit Markdown in Source mode.");
+      if (!rich) announce("sourceOnlyWarning");
     }
     raw.value = source;
     picker.value = syntax;
-    picker.title = modeDescriptions[syntax];
+    picker.title = languageText[modeDescriptions[syntax]];
     element.dataset.syntax = syntax;
     raw.hidden = syntax !== "source";
     surface.hidden = syntax === "source";
