@@ -182,6 +182,8 @@ Language changes update buttons, tooltips, dialog labels, placeholders, and acce
 
 Register a custom dictionary on `byMDeditor.locales` before mounting an editor, or before calling `setLanguage()`. Keys match `byMDeditor.locales.en`; missing messages fall back to English. Templates use `{document}`, `{level}`, `{palette}`, `{task}`, and `{number}` where applicable. Messages are plain text, never HTML.
 
+The translated sample documents and language names live only in `index.html`. The playground's **Language** setting switches controls and untouched examples; edited or imported documents stay intact. **Restore sample** loads the example in the selected language. The rest of the landing page stays in English.
+
 ## Themes
 
 Configure appearance in the options object or on the container:

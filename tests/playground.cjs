@@ -66,6 +66,8 @@ test("playground configures No-code and individual controls without recreating t
     await page.goto(`http://127.0.0.1:${server.address().port}`);
     await page.locator(".byEDsurface").waitFor();
     const source = await page.evaluate(() => playgroundEditor.getMarkdown());
+    assert.equal(await page.locator("#playground-language").isVisible(), true);
+    assert.equal(await page.locator("#playground-language option").count(), 9);
     await page.locator("#viewer-settings").evaluate((details) => (details.open = true));
     await page.locator("#syntax-mode").selectOption("no-code");
     assert.equal(await page.locator("#editor").getAttribute("data-syntax"), "no-code");
@@ -108,7 +110,81 @@ test("playground configures No-code and individual controls without recreating t
     await page.getByRole("button", { name: "Formatting", exact: true }).click();
     assert.equal(await page.locator("#toolbar").isChecked(), false);
     assert.equal(JSON.parse(await page.locator("#options-json").inputValue()).toolbar, false);
+    await page.locator("#editor-language").selectOption("es");
+    assert.equal(await page.locator("#playground-language").inputValue(), "es");
+    assert.equal(await page.evaluate(() => playgroundEditor.getLanguage()), "es");
+    assert.equal(JSON.parse(await page.locator("#options-json").inputValue()).language, "es");
+    await page.getByRole("button", { name: "Formato", exact: true }).click();
+    assert.equal(await page.locator("#toolbar").isChecked(), true, "Translated buttons still update playground configuration");
+    await page.locator('#editor [data-control="syntax"]').selectOption("clean");
+    assert.equal(await page.locator("#syntax-mode").inputValue(), "clean");
+    assert.match(await page.evaluate(() => playgroundEditor.getMarkdown()), /^# Un poco de escritura\. Un documento de verdad\./);
+    await page.locator("#editor-language").selectOption("en");
+    assert.equal(await page.evaluate(() => playgroundEditor.getMarkdown()), source);
     assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+test("language selection translates demo documents and preserves user edits and imports", async () => {
+  const assets = await getAssets();
+  const server = require("./serve.cjs");
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const browser = await launch();
+  try {
+    const page = await browser.newPage();
+    await routeAssets(page, assets);
+    await page.goto(`http://127.0.0.1:${server.address().port}`);
+    await page.locator(".byEDsurface").waitFor();
+    await page.locator("#viewer-settings").evaluate((details) => (details.open = true));
+    const headings = {
+      es: "# Un poco de escritura. Un documento de verdad.",
+      pt: "# Um pouco de escrita. Um documento de verdade.",
+      fr: "# Un peu d’écriture. Un vrai document.",
+      de: "# Ein wenig schreiben. Ein echtes Dokument.",
+      it: "# Un po’ di scrittura. Un documento vero.",
+      ja: "# 少し書くだけで、本物のドキュメントに。",
+      zh: "# 写一点文字，成就一份文档。",
+      en: "# A little writing. A real document."
+    };
+    for (const [code, heading] of Object.entries(headings)) {
+      await page.locator(code === "en" ? "#editor-language" : "#playground-language").selectOption(code);
+      const source = await page.evaluate(() => playgroundEditor.getMarkdown());
+      assert.equal(source.startsWith(`${heading}\n`), true);
+      assert.equal(await page.locator("#playground-language").inputValue(), code);
+      assert.equal(await page.locator("#editor-language").inputValue(), code);
+      assert.equal(await page.evaluate(() => playgroundEditor.getLanguage()), code);
+      assert.equal(await page.locator("#markdown-output").inputValue(), source);
+      assert.equal(await page.locator("#feedback").textContent(), "Original");
+      for (const level of [1, 2, 3, 4, 5, 6]) assert.equal(await page.locator(`.byEDsurface h${level}`).count(), level < 3 ? (level === 1 ? 1 : 7) : 1);
+      for (const selector of ["strong em", "del", ".byMDinlineCode", ".byMDlink", ".byEDimage", ".byEDtask", "table"]) assert.ok(await page.locator(`.byEDsurface ${selector}`).count(), `${code}: ${selector}`);
+      assert.equal(await page.locator(".byEDsurface .byEDhardBreak").count(), 1, `${code}: hard break`);
+    }
+    await page.evaluate(() => {
+      playgroundEditor.setSelection(playgroundEditor.getMarkdown().length);
+    });
+    await page.keyboard.type("User note");
+    const edited = await page.evaluate(() => {
+      window.editedLine = document.querySelector(".byEDline");
+      return playgroundEditor.getMarkdown();
+    });
+    await page.locator("#editor-language").selectOption("es");
+    assert.equal(await page.evaluate(() => playgroundEditor.getMarkdown()), edited);
+    assert.equal(await page.evaluate(() => editedLine === document.querySelector(".byEDline")), true);
+    await page.evaluate(() => playgroundEditor.command("undo"));
+    assert.equal((await page.evaluate(() => playgroundEditor.getMarkdown())).endsWith("User note"), false);
+    await page.getByRole("button", { name: "Restore sample", exact: true }).click();
+    assert.match(await page.evaluate(() => playgroundEditor.getMarkdown()), /^# Un poco de escritura/);
+    await page.locator("#file").setInputFiles({ name: "notes.md", mimeType: "text/markdown", buffer: Buffer.from("# My document\n\nKeep this text.") });
+    await page.waitForFunction(() => playgroundEditor.getMarkdown() === "# My document\n\nKeep this text.");
+    await page.locator("#editor-language").selectOption("ja");
+    assert.equal(await page.evaluate(() => playgroundEditor.getMarkdown()), "# My document\n\nKeep this text.");
+    await page.locator("#document-source").selectOption("showcase");
+    assert.match(await page.evaluate(() => playgroundEditor.getMarkdown()), /^# 少し書くだけで、本物のドキュメントに。/);
+    await page.getByRole("button", { name: "Restore sample", exact: true }).click();
+    assert.match(await page.evaluate(() => playgroundEditor.getMarkdown()), /^# 少し書くだけで、本物のドキュメントに。/);
   } finally {
     await browser.close();
     await new Promise((resolve) => server.close(resolve));

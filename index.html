@@ -327,12 +327,20 @@
         <div class="playground border">
           <div class="playground-toolbar bg-body-tertiary px-4 py-3 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-3">
             <h2 id="playground-title" class="h6 m-0 fw-semibold">Playground</h2>
-            <div class="source-picker">
-              <label class="small font-monospace text-body-secondary d-block mb-1" for="document-source">Sample</label>
-              <select id="document-source" class="form-select">
-                <option value="showcase">Default showcase</option>
-                <option value="custom">Blank document</option>
-              </select>
+            <div class="d-flex flex-column flex-sm-row gap-3 mw-100">
+              <div class="source-picker">
+                <label class="small font-monospace text-body-secondary d-block mb-1" for="playground-language">Language</label>
+                <select id="playground-language" class="form-select" data-editor-language>
+                  <option value="auto">Automatic</option>
+                </select>
+              </div>
+              <div class="source-picker">
+                <label class="small font-monospace text-body-secondary d-block mb-1" for="document-source">Sample</label>
+                <select id="document-source" class="form-select">
+                  <option value="showcase">Default showcase</option>
+                  <option value="custom">Blank document</option>
+                </select>
+              </div>
             </div>
           </div>
           <details class="border-top px-3 py-2">
@@ -354,6 +362,10 @@
           </details>
           <details class="border-top px-3 py-2" id="viewer-settings">
             <summary class="small fw-semibold">Editor controls</summary>
+            <label class="form-label mt-3" for="editor-language">Language</label>
+            <select id="editor-language" class="form-select mb-3" data-editor-language>
+              <option value="auto">Automatic</option>
+            </select>
             <label class="form-label mt-3" for="syntax-mode">Editing mode</label>
             <select id="syntax-mode" class="form-select mb-3">
               <option value="no-code">No-code</option>
@@ -521,79 +533,20 @@
     <noscript
       ><p class="site-width container-fluid">Enable JavaScript to use the playground. The <a href="https://github.com/byuwur/easy-md-editor#readme">README</a> includes integration examples.</p></noscript
     >
-    <!-- Markdown indentation is content; preserve it when formatting the surrounding HTML. -->
-    <!-- prettier-ignore -->
-    <script id="sample" type="text/plain"># A little writing. A real document.
-
-Write something useful. Let **easy-md-editor** handle the Markdown.
-
-## Start small
-
-Use the toolbar, or type *a little emphasis*, **bold text**, ***both together***,
-~~cross something out~~, and `keep a little code inline`.
-
-## Lists that work for you
-
-- A bullet for the first idea
-- Another idea, with **formatting inside**
-
-1. Write a first draft
-2. Read it once more
-3. Make it yours
-
-- [x] Write a document
-- [ ] Try a table from the toolbar
-- [ ] Switch to Preview
-
-## Links and an image
-
-Visit [BONYUR's portfolio](https://byuwur.co), or paste https://example.com.
-Autolinks work too: <https://byuwur.co> and <hello@example.com>.
-
-![BONYUR's mark](https://byuwur.github.io/img/logo.png "BONYUR")
-
-## A table worth editing
-
-| Name | Role |
-| --- | --- |
-| Andres | Developer |
-| Sam | Designer |
-
-## A thought to keep
-
-> Simple is complicated enough.
-> A quote can have **emphasis**, too.
-
-A hard break keeps these lines together.\
-This is the next line, inside the same paragraph in Preview.
-
----
-
-## Code stays code
-
-~~~javascript
-const markdown = editor.getMarkdown();
-/* Store Markdown as text.
-   Render it when reading. */
-const document = { title: "A little writing", published: true, revision: 1 };
-console.log(markdown, document);
-~~~
-
-## Every heading has its place
-
-### Make room for an idea
-
-#### Give it some detail
-
-##### Add a small note
-
-###### Even the smallest heading is editable
-
-Edit any example above. No-code, Clean, Assisted, Source, and Preview all use this same Markdown.
-</script>
     <script>
       document.addEventListener("DOMContentLoaded", () => {
-        const sample = document.getElementById("sample").textContent;
+        // prettier-ignore
+        const samples = {
+          en: { name: "English", source: "# A little writing. A real document.\n\nWrite something useful. Let **easy-md-editor** handle the Markdown.\n\n## Start small\n\nUse the toolbar, or type *a little emphasis*, **bold text**, ***both together***,\n~~cross something out~~, and `keep a little code inline`.\n\n## Lists that work for you\n\n- A bullet for the first idea\n- Another idea, with **formatting inside**\n\n1. Write a first draft\n2. Read it once more\n3. Make it yours\n\n- [x] Write a document\n- [ ] Try a table from the toolbar\n- [ ] Switch to Preview\n\n## Links and an image\n\nVisit [BONYUR's portfolio](https://byuwur.co), or paste https://example.com.\nAutolinks work too: \u003chttps://byuwur.co> and \u003chello@example.com>.\n\n![BONYUR's mark](https://byuwur.github.io/img/logo.png \"BONYUR\")\n\n## A table worth editing\n\n| Name | Role |\n| --- | --- |\n| Andres | Developer |\n| Sam | Designer |\n\n## A thought to keep\n\n> Simple is complicated enough.\n> A quote can have **emphasis**, too.\n\nA hard break keeps these lines together.\\\nThis is the next line, inside the same paragraph in Preview.\n\n---\n\n## Code stays code\n\n~~~javascript\nconst markdown = editor.getMarkdown();\n/* Store Markdown as text.\n   Render it when reading. */\nconst document = { title: \"A little writing\", published: true, revision: 1 };\nconsole.log(markdown, document);\n~~~\n\n## Every heading has its place\n\n### Make room for an idea\n\n#### Give it some detail\n\n##### Add a small note\n\n###### Even the smallest heading is editable\n\nEdit any example above. No-code, Clean, Assisted, Source, and Preview all use this same Markdown.\n" },
+          es: { name: "Español", source: "# Un poco de escritura. Un documento de verdad.\n\nEscribe algo útil. Deja que **easy-md-editor** se encargue del Markdown.\n\n## Empieza por lo sencillo\n\nUsa la barra de herramientas o escribe *un poco de énfasis*, **texto en negrita**, ***ambos a la vez***,\n~~tacha algo~~ y `añade un poco de código en línea`.\n\n## Listas que te ayudan\n\n- Una viñeta para la primera idea\n- Otra idea, con **formato dentro**\n\n1. Escribe un primer borrador\n2. Léelo una vez más\n3. Hazlo tuyo\n\n- [x] Escribir un documento\n- [ ] Probar una tabla desde la barra de herramientas\n- [ ] Cambiar a Vista previa\n\n## Enlaces y una imagen\n\nVisita [el portafolio de BONYUR](https://byuwur.co) o pega https://example.com.\nLos enlaces automáticos también funcionan: \u003chttps://byuwur.co> y \u003chello@example.com>.\n\n![La marca de BONYUR](https://byuwur.github.io/img/logo.png \"BONYUR\")\n\n## Una tabla para editar\n\n| Nombre | Rol |\n| --- | --- |\n| Andres | Desarrollador |\n| Sam | Diseñador |\n\n## Una idea para recordar\n\n> Simple es suficientemente complicado.\n> Una cita también puede tener **énfasis**.\n\nUn salto de línea mantiene estas líneas juntas.\\\nEsta es la siguiente línea, dentro del mismo párrafo en Vista previa.\n\n---\n\n## El código sigue siendo código\n\n~~~javascript\nconst markdown = editor.getMarkdown();\n/* Guarda Markdown como texto.\n   Muéstralo al leerlo. */\nconst document = { title: \"Un poco de escritura\", published: true, revision: 1 };\nconsole.log(markdown, document);\n~~~\n\n## Cada título tiene su lugar\n\n### Dale espacio a una idea\n\n#### Añade algunos detalles\n\n##### Agrega una pequeña nota\n\n###### Hasta el título más pequeño se puede editar\n\nEdita cualquier ejemplo de arriba. Sin código, Limpio, Asistido, Fuente y Vista previa usan el mismo Markdown.\n" },
+          pt: { name: "Português", source: "# Um pouco de escrita. Um documento de verdade.\n\nEscreva algo útil. Deixe o **easy-md-editor** cuidar do Markdown.\n\n## Comece pelo básico\n\nUse a barra de ferramentas ou escreva *um pouco de ênfase*, **texto em negrito**, ***os dois juntos***,\n~~risque algo~~ e `adicione um pouco de código em linha`.\n\n## Listas que ajudam você\n\n- Um marcador para a primeira ideia\n- Outra ideia, com **formatação dentro**\n\n1. Escreva um primeiro rascunho\n2. Leia mais uma vez\n3. Deixe com a sua cara\n\n- [x] Escrever um documento\n- [ ] Experimentar uma tabela pela barra de ferramentas\n- [ ] Mudar para a Prévia\n\n## Links e uma imagem\n\nVisite [o portfólio de BONYUR](https://byuwur.co) ou cole https://example.com.\nLinks automáticos também funcionam: \u003chttps://byuwur.co> e \u003chello@example.com>.\n\n![A marca de BONYUR](https://byuwur.github.io/img/logo.png \"BONYUR\")\n\n## Uma tabela para editar\n\n| Nome | Função |\n| --- | --- |\n| Andres | Desenvolvedor |\n| Sam | Designer |\n\n## Uma ideia para guardar\n\n> Simples já é complicado o suficiente.\n> Uma citação também pode ter **ênfase**.\n\nUma quebra de linha mantém estas linhas juntas.\\\nEsta é a próxima linha, dentro do mesmo parágrafo na Prévia.\n\n---\n\n## Código continua sendo código\n\n~~~javascript\nconst markdown = editor.getMarkdown();\n/* Armazene Markdown como texto.\n   Renderize ao ler. */\nconst document = { title: \"Um pouco de escrita\", published: true, revision: 1 };\nconsole.log(markdown, document);\n~~~\n\n## Cada título tem seu lugar\n\n### Dê espaço para uma ideia\n\n#### Acrescente alguns detalhes\n\n##### Adicione uma pequena nota\n\n###### Até o menor título pode ser editado\n\nEdite qualquer exemplo acima. Sem código, Limpo, Assistido, Fonte e Prévia usam o mesmo Markdown.\n" },
+          fr: { name: "Français", source: "# Un peu d’écriture. Un vrai document.\n\nÉcrivez quelque chose d’utile. Laissez **easy-md-editor** s’occuper du Markdown.\n\n## Commencez simplement\n\nUtilisez la barre d’outils ou écrivez *un peu d’emphase*, **du texte en gras**, ***les deux ensemble***,\n~~barrez quelque chose~~ et `ajoutez un peu de code en ligne`.\n\n## Des listes à votre service\n\n- Une puce pour la première idée\n- Une autre idée, avec **de la mise en forme**\n\n1. Rédigez un premier brouillon\n2. Relisez-le une fois\n3. Personnalisez-le\n\n- [x] Écrire un document\n- [ ] Essayer un tableau depuis la barre d’outils\n- [ ] Passer à l’aperçu\n\n## Des liens et une image\n\nVisitez [le portfolio de BONYUR](https://byuwur.co) ou collez https://example.com.\nLes liens automatiques fonctionnent aussi : \u003chttps://byuwur.co> et \u003chello@example.com>.\n\n![La marque de BONYUR](https://byuwur.github.io/img/logo.png \"BONYUR\")\n\n## Un tableau à modifier\n\n| Nom | Rôle |\n| --- | --- |\n| Andres | Développeur |\n| Sam | Designer |\n\n## Une pensée à retenir\n\n> La simplicité est déjà assez compliquée.\n> Une citation peut aussi avoir **de l’emphase**.\n\nUn saut de ligne garde ces lignes ensemble.\\\nVoici la ligne suivante, dans le même paragraphe de l’aperçu.\n\n---\n\n## Le code reste du code\n\n~~~javascript\nconst markdown = editor.getMarkdown();\n/* Stockez le Markdown sous forme de texte.\n   Affichez-le à la lecture. */\nconst document = { title: \"Un peu d’écriture\", published: true, revision: 1 };\nconsole.log(markdown, document);\n~~~\n\n## Chaque titre a sa place\n\n### Faites de la place à une idée\n\n#### Ajoutez quelques détails\n\n##### Ajoutez une petite note\n\n###### Même le plus petit titre peut être modifié\n\nModifiez les exemples ci-dessus. Sans code, Épuré, Assisté, Source et Aperçu utilisent tous le même Markdown.\n" },
+          de: { name: "Deutsch", source: "# Ein wenig schreiben. Ein echtes Dokument.\n\nSchreibe etwas Nützliches. Lass **easy-md-editor** das Markdown übernehmen.\n\n## Fang klein an\n\nNutze die Werkzeugleiste oder schreibe *etwas Betonung*, **fetten Text**, ***beides zusammen***,\n~~streiche etwas durch~~ und `füge etwas Inline-Code ein`.\n\n## Listen, die dir helfen\n\n- Ein Aufzählungspunkt für die erste Idee\n- Eine weitere Idee mit **Formatierung darin**\n\n1. Schreibe einen ersten Entwurf\n2. Lies ihn noch einmal\n3. Mach ihn zu deinem Text\n\n- [x] Ein Dokument schreiben\n- [ ] Eine Tabelle aus der Werkzeugleiste ausprobieren\n- [ ] Zur Vorschau wechseln\n\n## Links und ein Bild\n\nBesuche [BONYURs Portfolio](https://byuwur.co) oder füge https://example.com ein.\nAutomatische Links funktionieren auch: \u003chttps://byuwur.co> und \u003chello@example.com>.\n\n![BONYURs Logo](https://byuwur.github.io/img/logo.png \"BONYUR\")\n\n## Eine Tabelle zum Bearbeiten\n\n| Name | Rolle |\n| --- | --- |\n| Andres | Entwickler |\n| Sam | Designer |\n\n## Ein Gedanke zum Mitnehmen\n\n> Einfach ist kompliziert genug.\n> Auch ein Zitat kann **Betonung** enthalten.\n\nEin Zeilenumbruch hält diese Zeilen zusammen.\\\nDas ist die nächste Zeile, in der Vorschau innerhalb desselben Absatzes.\n\n---\n\n## Code bleibt Code\n\n~~~javascript\nconst markdown = editor.getMarkdown();\n/* Speichere Markdown als Text.\n   Rendere es beim Lesen. */\nconst document = { title: \"Ein wenig schreiben\", published: true, revision: 1 };\nconsole.log(markdown, document);\n~~~\n\n## Jede Überschrift hat ihren Platz\n\n### Schaffe Platz für eine Idee\n\n#### Ergänze ein paar Details\n\n##### Füge eine kleine Notiz hinzu\n\n###### Selbst die kleinste Überschrift ist bearbeitbar\n\nBearbeite jedes Beispiel oben. Ohne Code, Bereinigt, Unterstützt, Quelltext und Vorschau nutzen dasselbe Markdown.\n" },
+          it: { name: "Italiano", source: "# Un po’ di scrittura. Un documento vero.\n\nScrivi qualcosa di utile. Lascia che **easy-md-editor** si occupi del Markdown.\n\n## Inizia dalle cose semplici\n\nUsa la barra degli strumenti o scrivi *un po’ di enfasi*, **testo in grassetto**, ***entrambi insieme***,\n~~barra qualcosa~~ e `aggiungi un po’ di codice in linea`.\n\n## Liste che ti aiutano\n\n- Un punto per la prima idea\n- Un’altra idea, con **formattazione all’interno**\n\n1. Scrivi una prima bozza\n2. Rileggila un’altra volta\n3. Rendila tua\n\n- [x] Scrivere un documento\n- [ ] Provare una tabella dalla barra degli strumenti\n- [ ] Passare all’anteprima\n\n## Collegamenti e un’immagine\n\nVisita [il portfolio di BONYUR](https://byuwur.co) o incolla https://example.com.\nFunzionano anche i collegamenti automatici: \u003chttps://byuwur.co> e \u003chello@example.com>.\n\n![Il marchio di BONYUR](https://byuwur.github.io/img/logo.png \"BONYUR\")\n\n## Una tabella da modificare\n\n| Nome | Ruolo |\n| --- | --- |\n| Andres | Sviluppatore |\n| Sam | Designer |\n\n## Un pensiero da conservare\n\n> Semplice è già abbastanza complicato.\n> Anche una citazione può avere **enfasi**.\n\nUn’interruzione di riga tiene insieme queste righe.\\\nQuesta è la riga successiva, nello stesso paragrafo dell’anteprima.\n\n---\n\n## Il codice resta codice\n\n~~~javascript\nconst markdown = editor.getMarkdown();\n/* Salva Markdown come testo.\n   Mostralo durante la lettura. */\nconst document = { title: \"Un po’ di scrittura\", published: true, revision: 1 };\nconsole.log(markdown, document);\n~~~\n\n## Ogni titolo ha il suo posto\n\n### Fai spazio a un’idea\n\n#### Aggiungi qualche dettaglio\n\n##### Inserisci una piccola nota\n\n###### Anche il titolo più piccolo è modificabile\n\nModifica gli esempi qui sopra. Senza codice, Pulito, Assistito, Sorgente e Anteprima usano tutti lo stesso Markdown.\n" },
+          ja: { name: "日本語", source: "# 少し書くだけで、本物のドキュメントに。\n\n役立つものを書きましょう。Markdownは**easy-md-editor**におまかせください。\n\n## 小さく始めましょう\n\nツールバーを使うか、*少し強調*、**太字のテキスト**、***両方を組み合わせたテキスト***、\n~~取り消し線~~、`短いインラインコード`を入力してみましょう。\n\n## 便利なリスト\n\n- 最初のアイデアの箇条書き\n- **書式を含む**別のアイデア\n\n1. 最初の下書きを書く\n2. もう一度読み返す\n3. 自分らしく仕上げる\n\n- [x] ドキュメントを書く\n- [ ] ツールバーから表を試す\n- [ ] プレビューに切り替える\n\n## リンクと画像\n\n[BONYURのポートフォリオ](https://byuwur.co)を見るか、https://example.com を貼り付けましょう。\n自動リンクも使えます：\u003chttps://byuwur.co> と \u003chello@example.com>。\n\n![BONYURのロゴ](https://byuwur.github.io/img/logo.png \"BONYUR\")\n\n## 編集してみたい表\n\n| 名前 | 役割 |\n| --- | --- |\n| Andres | 開発者 |\n| Sam | デザイナー |\n\n## 覚えておきたい言葉\n\n> シンプルでも、十分に複雑。\n> 引用にも**強調**を付けられます。\n\n改行でこれらの行をつなげます。\\\nこれは次の行です。プレビューでは同じ段落の中に表示されます。\n\n---\n\n## コードはコードのまま\n\n~~~javascript\nconst markdown = editor.getMarkdown();\n/* Markdownをテキストとして保存します。\n   読むときに表示します。 */\nconst document = { title: \"少し書いてみましょう\", published: true, revision: 1 };\nconsole.log(markdown, document);\n~~~\n\n## どの見出しにも役割があります\n\n### アイデアのための場所を作る\n\n#### 詳細を少し加える\n\n##### 小さなメモを添える\n\n###### 一番小さな見出しも編集できます\n\n上の例を編集してみましょう。構文非表示、クリーン、アシスト、ソース、プレビューはすべて同じMarkdownを使います。\n" },
+          zh: { name: "简体中文", source: "# 写一点文字，成就一份文档。\n\n写点有用的内容。让**easy-md-editor**处理Markdown。\n\n## 从简单开始\n\n使用工具栏，或输入*一点强调*、**粗体文字**、***两者结合***、\n~~删除线~~，以及`一小段行内代码`。\n\n## 让列表为你服务\n\n- 第一个想法的列表项\n- 另一个想法，包含**文字格式**\n\n1. 写出初稿\n2. 再读一遍\n3. 写出自己的风格\n\n- [x] 编写文档\n- [ ] 从工具栏试用表格\n- [ ] 切换到预览\n\n## 链接与图片\n\n访问[BONYUR的作品集](https://byuwur.co)，或粘贴 https://example.com。\n自动链接同样可用：\u003chttps://byuwur.co> 和 \u003chello@example.com>。\n\n![BONYUR的标志](https://byuwur.github.io/img/logo.png \"BONYUR\")\n\n## 值得编辑的表格\n\n| 姓名 | 职责 |\n| --- | --- |\n| Andres | 开发者 |\n| Sam | 设计师 |\n\n## 值得记住的一句话\n\n> 简单，本就足够复杂。\n> 引用也可以包含**强调**。\n\n使用换行将这些行保留在一起。\\\n这是下一行，在预览中仍属于同一段落。\n\n---\n\n## 代码依然是代码\n\n~~~javascript\nconst markdown = editor.getMarkdown();\n/* 将Markdown保存为文本。\n   阅读时再进行渲染。 */\nconst document = { title: \"写一点文字\", published: true, revision: 1 };\nconsole.log(markdown, document);\n~~~\n\n## 每个标题都有自己的位置\n\n### 为想法留出空间\n\n#### 补充一些细节\n\n##### 添加一条小注释\n\n###### 最小的标题也可以编辑\n\n编辑上面的任意示例。隐藏语法、简洁、辅助、源码和预览使用的都是同一份Markdown。\n" }
+        };
+        let sample = samples.en.source;
         const output = document.getElementById("markdown-output");
         const feedback = document.getElementById("feedback");
         const sourceSelect = document.getElementById("document-source");
@@ -623,11 +576,27 @@ Edit any example above. No-code, Clean, Assisted, Source, and Preview all use th
         /* --- EDITOR CONFIGURATION --- */
         const visibilityOptions = ["toolbarToggle", "syntaxSelect", "previewToggle", "themeToggle", "paletteSelect", "statusBar"];
         const modeSelect = document.getElementById("syntax-mode");
+        const languageSelect = document.getElementById("editor-language");
+        const languageSelects = document.querySelectorAll("[data-editor-language]");
+        for (const picker of languageSelects) for (const [code, example] of Object.entries(samples)) picker.add(new Option(example.name, code));
+        const updateSampleLanguage = () => {
+          sample = samples[editor.getLanguage()]?.source ?? samples.en.source;
+          // Translated examples belong to the demo; never overwrite edited or imported Markdown.
+          if (documents.showcase.source !== documents.showcase.original) return;
+          documents.showcase = { source: sample, original: sample };
+          if (activeSource === "showcase" && editor.getMarkdown() !== sample) {
+            editor.setMarkdown(sample);
+            clearTimeout(outputTimer);
+            updateOutput(sample);
+          }
+        };
+        updateSampleLanguage();
         const updateConfiguration = () => {
           modeSelect.value = document.getElementById("editor").dataset.syntax;
           document.getElementById("options-json").value = JSON.stringify(
             {
               syntax: modeSelect.value,
+              language: languageSelect.value,
               toolbar: document.getElementById("toolbar").checked,
               ...Object.fromEntries(visibilityOptions.map((name) => [name, document.getElementById(name).checked])),
               animations: document.getElementById("animations").checked,
@@ -650,12 +619,19 @@ Edit any example above. No-code, Clean, Assisted, Source, and Preview all use th
           editor.setSyntaxMode(modeSelect.value);
           updateConfiguration();
         });
+        for (const picker of languageSelects)
+          picker.addEventListener("change", () => {
+            editor.setLanguage(picker.value);
+            for (const select of languageSelects) select.value = picker.value;
+            updateSampleLanguage();
+            updateConfiguration();
+          });
         document.getElementById("editor").addEventListener("change", (event) => {
-          if (event.target.getAttribute("aria-label") === "Syntax visibility") modeSelect.value = event.target.value;
+          if (event.target.matches('[data-control="syntax"]')) modeSelect.value = event.target.value;
           updateConfiguration();
         });
         document.getElementById("editor").addEventListener("click", (event) => {
-          const toggle = event.target.closest('[aria-label="Formatting"]');
+          const toggle = event.target.closest('[data-control="toolbar"]');
           if (toggle) {
             document.getElementById("toolbar").checked = toggle.getAttribute("aria-expanded") === "true";
             updateConfiguration();
