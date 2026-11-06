@@ -78,6 +78,80 @@ test("No-code editing and control visibility", async (t) => {
       assert.equal(await page.evaluate(() => editor.getMarkdown()), "## Title");
       assert.equal(await page.locator(".byEDsurface").innerText(), "Title");
     });
+    await t.test("typing heading text adds its separator in every visual mode", async () => {
+      for (const syntax of ["clean", "assisted", "no-code"]) {
+        for (const level of [1, 3, 6]) {
+          await page.evaluate((syntax) => {
+            render("", { syntax });
+            editor.focus();
+          }, syntax);
+          await page.keyboard.type("#".repeat(level));
+          await page.keyboard.type("Title");
+          const expected = `${"#".repeat(level)} Title`;
+          assert.equal(await page.evaluate(() => editor.getMarkdown()), expected, `${syntax}, heading ${level}`);
+          assert.equal(await page.locator(`.byEDsurface h${level}`).count(), 1);
+          if (syntax === "no-code") assert.equal(await page.locator(".byEDsurface").innerText(), "Title");
+          await page.evaluate(() => editor.command("undo"));
+          assert.equal(await page.evaluate(() => editor.getMarkdown()), "");
+          await page.evaluate(() => editor.command("redo"));
+          assert.equal(await page.evaluate(() => editor.getMarkdown()), expected);
+        }
+      }
+    });
+    await t.test("empty headings accept paste, IME, and toolbar changes without losing their prefix", async () => {
+      const paste = await page.evaluate(() => {
+        render("###");
+        editor.setSelection(3);
+        const data = new DataTransfer();
+        data.setData("text/plain", "Title");
+        document.querySelector(".byEDsurface").dispatchEvent(new ClipboardEvent("paste", { clipboardData: data, bubbles: true, cancelable: true }));
+        return [editor.getMarkdown(), editor.getSelection()];
+      });
+      assert.deepEqual(paste, ["### Title", { anchor: 9, focus: 9 }]);
+      await page.evaluate(() => editor.command("undo"));
+      assert.equal(await page.evaluate(() => editor.getMarkdown()), "###", "Undo restores the untouched original marker");
+      await page.evaluate(() => editor.command("heading", 1));
+      await page.keyboard.type("Title");
+      assert.equal(await page.evaluate(() => editor.getMarkdown()), "# Title");
+      const composition = await page.evaluate(() => {
+        render("###");
+        editor.setSelection(3);
+        const surface = document.querySelector(".byEDsurface"),
+          text = document.getSelection().focusNode;
+        surface.dispatchEvent(new CompositionEvent("compositionstart", { bubbles: true }));
+        text.appendData("日本語");
+        surface.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertCompositionText", isComposing: true, data: "日本語" }));
+        const during = editor.getMarkdown();
+        surface.dispatchEvent(new CompositionEvent("compositionend", { bubbles: true, data: "日本語" }));
+        return { during, after: editor.getMarkdown(), selection: editor.getSelection() };
+      });
+      assert.deepEqual(composition, { during: "###", after: "### 日本語", selection: { anchor: 7, focus: 7 } });
+      await page.evaluate(() => render("###"));
+      await page.locator(".byEDsurface h3").click({ position: { x: 5, y: 5 } });
+      await page.keyboard.type("Title");
+      assert.equal(await page.evaluate(() => editor.getMarkdown()), "### Title");
+    });
+    await t.test("heading shortcuts preserve newlines, existing spaces, and literal source or code", async () => {
+      const cases = [
+        ["Before\r\n\r\n", "no-code", "###Title", "Before\r\n\r\n### Title"],
+        ["###   ", "no-code", "Title", "###   Title"],
+        ["", "source", "###Title", "###Title"],
+        ["#######", "clean", "Title", "#######Title"],
+        ["\\#", "no-code", "Title", "\\#Title"],
+        ["~~~js\n", "no-code", "#Title", "~~~js\n#Title"]
+      ];
+      for (const [source, syntax, input, expected] of cases) {
+        await page.evaluate(
+          ({ source, syntax }) => {
+            render(source, { syntax });
+            editor.setSelection(source.length);
+          },
+          { source, syntax }
+        );
+        await page.keyboard.type(input);
+        assert.equal(await page.evaluate(() => editor.getMarkdown()), expected, `${syntax}: ${source}`);
+      }
+    });
     await t.test("lists and table cells remain editable without their source delimiters", async () => {
       await page.evaluate(() => {
         render("- Item");

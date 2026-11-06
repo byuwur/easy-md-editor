@@ -438,9 +438,9 @@
         if (syntax === "no-code" && line?.meta.type === "source") return line.from + (offset ? line.text.length : 0);
         const point = offset < target.childNodes.length ? firstPoint(target.childNodes[offset], false) : firstPoint(target, true);
         if (point !== null) return point;
-        // A blank line's placeholder <br> still belongs to a canonical source position.
+        // Empty visible bodies still own a caret after their hidden heading/list prefix.
         const record = lineMap.get(target.closest(".byEDline"));
-        if (record && !record.text.length) return record.from;
+        if (record && record.meta.bodyFrom === record.meta.bodyTo) return record.from + record.meta.bodyFrom;
       }
       return null;
     };
@@ -961,6 +961,14 @@
     /** Commit one source edit, update derived views and undo state, then notify the application synchronously. */
     const change = (from, to, inserted, next, type = "command", remember = true, native = null) => {
       if (!alive || previewing) return false;
+      if (remember && syntax !== "source" && from === to && inserted && !/^[#\s]/.test(inserted)) {
+        const record = lines[lineAt(from)];
+        // Add the heading separator in the source transaction so typing, paste, and IME agree.
+        if (record.meta.type === "heading" && from === record.from + record.text.length && /^ {0,3}#{1,6}$/.test(record.text)) {
+          inserted = ` ${inserted}`;
+          if (next) next = { anchor: next.anchor + 1, focus: next.focus + 1 };
+        }
+      }
       // Text edits stay inside visible structure; explicit commands and undo can change that structure.
       if (syntax === "no-code" && remember && (type.startsWith("insert") || type.startsWith("delete") || ["paste", "cut", "composition"].includes(type)) && !(from === 0 && to === source.length && from < to)) {
         const first = lineAt(from),
@@ -1175,7 +1183,7 @@
         const original = source.slice(start, end);
         const output = original
           .split(/(\r\n|\r|\n)/)
-          .map((line, index) => (index % 2 || (!line.trim() && /[\r\n]/.test(original)) ? line : prefix + line.replace(/^(?: {0,3}#{1,6}\s+|(?:[-+*]|\d+[.)])\s+(?:\[[ xX]\]\s+)?|> ?)/, "")))
+          .map((line, index) => (index % 2 || (!line.trim() && /[\r\n]/.test(original)) ? line : prefix + line.replace(/^(?: {0,3}#{1,6}(?:\s+|$)|(?:[-+*]|\d+[.)])\s+(?:\[[ xX]\]\s+)?|> ?)/, "")))
           .join("");
         return change(start, end, output, { anchor: start + prefix.length, focus: start + output.length }, name);
       }

@@ -98,6 +98,8 @@ Code colors follow the fence language and selected palette. The editor reuses CO
 
 Use the toolbar for headings, paragraphs, bold, italic, strike, inline code, lists, checklists, links, images, tables, fences, quotes, and dividers. Commands act on the current selection. Inline formatting stays within one paragraph or table cell; paragraph styles apply outside tables.
 
+In visual modes, typing text after a bare heading marker adds the required space (`###` then `Title` becomes `### Title`). Source mode keeps exactly what you type.
+
 Enter inserts one line break, continues a list, or exits an empty list item. Press it twice to separate paragraphs. Shift+Enter inserts a Markdown hard break. In a table, Tab/Shift+Tab move between cells; Enter moves to the next row and adds a row at the end. Literal pipes are escaped for you. Shift+Enter and multiline paste leave a cell unchanged because Markdown tables use single-line cells. Tab leaves ordinary prose normally.
 
 Backspace at a closing formatting boundary removes a delimiter before deleting the word. Undo/redo share one history across modes; consecutive text input is grouped. Pasting accepts plain text/Markdown rather than HTML. Copy and Cut return the selected Markdown, including delimiters.
