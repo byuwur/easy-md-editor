@@ -338,3 +338,5 @@ Need another format, maybe an editor? Explore the family:
 ## License
 
 MIT (c) Andres Trujillo [Mateus] byUwUr
+
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/byuwur/easy-md-editor)
