@@ -329,7 +329,7 @@ Measured in local Chrome with CODE loaded, a 1,500-row table, 5,000 code lines, 
 
 ## The easy viewers
 
-Need another format, or a Markdown editor? Explore the family:
+Need another format, maybe an editor? Explore the family:
 
 [Markdown](https://github.com/byuwur/easy-md-viewer) · [JSON](https://github.com/byuwur/easy-json-viewer) · [CSV & TSV](https://github.com/byuwur/easy-csv-viewer) · [Logs](https://github.com/byuwur/easy-log-viewer) · [Diff](https://github.com/byuwur/easy-diff-viewer) · [XML](https://github.com/byuwur/easy-xml-viewer) · [YAML](https://github.com/byuwur/easy-yaml-viewer) · [Source code](https://github.com/byuwur/easy-code-viewer)
 
