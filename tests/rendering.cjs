@@ -34,6 +34,206 @@ async function install(page, viewer = true) {
   });
 }
 
+// --- IMAGE SIZING ---
+test("Image sizes share source, history, and rendering across editor modes", async (t) => {
+  const browser = await launch();
+  try {
+    const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
+    const errors = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await install(page);
+    await page.route("https://images.example/image.svg", (route) => route.fulfill({ contentType: "image/svg+xml", body: '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="400"><rect width="800" height="400" fill="#0969da"/></svg>' }));
+    const image = '![A logo](https://images.example/image.svg "Original title")';
+    for (const mode of ["no-code", "clean", "assisted"]) {
+      await t.test(`${mode} sizes an existing image and removes metadata for Default`, async () => {
+        await page.evaluate(({ image, mode }) => render(`Before\n\n${image}\n\nAfter`, { syntax: mode, language: "en" }), { image, mode });
+        const img = page.locator(".byEDsurface .byEDimage");
+        await page.waitForFunction(() => document.querySelector(".byEDimage")?.naturalWidth === 800);
+        await img.click();
+        const sizes = page.locator(".byEDimageToolbar");
+        assert.equal(await sizes.locator('[aria-pressed="true"]').getAttribute("value"), "default");
+        assert.equal(await sizes.locator("select").count(), 0);
+        for (const [size, width] of [["original", 800], ["xs", 96], ["small", 160], ["regular", 320], ["large", 480], ["xl", 720]]) {
+          await sizes.locator(`button[value="${size}"]`).click();
+          assert.equal(await page.evaluate(() => editor.getMarkdown()), `Before\n\n${image}<!-- bymd:size=${size} -->\n\nAfter`);
+          assert.equal(await sizes.locator('[aria-pressed="true"]').getAttribute("value"), size);
+          const box = await img.boundingBox();
+          assert.equal(box.width, width);
+          assert.equal(box.height, width / 2);
+          assert.equal(await img.getAttribute("title"), "Original title");
+          assert.equal(await page.locator('.byEDline[data-type="source"]').count(), 0, "Sized images stay visually editable");
+        }
+        await sizes.locator('button[value="default"]').click();
+        assert.equal(await page.evaluate(() => editor.getMarkdown()), `Before\n\n${image}\n\nAfter`);
+        assert.equal(await img.getAttribute("data-size"), null);
+        assert.equal(await page.evaluate(() => changes.length), 7, "Each size is one source transaction");
+        await page.evaluate(() => editor.command("undo"));
+        assert.equal(await img.getAttribute("data-size"), "xl");
+        await page.evaluate(() => editor.command("redo"));
+        assert.equal(await img.getAttribute("data-size"), null);
+      });
+    }
+    await t.test("sizing preserves nested inline offsets, CRLF, unrelated images, and Source undo", async () => {
+      const source = `# A heading\r\n\r\n- Before **${image}<!-- bymd:size=small -->** after\r\n\r\n${image}`;
+      await page.evaluate((source) => render(source, { syntax: "no-code", language: "en" }), source);
+      await page.locator(".byEDimage").first().click();
+      await page.locator('.byEDimageToolbar button[value="large"]').click();
+      const resized = source.replace("size=small", "size=large");
+      assert.equal(await page.evaluate(() => editor.getMarkdown()), resized);
+      await page.evaluate(() => {
+        editor.setSyntaxMode("source");
+        editor.command("undo");
+      });
+      assert.equal(await page.evaluate(() => editor.getMarkdown()), source);
+      await page.evaluate(() => editor.command("redo"));
+      assert.equal(await page.evaluate(() => editor.getMarkdown()), resized);
+      await page.evaluate(() => {
+        editor.setSelection(editor.getMarkdown().lastIndexOf("![") + 3);
+        editor.command("imageSize", "xs");
+      });
+      const both = `${resized}<!-- bymd:size=xs -->`;
+      assert.equal(await page.evaluate(() => editor.getMarkdown()), both);
+      for (const mode of ["clean", "assisted", "no-code", "source"]) {
+        await page.evaluate((mode) => editor.setSyntaxMode(mode), mode);
+        assert.equal(await page.evaluate(() => editor.getMarkdown()), both);
+      }
+      await page.evaluate(() => editor.setPreview(true));
+      assert.deepEqual(await page.locator(".byEDpreview img").evaluateAll((images) => images.map((img) => img.dataset.size)), ["large", "xs"]);
+      assert.equal(await page.locator(".byEDimageToolbar:visible").count(), 0);
+      assert.equal(await page.evaluate(() => editor.command("imageSize", "xl")), false, "Preview remains read-only");
+      await page.evaluate(() => {
+        editor.setPreview(false);
+        editor.command("undo");
+      });
+      assert.equal(await page.evaluate(() => editor.getMarkdown()), resized);
+    });
+    await t.test("Source edits update sizes in every visual mode and Preview without changing the source", async () => {
+      await page.evaluate((image) => render(image, { syntax: "source", language: "en" }), image);
+      await page.locator(".byEDsource").fill(`${image}<!-- bymd:size=regular -->`);
+      const source = `${image}<!-- bymd:size=regular -->`;
+      assert.equal(await page.evaluate(() => editor.getMarkdown()), source);
+      for (const mode of ["no-code", "clean", "assisted"]) {
+        await page.evaluate((mode) => editor.setSyntaxMode(mode), mode);
+        const box = await page.locator(".byEDimage").boundingBox();
+        assert.equal(box.width, 320);
+        assert.equal(box.height, 160);
+      }
+      await page.evaluate(() => editor.setPreview(true));
+      const box = await page.locator(".byEDpreview img").boundingBox();
+      assert.equal(box.width, 320);
+      assert.equal(box.height, 160);
+      assert.equal(await page.evaluate(() => editor.getMarkdown()), source);
+    });
+    await t.test("the image dialog inserts a size in one undo entry and localizes its choices", async () => {
+      await page.evaluate(() => render("Before", { syntax: "no-code", language: "en" }));
+      await page.getByRole("button", { name: "Image", exact: true }).click();
+      await page.locator('dialog input[name="url"]').fill("https://images.example/image.svg");
+      await page.locator('dialog input[name="label"]').fill("A logo");
+      const sizes = page.locator("dialog .byEDimageSizes");
+      assert.equal(await sizes.locator('[aria-pressed="true"]').getAttribute("value"), "default");
+      await sizes.locator('button[value="small"]').click();
+      await page.evaluate(() => editor.setLanguage("es"));
+      assert.equal(await sizes.locator('button[value="default"]').textContent(), "Predeterminado");
+      assert.equal(await sizes.locator('[aria-pressed="true"]').getAttribute("value"), "small");
+      await page.locator('dialog button[type="submit"]').click();
+      assert.equal(await page.evaluate(() => editor.getMarkdown()), "![A logo](https://images.example/image.svg)<!-- bymd:size=small -->Before");
+      await page.evaluate(() => editor.command("undo"));
+      assert.equal(await page.evaluate(() => editor.getMarkdown()), "Before");
+    });
+    await t.test("the floating toolbar supports keyboard, dismissal, narrow layouts, and editor cleanup", async () => {
+      await page.setViewportSize({ width: 360, height: 700 });
+      await page.evaluate((image) => render(image, { syntax: "no-code", language: "en", palette: "github", theme: "dark" }), image);
+      const img = page.locator(".byEDimage");
+      await img.focus();
+      await page.keyboard.press("Enter");
+      assert.equal(await page.locator('.byEDimageToolbar button[value="default"]').evaluate((control) => control === document.activeElement), true);
+      await page.keyboard.press("End");
+      assert.equal(await page.locator('.byEDimageToolbar button[value="xl"]').evaluate((control) => control === document.activeElement), true);
+      await page.keyboard.press("Enter");
+      assert.equal(await page.locator('.byEDimageToolbar button[value="xl"]').getAttribute("aria-pressed"), "true");
+      assert.equal(await page.locator(".byEDimageSizes").evaluate((row) => getComputedStyle(row).overflowX === "auto" && row.scrollWidth > row.clientWidth), true);
+      const toolbar = await page.locator(".byEDimageToolbar").boundingBox();
+      assert.ok(toolbar.x >= 0 && toolbar.x + toolbar.width <= 360);
+      const box = await img.boundingBox();
+      assert.ok(box.width < 360);
+      assert.equal(box.height, box.width / 2);
+      await page.keyboard.press("Escape");
+      assert.equal(await page.locator(".byEDimageToolbar:visible").count(), 0);
+      await img.click();
+      await page.locator("#other").evaluate((other) => { other.textContent = "Outside"; });
+      await page.locator("#other").click();
+      assert.equal(await page.locator(".byEDimageToolbar:visible").count(), 0);
+      assert.equal(await page.evaluate(() => changes.length), 1);
+      await img.click();
+      await page.evaluate(() => editor.setMarkdown("Replacement"));
+      assert.equal(await page.locator(".byEDimageToolbar:visible").count(), 0);
+      await page.evaluate(() => editor.destroy());
+      assert.equal(await page.locator(".byEDimageToolbar").count(), 0);
+      await page.setViewportSize({ width: 1100, height: 900 });
+    });
+    await t.test("deleting a selected No-code image removes its metadata and undo restores it", async () => {
+      const source = `${image}<!-- bymd:size=small -->`;
+      await page.evaluate((source) => render(source, { syntax: "no-code", language: "en" }), source);
+      await page.locator(".byEDimage").click();
+      await page.keyboard.press("Backspace");
+      assert.equal(await page.evaluate(() => editor.getMarkdown()), "");
+      await page.keyboard.press("ControlOrMeta+z");
+      assert.equal(await page.evaluate(() => editor.getMarkdown()), source);
+      assert.equal(await page.locator(".byEDimage").getAttribute("data-size"), "small");
+    });
+    await t.test("typing around a resized image retains its source mapping and independent history", async () => {
+      await page.evaluate((image) => render(`Before\n\n${image}\n\nAfter`, { syntax: "clean", language: "en" }), image);
+      await page.evaluate(() => editor.setSelection(0));
+      await page.keyboard.type("New ");
+      await page.locator(".byEDimage").click();
+      await page.locator('.byEDimageToolbar button[value="regular"]').click();
+      const resized = `New Before\n\n${image}<!-- bymd:size=regular -->\n\nAfter`;
+      assert.equal(await page.evaluate(() => editor.getMarkdown()), resized);
+      await page.evaluate(() => editor.setSelection(editor.getMarkdown().length));
+      await page.keyboard.type("!");
+      assert.equal(await page.locator(".byEDimageToolbar:visible").count(), 0);
+      assert.equal(await page.evaluate(() => editor.getMarkdown()), `${resized}!`);
+      await page.evaluate(() => editor.command("undo"));
+      assert.equal(await page.evaluate(() => editor.getMarkdown()), resized);
+      await page.evaluate(() => editor.command("undo"));
+      assert.equal(await page.evaluate(() => editor.getMarkdown()), `New Before\n\n${image}\n\nAfter`);
+      assert.equal(await page.evaluate(() => editor.command("imageSize", "invalid")), false);
+    });
+    await t.test("the floating choices localize in place and preserve the selected image and source", async () => {
+      await page.evaluate((image) => render(`${image}<!-- bymd:size=small -->`, { syntax: "no-code", language: "en" }), image);
+      await page.locator(".byEDimage").click();
+      const source = await page.evaluate(() => editor.getMarkdown());
+      await page.evaluate(() => editor.setLanguage("de"));
+      assert.equal(await page.locator('.byEDimageToolbar button[value="small"]').textContent(), "Klein (160px)");
+      assert.equal(await page.locator('.byEDimageToolbar button[value="small"]').getAttribute("aria-pressed"), "true");
+      assert.equal(await page.locator(".byEDimageToolbar").getAttribute("aria-label"), "Bildgröße");
+      assert.equal(await page.evaluate(() => editor.getMarkdown()), source);
+      assert.deepEqual(await page.evaluate(() => changes), []);
+    });
+    await t.test("explicit sizes preserve tall-image proportions while Default retains the existing height limit", async () => {
+      await page.route("https://images.example/portrait.svg", (route) => route.fulfill({ contentType: "image/svg+xml", body: '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="1200"><rect width="200" height="1200" fill="#0969da"/></svg>' }));
+      await page.evaluate(() => render("![Portrait](https://images.example/portrait.svg)", { syntax: "no-code", language: "en" }));
+      const img = page.locator(".byEDimage");
+      await page.waitForFunction(() => document.querySelector(".byEDimage")?.naturalHeight === 1200);
+      assert.equal((await img.boundingBox()).height, 400);
+      await img.click();
+      await page.locator('.byEDimageToolbar button[value="original"]').click();
+      let box = await img.boundingBox();
+      assert.equal(box.width, 200);
+      assert.equal(box.height, 1200);
+      await page.locator('.byEDimageToolbar button[value="small"]').click();
+      box = await img.boundingBox();
+      assert.equal(box.width, 160);
+      assert.equal(box.height, 960);
+      await page.locator('.byEDimageToolbar button[value="default"]').click();
+      assert.equal((await img.boundingBox()).height, 400);
+    });
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});
+
 // --- LOCALIZED CONTROLS ---
 test("control languages preserve source, native editing, and instance state", async (t) => {
   const browser = await launch();

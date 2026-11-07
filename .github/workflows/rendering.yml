@@ -34,7 +34,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: byuwur/easy-md-viewer
-          ref: v2.7
+          ref: v2.8
           path: easy-md-viewer
       - uses: actions/checkout@v4
         with:

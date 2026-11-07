@@ -10,7 +10,7 @@
   if (global.byMDeditor?.initialized) return;
 
   // --- METADATA ---
-  byMDeditor.VERSION = "1.7"; // 2026-11-07
+  byMDeditor.VERSION = "1.8"; // 2026-11-07
 
   // --- CONSTANTS ---
   const tools = [
@@ -33,6 +33,7 @@
   const shortcutKeys = { bold: "B", italic: "I", undo: "Z", redo: "Shift + Z" };
   const wraps = { bold: "**", italic: "*", strikethrough: "~~", inlineCode: "`" };
   const modes = ["no-code", "clean", "assisted", "source"];
+  const imageSizes = ["default", "original", "xs", "small", "regular", "large", "xl"];
   const modeDescriptions = {
     "no-code": "descriptionNoCode",
     clean: "descriptionClean",
@@ -222,6 +223,14 @@
       validUrl: "Use a web, email, or relative URL.",
       text: "Text",
       imageDescription: "Image description",
+      imageSize: "Image size",
+      imageSizeDefault: "Default",
+      imageSizeOriginal: "Original",
+      imageSizeXS: "XS (96px)",
+      imageSizeSmall: "Small (160px)",
+      imageSizeRegular: "Regular (320px)",
+      imageSizeLarge: "Large (480px)",
+      imageSizeXL: "XL (720px)",
       linkText: "Link text",
       column: "Column {number}",
       insertTable: "Insert table",
@@ -299,6 +308,14 @@
       validUrl: "Usa una URL web, de correo electrónico o relativa.",
       text: "Texto",
       imageDescription: "Descripción de la imagen",
+      imageSize: "Tamaño de imagen",
+      imageSizeDefault: "Predeterminado",
+      imageSizeOriginal: "Original",
+      imageSizeXS: "XS (96px)",
+      imageSizeSmall: "Pequeño (160px)",
+      imageSizeRegular: "Normal (320px)",
+      imageSizeLarge: "Grande (480px)",
+      imageSizeXL: "XL (720px)",
       linkText: "Texto del enlace",
       column: "Columna {number}",
       insertTable: "Insertar tabla",
@@ -376,6 +393,14 @@
       validUrl: "Use uma URL da web, de e-mail ou relativa.",
       text: "Texto",
       imageDescription: "Descrição da imagem",
+      imageSize: "Tamanho da imagem",
+      imageSizeDefault: "Padrão",
+      imageSizeOriginal: "Original",
+      imageSizeXS: "XS (96px)",
+      imageSizeSmall: "Pequeno (160px)",
+      imageSizeRegular: "Normal (320px)",
+      imageSizeLarge: "Grande (480px)",
+      imageSizeXL: "XL (720px)",
       linkText: "Texto do link",
       column: "Coluna {number}",
       insertTable: "Inserir tabela",
@@ -453,6 +478,14 @@
       validUrl: "Utilisez une URL web, de courriel ou relative.",
       text: "Texte",
       imageDescription: "Description de l’image",
+      imageSize: "Taille de l’image",
+      imageSizeDefault: "Par défaut",
+      imageSizeOriginal: "Originale",
+      imageSizeXS: "XS (96px)",
+      imageSizeSmall: "Petite (160px)",
+      imageSizeRegular: "Normale (320px)",
+      imageSizeLarge: "Grande (480px)",
+      imageSizeXL: "XL (720px)",
       linkText: "Texte du lien",
       column: "Colonne {number}",
       insertTable: "Insérer un tableau",
@@ -530,6 +563,14 @@
       validUrl: "Verwende eine Web-, E-Mail- oder relative URL.",
       text: "Text",
       imageDescription: "Bildbeschreibung",
+      imageSize: "Bildgröße",
+      imageSizeDefault: "Standard",
+      imageSizeOriginal: "Original",
+      imageSizeXS: "XS (96px)",
+      imageSizeSmall: "Klein (160px)",
+      imageSizeRegular: "Normal (320px)",
+      imageSizeLarge: "Groß (480px)",
+      imageSizeXL: "XL (720px)",
       linkText: "Linktext",
       column: "Spalte {number}",
       insertTable: "Tabelle einfügen",
@@ -607,6 +648,14 @@
       validUrl: "Usa un URL web, email o relativo.",
       text: "Testo",
       imageDescription: "Descrizione dell’immagine",
+      imageSize: "Dimensione immagine",
+      imageSizeDefault: "Predefinita",
+      imageSizeOriginal: "Originale",
+      imageSizeXS: "XS (96px)",
+      imageSizeSmall: "Piccola (160px)",
+      imageSizeRegular: "Normale (320px)",
+      imageSizeLarge: "Grande (480px)",
+      imageSizeXL: "XL (720px)",
       linkText: "Testo del collegamento",
       column: "Colonna {number}",
       insertTable: "Inserisci tabella",
@@ -684,6 +733,14 @@
       validUrl: "ウェブ、メール、または相対URLを使用してください。",
       text: "テキスト",
       imageDescription: "画像の説明",
+      imageSize: "画像サイズ",
+      imageSizeDefault: "既定",
+      imageSizeOriginal: "元のサイズ",
+      imageSizeXS: "XS (96px)",
+      imageSizeSmall: "小 (160px)",
+      imageSizeRegular: "標準 (320px)",
+      imageSizeLarge: "大 (480px)",
+      imageSizeXL: "XL (720px)",
       linkText: "リンクのテキスト",
       column: "列{number}",
       insertTable: "表を挿入",
@@ -761,6 +818,14 @@
       validUrl: "请使用网页、电子邮件或相对URL。",
       text: "文本",
       imageDescription: "图片说明",
+      imageSize: "图片大小",
+      imageSizeDefault: "默认",
+      imageSizeOriginal: "原始大小",
+      imageSizeXS: "XS (96px)",
+      imageSizeSmall: "小 (160px)",
+      imageSizeRegular: "常规 (320px)",
+      imageSizeLarge: "大 (480px)",
+      imageSizeXL: "XL (720px)",
       linkText: "链接文本",
       column: "第{number}列",
       insertTable: "插入表格",
@@ -885,7 +950,12 @@
     let eol = source.match(/\r\n|\r|\n/)?.[0] || "\n",
       rawBreaks = [];
     let textMap = new WeakMap(),
-      lineMap = new WeakMap();
+      lineMap = new WeakMap(),
+      imageMap = new WeakMap();
+    let selectedImage = null,
+      imageToolbar = null,
+      imageOptions = null,
+      imageObserver = null;
     const metrics = options.onMeasure ? options.onMeasure : null;
     const measure = (operation, started, extra = {}) => metrics?.({ operation, duration: performance.now() - started, ...extra });
     const listen = (target, type, handler, extra = {}) => target.addEventListener(type, handler, { signal, ...extra });
@@ -903,7 +973,7 @@
     };
     // Update only UI labels; source nodes, selection, composition, and history keep their owners.
     const translateControls = () => {
-      for (const root of [bar, toolbar, dialog]) {
+      for (const root of [bar, toolbar, imageToolbar, dialog]) {
         if (!root) continue;
         root.lang = language;
         for (const text of root.querySelectorAll("[data-message]")) {
@@ -934,6 +1004,7 @@
       palettePicker.setAttribute("aria-label", languageText.colorPalette);
       for (const group of palettePicker.querySelectorAll("optgroup")) group.label = languageText[group.dataset.messageGroup];
       heading.setAttribute("aria-label", languageText.paragraphStyle);
+      imageToolbar?.setAttribute("aria-label", languageText.imageSize);
       themeButton.title = languageText[isDark() ? "lightTheme" : "darkTheme"];
       themeButton.setAttribute("aria-label", themeButton.title);
       for (const record of lines) {
@@ -1280,6 +1351,106 @@
       }
     };
 
+    // --- IMAGE CONTROLS ---
+    const markImageSize = (row, value) => {
+      row.dataset.size = value;
+      for (const button of row.querySelectorAll("button")) {
+        button.setAttribute("aria-pressed", String(button.value === value));
+        button.tabIndex = button.value === value ? 0 : -1;
+      }
+    };
+    const imageSizeOptions = (onSelect, controlSignal = signal) => {
+      const row = node("div", "byEDimageSizes");
+      row.setAttribute("role", "group");
+      row.setAttribute("aria-label", languageText.imageSize);
+      row.dataset.messageLabel = "imageSize";
+      for (const value of imageSizes) {
+        const suffix = ["xs", "xl"].includes(value) ? value.toUpperCase() : value[0].toUpperCase() + value.slice(1);
+        const key = `imageSize${suffix}`;
+        const button = node("button", "", languageText[key]);
+        button.type = "button";
+        button.value = value;
+        button.dataset.message = key;
+        listen(
+          button,
+          "click",
+          () => {
+            markImageSize(row, value);
+            onSelect?.(value);
+          },
+          { signal: controlSignal }
+        );
+        row.append(button);
+      }
+      listen(
+        row,
+        "keydown",
+        (event) => {
+          if (!event.target.matches("button") || !["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+          event.preventDefault();
+          const buttons = [...row.querySelectorAll("button")],
+            current = buttons.indexOf(event.target);
+          const index = event.key === "Home" ? 0 : event.key === "End" ? buttons.length - 1 : (current + (event.key === "ArrowRight" ? 1 : -1) + buttons.length) % buttons.length;
+          for (const button of buttons) button.tabIndex = button === buttons[index] ? 0 : -1;
+          buttons[index].focus({ preventScroll: true });
+          buttons[index].scrollIntoView({ block: "nearest", inline: "nearest" });
+        },
+        { signal: controlSignal }
+      );
+      markImageSize(row, "default");
+      return row;
+    };
+    const hideImageToolbar = () => {
+      selectedImage?.classList.remove("is-selected");
+      selectedImage = null;
+      imageObserver?.disconnect();
+      if (imageToolbar) imageToolbar.hidden = true;
+    };
+    // Coordinates share the editor's containing block, including its own scroll and borders.
+    const positionImageToolbar = () => {
+      if (!selectedImage?.isConnected) return hideImageToolbar();
+      const image = selectedImage.getBoundingClientRect(),
+        owner = element.getBoundingClientRect();
+      const left = Math.max(0, owner.left),
+        right = Math.min(global.innerWidth, owner.right),
+        top = Math.max(0, owner.top),
+        bottom = Math.min(global.innerHeight, owner.bottom);
+      imageToolbar.hidden = image.bottom <= top || image.top >= bottom || image.right <= left || image.left >= right;
+      if (imageToolbar.hidden) return;
+      imageToolbar.style.maxWidth = `${Math.max(0, right - left)}px`;
+      const x = Math.max(left, Math.min(image.left, right - imageToolbar.offsetWidth));
+      let y = Math.min(image.bottom, bottom) + 6;
+      if (y + imageToolbar.offsetHeight > bottom) y = Math.max(top, image.top - imageToolbar.offsetHeight - 6);
+      imageToolbar.style.left = `${x - owner.left + element.scrollLeft - element.clientLeft}px`;
+      imageToolbar.style.top = `${y - owner.top + element.scrollTop - element.clientTop}px`;
+    };
+    const showImageToolbar = (image) => {
+      if (previewing || syntax === "source" || !imageMap.has(image)) return;
+      hideImageToolbar();
+      if (!imageToolbar) {
+        imageToolbar = node("div", "byEDimageToolbar");
+        imageToolbar.setAttribute("role", "toolbar");
+        imageToolbar.setAttribute("aria-label", languageText.imageSize);
+        imageToolbar.lang = language;
+        imageOptions = imageSizeOptions((size) => command("imageSize", size));
+        imageToolbar.append(imageOptions);
+        element.append(imageToolbar);
+        listen(imageToolbar, "keydown", (event) => {
+          if (event.key !== "Escape") return;
+          event.preventDefault();
+          hideImageToolbar();
+          restore(position);
+        });
+        imageObserver = new ResizeObserver(positionImageToolbar);
+      }
+      selectedImage = image;
+      image.classList.add("is-selected");
+      markImageSize(imageOptions, imageMap.get(image).token.size || "default");
+      positionImageToolbar();
+      imageObserver.observe(image);
+      imageObserver.observe(element);
+    };
+
     // --- INCREMENTAL RENDERING ---
     const renderInline = (target, record, from, to) => {
       const value = record.text.slice(from, to);
@@ -1310,8 +1481,8 @@
           }
           const tag = { strongEm: "strong", link: "span", image: "span" }[token.type] || token.type;
           const wrapper = node(tag, token.type === "code" ? "byMDinlineCode" : token.type === "link" ? "byMDlink" : "");
-          if (["strong", "strongEm", "em", "del", "code"].includes(token.type) || (syntax === "no-code" && !token.auto && ["link", "image"].includes(token.type)))
-            record.formats.push({ ...token, from: start, to: end, bodyFrom: from + token.bodyFrom, bodyTo: from + token.bodyTo });
+          if (["strong", "strongEm", "em", "del", "code", "image"].includes(token.type) || (syntax === "no-code" && !token.auto && token.type === "link"))
+            record.formats.push({ ...token, from: start, to: end, bodyFrom: from + token.bodyFrom, bodyTo: from + token.bodyTo, ...(token.size ? { sizeFrom: from + token.sizeFrom } : {}) });
           mappedText(wrapper, record, start, from + token.bodyFrom, "byEDsyntax");
           if (token.children && !token.auto) render(wrapper, token.children);
           else mappedText(wrapper, record, from + token.bodyFrom, from + token.bodyTo);
@@ -1327,6 +1498,14 @@
             img.alt = token.text;
             img.loading = "lazy";
             img.contentEditable = "false";
+            img.draggable = false;
+            img.tabIndex = 0;
+            if (token.title) img.title = token.title;
+            if (token.size) {
+              img.classList.add("byMDimage");
+              img.dataset.size = token.size;
+            }
+            imageMap.set(img, { record, token: record.formats.at(-1) });
             wrapper.append(img);
             wrapper.classList.add("byEDimageSource");
           }
@@ -1702,6 +1881,7 @@
     // Commit one source edit, update derived views and undo state, then notify the application synchronously.
     const change = (from, to, inserted, next, type = "command", remember = true, native = null) => {
       if (!alive || previewing) return false;
+      hideImageToolbar();
       if (remember && syntax !== "source" && from === to && inserted && !/^[#\s]/.test(inserted)) {
         const record = lines[lineAt(from)];
         // Add the heading separator in the source transaction so typing, paste, and IME agree.
@@ -1911,6 +2091,30 @@
         undo(name === "redo");
         return true;
       }
+      if (name === "imageSize") {
+        if (!imageSizes.includes(value)) return false;
+        const selected = selectedImage && imageMap.get(selectedImage);
+        const record = selected?.record || formattingAt(from);
+        const token = selected?.token || record?.formats.find((item) => item.type === "image" && record.from + item.from <= from && record.from + item.to >= to);
+        if (!token) return false;
+        const start = record.from + (token.sizeFrom ?? token.to),
+          end = record.from + token.to,
+          metadata = value === "default" ? "" : `<!-- bymd:size=${value} -->`,
+          imageFrom = record.from + token.from,
+          keepToolbar = Boolean(selectedImage);
+        const changed = change(start, end, metadata, { anchor: imageFrom, focus: start + metadata.length }, name);
+        if (changed && keepToolbar) {
+          const image = [...surface.querySelectorAll(".byEDimage")].find((item) => {
+            const mapping = imageMap.get(item);
+            return mapping.record.from + mapping.token.from === imageFrom;
+          });
+          if (image) {
+            showImageToolbar(image);
+            imageOptions.querySelector('[aria-pressed="true"]').focus({ preventScroll: true });
+          }
+        }
+        return changed;
+      }
       if (syntax === "no-code" && lines[lineAt(from)]?.meta.type === "source") {
         announce("readOnlyBlock");
         return false;
@@ -1974,7 +2178,8 @@
         const label = source.slice(from, to) || value.label || languageText[name === "image" ? "imageDescription" : "linkText"];
         const url = value.url.replace(/\(/g, "%28").replace(/\)/g, "%29").replace(/\s/g, "%20");
         const opening = name === "image" ? "![" : "[";
-        return change(from, to, `${opening}${label}](${url})`, { anchor: from + opening.length, focus: from + opening.length + label.length }, name);
+        const metadata = name === "image" && imageSizes.includes(value.size) && value.size !== "default" ? `<!-- bymd:size=${value.size} -->` : "";
+        return change(from, to, `${opening}${label}](${url})${metadata}`, { anchor: from + opening.length, focus: from + opening.length + label.length }, name);
       }
       if (name === "table" || name === "insertTable") {
         if (!value) return openDialog("table");
@@ -2006,6 +2211,7 @@
     // Own one insertion dialog at a time and retain the source selection while focus is inside it.
     const openDialog = (name) => {
       if (dialog) return;
+      hideImageToolbar();
       savedPosition = selection();
       dialogAbort = new AbortController();
       const dialogListen = (target, type, handler) => listen(target, type, handler, { signal: dialogAbort.signal });
@@ -2057,6 +2263,14 @@
       } else {
         field("url", name === "image" ? "imageUrl" : "url", "text", "https://");
         field("label", name === "image" ? "imageDescription" : "linkText", "text", source.slice(Math.min(savedPosition.anchor, savedPosition.focus), Math.max(savedPosition.anchor, savedPosition.focus)));
+        if (name === "image") {
+          const wrapper = node("fieldset", "byEDfield"),
+            caption = node("legend", "", languageText.imageSize);
+          caption.dataset.message = "imageSize";
+          fields.size = imageSizeOptions(null, dialogAbort.signal);
+          wrapper.append(caption, fields.size);
+          form.append(wrapper);
+        }
       }
       const actions = node("div", "byEDdialogActions"),
         cancel = node("button", "byEDdialogCancel"),
@@ -2101,7 +2315,12 @@
       });
       dialogListen(form, "submit", (event) => {
         event.preventDefault();
-        const value = name === "table" ? { rows: Number(fields.rows.value), columns: Number(fields.columns.value) } : name === "codeBlock" ? fields.language.value : { url: fields.url.value, label: fields.label.value };
+        const value =
+          name === "table"
+            ? { rows: Number(fields.rows.value), columns: Number(fields.columns.value) }
+            : name === "codeBlock"
+              ? fields.language.value
+              : { url: fields.url.value, label: fields.label.value, ...(name === "image" ? { size: fields.size.dataset.size } : {}) };
         close();
         command(name, value);
       });
@@ -2388,6 +2607,7 @@
       document,
       "pointerdown",
       (event) => {
+        if (!imageToolbar?.contains(event.target) && event.target !== selectedImage) hideImageToolbar();
         if (element.contains(event.target) || !element.contains(document.activeElement)) return;
         position = selection();
         // Empty host space can hit-test to the nearest editable line outside its bounds.
@@ -2410,8 +2630,52 @@
       if (!dirty) activate(lines[lineAt(selection().focus)]);
     });
     listen(element, "focusout", (event) => {
-      if (!element.contains(event.relatedTarget)) activate(null);
+      if (!element.contains(event.relatedTarget)) {
+        activate(null);
+        hideImageToolbar();
+      }
     });
+    listen(surface, "pointerdown", (event) => {
+      if (!event.target.matches(".byEDimage")) return;
+      event.preventDefault();
+      finishComposition();
+      const image = event.target,
+        mapping = imageMap.get(image);
+      if (!image.isConnected || !mapping) return;
+      restore({ anchor: mapping.record.from + mapping.token.from, focus: mapping.record.from + mapping.token.to });
+      showImageToolbar(image);
+    });
+    listen(surface, "focusin", (event) => {
+      if (event.target.matches(".byEDimage")) showImageToolbar(event.target);
+    });
+    listen(
+      surface,
+      "keydown",
+      (event) => {
+        if (!event.target.matches(".byEDimage") || !["Enter", " ", "Escape"].includes(event.key)) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        if (event.key === "Escape") {
+          hideImageToolbar();
+          restore(position);
+        } else {
+          showImageToolbar(event.target);
+          imageOptions.querySelector('[aria-pressed="true"]').focus({ preventScroll: true });
+        }
+      },
+      { capture: true }
+    );
+    listen(global, "resize", () => {
+      if (selectedImage) positionImageToolbar();
+    });
+    listen(
+      document,
+      "scroll",
+      () => {
+        if (selectedImage) positionImageToolbar();
+      },
+      { capture: true }
+    );
     listen(toolbar, "pointerdown", (event) => {
       if (event.target.closest("button")) {
         position = selection();
@@ -2443,6 +2707,7 @@
         if (typeof value !== "string") throw new TypeError("byMDeditor.setMarkdown: value must be a string.");
         if (value.length > 2000000) throw new RangeError("Document exceeds 2,000,000 characters.");
         finishComposition();
+        hideImageToolbar();
         source = value;
         eol = source.match(/\r\n|\r|\n/)?.[0] || "\n";
         syncRawBreaks();
@@ -2467,6 +2732,7 @@
           return;
         }
         finishComposition();
+        hideImageToolbar();
         if (!previewing) position = selection();
         // Source mode can retain a hidden visual document built in a different mode.
         const rebuild = renderedNoCode !== (mode === "no-code");
@@ -2510,6 +2776,7 @@
       setPreview(visible) {
         if (!alive) return;
         finishComposition();
+        hideImageToolbar();
         if (!previewing) savedPosition = selection();
         if (visible && typeof global.byMDviewer !== "function") {
           announce("previewNeedsViewer");
@@ -2599,6 +2866,7 @@
         if (!alive) return;
         // Commit browser-owned IME text before releasing listeners; this may call onChange during teardown.
         finishComposition();
+        hideImageToolbar();
         alive = false;
         abort.abort();
         dialogAbort?.abort();
@@ -2615,6 +2883,7 @@
         dialog = null;
         textMap = new WeakMap();
         lineMap = new WeakMap();
+        imageMap = new WeakMap();
         source = "";
         rawBreaks = [];
         raw.value = "";

@@ -107,6 +107,24 @@ Enter inserts one line break, continues a list, or exits an empty list item. Pre
 
 Backspace at a closing formatting boundary removes a delimiter before deleting the word. Undo/redo share one history across modes; consecutive text input is grouped. Pasting accepts plain text/Markdown rather than HTML. Copy and Cut return the selected Markdown, including delimiters.
 
+### Image sizes
+
+Click an image in No-code, Clean, or Assisted mode to open its floating row of size buttons. The row scrolls horizontally when space is tight. Keyboard users can focus the image and press Enter or Space to focus the current size, use arrow keys or Home/End to move between choices, and press Enter or Space to apply one; Escape closes the toolbar. Clicking elsewhere dismisses it. The image insertion dialog offers the same choices:
+
+- **Default:** unchanged image behavior; no size metadata.
+- **Original:** natural image width.
+- **XS:** 96px; **Small:** 160px; **Regular:** 320px; **Large:** 480px; **XL:** 720px.
+
+Explicit sizes preserve proportions and shrink to fit the document. Resizing changes only an optional comment immediately after the image, preserving its alt text, URL, and title:
+
+```markdown
+![A logo](logo.png "Original title")<!-- bymd:size=small -->
+```
+
+Each resize is one undo step in the shared history. Source mode edits this same Markdown, and Preview uses the viewer's matching image sizes while remaining read-only. Default removes the size comment. Images without metadata keep the editor's existing display behavior, including its height limit.
+
+Image sizing requires MD viewer 2.8 or newer in both JavaScript and CSS. The playground and CI pin that companion release. Other Markdown engines supporting HTML comments show the image normally and ignore the sizing; engines that escape raw HTML may expose the comment.
+
 ## API
 
 ```javascript
@@ -141,7 +159,8 @@ editor.destroy();
 | `bold`, `italic`, `strikethrough`, `inlineCode`                                       | None                                                                   |
 | `heading`                                                                             | Level 1–6; `0` means paragraph                                         |
 | `paragraph`, `bulletList`, `orderedList`, `checklist`, `blockquote`, `horizontalRule` | None                                                                   |
-| `link`, `image`                                                                       | `{ url, label }`; omit to open the insertion dialog                    |
+| `link`, `image`                                                                       | `{ url, label }`; images also accept optional `size`; omit to open the insertion dialog |
+| `imageSize`                                                                           | `"default"`, `"original"`, `"xs"`, `"small"`, `"regular"`, `"large"`, or `"xl"`; resize the selected image or the image containing the caret |
 | `table`                                                                               | `{ rows, columns }`; omit for the size dialog; rows exclude the header |
 | `codeBlock`                                                                           | Language string, or `""` for plain code; omit for the language dialog  |
 | `undo`, `redo`                                                                        | None                                                                   |
