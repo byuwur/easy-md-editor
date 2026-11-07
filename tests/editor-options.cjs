@@ -565,6 +565,32 @@ test("No-code editing and control visibility", async (t) => {
       }
     });
 
+    await t.test("clicking outside insertion dialogs cancels without editing or losing the selection", async () => {
+      for (const command of ["link", "image", "table", "codeBlock"])
+        for (const outsideEditor of [false, true]) {
+          await page.evaluate((command) => {
+            render("Selected text", { language: "en" });
+            editor.setSelection(0, 8);
+            editor.command(command);
+          }, command);
+          await page.locator("dialog h2").click();
+          assert.equal(await page.locator("dialog").isVisible(), true, "Clicks inside the form keep it open");
+          if (command === "link" && !outsideEditor) {
+            await page.locator("dialog h2").hover();
+            await page.mouse.down();
+            await page.mouse.move(1, 1);
+            await page.mouse.up();
+            assert.equal(await page.locator("dialog").isVisible(), true, "Dragging out of the form does not cancel it");
+          }
+          const bounds = await page.locator("dialog").boundingBox();
+          await page.mouse.click(outsideEditor ? 1 : bounds.x + 5, outsideEditor ? 1 : bounds.y + 5);
+          assert.equal(await page.locator("dialog").count(), 0, `${command}, outside editor: ${outsideEditor}`);
+          assert.equal(await page.evaluate(() => editor.getMarkdown()), "Selected text");
+          assert.deepEqual(await page.evaluate(() => editor.getSelection()), { anchor: 0, focus: 8 });
+          assert.deepEqual(await page.evaluate(() => changes), []);
+        }
+    });
+
     await t.test("code-block dialog uses CODE languages, defaults to Plain Text, and preserves localized choices", async () => {
       for (const language of ["plain", "javascript", "python"]) {
         await page.evaluate(() => {

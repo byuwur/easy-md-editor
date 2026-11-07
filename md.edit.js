@@ -2088,6 +2088,13 @@
         restore(savedPosition);
       };
       dialogListen(cancel, "click", close);
+      let outsidePress = false;
+      dialogListen(dialog, "pointerdown", (event) => {
+        outsidePress = event.target === dialog;
+      });
+      dialogListen(dialog, "click", (event) => {
+        if (outsidePress && event.target === dialog) close();
+      });
       dialogListen(dialog, "cancel", (event) => {
         event.preventDefault();
         close();
