@@ -441,6 +441,70 @@ test("No-code editing and control visibility", async (t) => {
       assert.equal(await page.evaluate(() => editor.getMarkdown()), source);
     });
 
+    await t.test("compact controls retain accessible names, button titles, selection and history", async () => {
+      await page.evaluate(() => {
+        render("Hello", { language: "en", controlsCompact: true });
+        window.originalBold = document.querySelector('[data-command="bold"]');
+        editor.setSelection(0, 5);
+        editor.command("bold");
+      });
+      const position = await page.evaluate(() => editor.getSelection());
+      const bold = page.getByRole("button", { name: "Bold", exact: true });
+      assert.equal(await bold.locator("span").isHidden(), true);
+      assert.match(await bold.getAttribute("title"), /^Bold \((Ctrl|Cmd) \+ B\)$/);
+      await page.evaluate(() => editor.setControls({ controlsCompact: false }));
+      assert.equal(await bold.locator("span").isVisible(), true);
+      assert.equal(await page.evaluate(() => document.querySelector('[data-command="bold"]') === originalBold), true);
+      assert.deepEqual(await page.evaluate(() => editor.getSelection()), position);
+      await page.evaluate(() => editor.setControls({ controlsCompact: true }));
+      assert.equal(await bold.locator("span").isHidden(), true);
+      await page.evaluate(() => editor.command("undo"));
+      assert.equal(await page.evaluate(() => editor.getMarkdown()), "Hello");
+      await page.evaluate(() => editor.destroy());
+      assert.equal(await page.locator("#editor").evaluate((root) => root.classList.contains("byEDcompact")), false);
+      await page.evaluate(() => render("Hello", { language: "en" }));
+      assert.equal(await page.getByRole("button", { name: "Bold", exact: true }).locator("span").isVisible(), true);
+    });
+    await t.test("shortcut titles follow the platform, language, and shortcuts option", async () => {
+      try {
+        for (const [platform, modifier] of [
+          ["Win32", "Ctrl"],
+          ["MacIntel", "Cmd"]
+        ]) {
+          await page.evaluate((platform) => {
+            Object.defineProperty(navigator, "platform", { configurable: true, value: platform });
+            render("Hello", { language: "en", controlsCompact: true });
+          }, platform);
+          for (const [command, label, keys] of [
+            ["bold", "Bold", "B"],
+            ["italic", "Italic", "I"],
+            ["undo", "Undo", "Z"],
+            ["redo", "Redo", "Shift + Z"]
+          ]) {
+            const button = page.locator(`[data-command="${command}"]`);
+            assert.equal(await button.getAttribute("title"), `${label} (${modifier} + ${keys})`);
+            assert.equal(await button.getAttribute("aria-label"), label);
+          }
+          await page.evaluate(() => editor.setLanguage("es"));
+          assert.equal(await page.locator('[data-command="bold"]').getAttribute("title"), `Negrita (${modifier} + B)`);
+          await page.evaluate(() => render("Hello", { language: "en", shortcuts: false, controlsCompact: true }));
+          assert.equal(await page.locator('[data-command="bold"]').getAttribute("title"), "Bold");
+        }
+      } finally {
+        await page.evaluate(() => {
+          delete navigator.platform;
+        });
+      }
+      await page.evaluate(() => {
+        render("Hello", { language: "en", controlsCompact: true });
+        editor.setSelection(0, 5);
+      });
+      await page.keyboard.press("Control+b");
+      assert.equal(await page.evaluate(() => editor.getMarkdown()), "**Hello**");
+      await page.keyboard.press("Control+z");
+      assert.equal(await page.evaluate(() => editor.getMarkdown()), "Hello");
+    });
+
     // --- OPTIONAL CONTROLS ---
     const selectors = {
       toolbarToggle: '[aria-label="Formatting"]',

@@ -64,6 +64,7 @@ test("control languages preserve source, native editing, and instance state", as
       assert.equal(await page.evaluate(() => editor.getLanguage()), "es", "Duplicate core imports retain dictionaries and instances");
     });
     await t.test("all eight dictionaries have complete messages and matching placeholders", async () => {
+      const modifier = await page.evaluate(() => (/Mac|iPhone|iPad|iPod/.test(navigator.platform) ? "Cmd" : "Ctrl"));
       const locales = await page.evaluate(() => byMDeditor.locales);
       assert.deepEqual(Object.keys(locales), ["en", "es", "pt", "fr", "de", "it", "ja", "zh"]);
       const source = "# Heading\n\n- [ ] Write\n\n  - Nested\n\n~~~js\nconst value = 1;\n~~~";
@@ -76,7 +77,7 @@ test("control languages preserve source, native editing, and instance state", as
         }
         await page.evaluate(({ source, code }) => render(source, { language: code, syntax: "no-code", theme: "light", palette: "monokai" }), { source, code });
         assert.equal(await page.locator('[data-control="toolbar"]').getAttribute("aria-label"), messages.formatting);
-        assert.equal(await page.locator('[data-command="bold"]').getAttribute("title"), messages.bold);
+        assert.equal(await page.locator('[data-command="bold"]').getAttribute("title"), `${messages.bold} (${modifier} + B)`);
         assert.equal(await page.locator('[data-command="bold"] span').textContent(), messages.bold);
         assert.equal(await page.locator('[data-control="syntax"] option[value="no-code"]').textContent(), messages.modeNoCode);
         assert.equal(await page.locator('[data-control="syntax"]').getAttribute("title"), messages.descriptionNoCode);

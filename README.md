@@ -63,6 +63,7 @@ No database, network requests, autosave, or browser storage are built in.
 | `appearAnimation`  | `false`                                 | Fade and gently move the editor in when `animations` is enabled.                                                            |
 | `toolbar`          | `true`                                  | Show formatting tools; users can collapse them.                                                                             |
 | `toolbarToggle`    | `true`                                  | Show the Formatting button that opens or closes the toolbar.                                                                |
+| `controlsCompact`  | `false`                                 | Hide button labels while retaining icons, tooltips, and accessible names.                                                   |
 | `syntaxSelect`     | `true`                                  | Show the editing-mode selector.                                                                                             |
 | `previewToggle`    | `true`                                  | Show the Preview button.                                                                                                    |
 | `themeToggle`      | `true`                                  | Show the light/dark theme switch.                                                                                           |
@@ -80,7 +81,7 @@ No database, network requests, autosave, or browser storage are built in.
 | `onChange`         | —                                       | Called with the complete Markdown after a committed edit or `setMarkdown()`.                                                |
 | `onMeasure`        | —                                       | Optional development callback receiving `{ operation, duration, ... }` samples in milliseconds.                             |
 
-For a smaller toolbar: `tools: ["heading", "bold", "italic", "link", "undo", "redo"]`.
+For a smaller toolbar: `tools: ["heading", "bold", "italic", "link", "undo", "redo"]`. Set `controlsCompact: true` to hide button labels. Button titles include the supported Ctrl/Cmd shortcuts for Bold, Italic, Undo, and Redo when `shortcuts` is enabled.
 
 Use `editor.setAnimations(false)` to change motion without recreating the editor or resetting selection/history.
 
@@ -129,7 +130,7 @@ editor.destroy();
 
 `onChange` is synchronous. Debounce expensive application work such as storage or remote requests outside the editor. Mode, theme, and selection changes do not call it.
 
-`setControls(options)` changes any of `toolbarToggle`, `syntaxSelect`, `previewToggle`, `themeToggle`, `paletteSelect`, and `statusBar` without rebuilding the document or resetting selection/history. Omitted keys retain their current values; `false` hides a control. Use `setToolbar()` for the formatting tools themselves. An empty control bar is hidden automatically.
+`setControls(options)` also accepts `controlsCompact: true` for icon-only buttons; `false` restores their labels. It changes the visibility of `toolbarToggle`, `syntaxSelect`, `previewToggle`, `themeToggle`, `paletteSelect`, and `statusBar` without rebuilding the document or resetting selection/history. Omitted keys retain their current values; `false` hides a control. Use `setToolbar()` for the formatting tools themselves. An empty control bar is hidden automatically.
 
 `getSelection()` returns `{ anchor, focus }`. `setSelection(anchor, focus = anchor)` accepts UTF-16 source offsets, like JavaScript string indexes; reverse ranges preserve their direction. No-code projects positions inside hidden syntax onto visible text; read-only blocks expose their source boundaries. Select All still includes the complete Markdown.
 

@@ -83,6 +83,13 @@
   align-items: center;
   justify-content: center;
 }
+.byMDeditor.byEDcompact .byEDbutton {
+  min-width: 2.25em;
+  gap: 0;
+}
+.byMDeditor.byEDcompact .byEDbutton > span {
+  display: none;
+}
 .byEDcontrols > .byVIEWthemeToggle {
   position: relative;
   display: grid;

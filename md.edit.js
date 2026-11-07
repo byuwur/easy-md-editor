@@ -30,6 +30,7 @@
     ["blockquote", "quote-left"],
     ["horizontalRule", "minus"]
   ];
+  const shortcutKeys = { bold: "B", italic: "I", undo: "Z", redo: "Shift + Z" };
   const wraps = { bold: "**", italic: "*", strikethrough: "~~", inlineCode: "`" };
   const modes = ["no-code", "clean", "assisted", "source"];
   const modeDescriptions = {
@@ -826,6 +827,7 @@
       appearAnimation: false,
       toolbar: true,
       toolbarToggle: true,
+      controlsCompact: false,
       syntaxSelect: true,
       previewToggle: true,
       themeToggle: true,
@@ -885,6 +887,8 @@
     for (const [key, englishText] of Object.entries(byMDeditor.locales.en)) {
       languageText[key] = String(translations[key] ?? byMDeditor.locales[language]?.[key] ?? englishText);
     }
+    const shortcutModifier = /Mac|iPhone|iPad|iPod/.test(global.navigator?.platform || "") ? "Cmd" : "Ctrl";
+    const buttonTitle = (key) => (options.shortcuts && shortcutKeys[key] ? `${languageText[key]} (${shortcutModifier} + ${shortcutKeys[key]})` : languageText[key]);
     const announce = (key) => {
       announcement = key;
       status.textContent = languageText[key];
@@ -902,8 +906,9 @@
           text.textContent = message;
         }
         for (const control of root.querySelectorAll("[data-message-label]")) {
-          control.title = languageText[control.dataset.messageLabel];
-          control.setAttribute("aria-label", control.title);
+          const key = control.dataset.messageLabel;
+          control.title = buttonTitle(key);
+          control.setAttribute("aria-label", languageText[key]);
         }
       }
       status.lang = language;
@@ -983,7 +988,7 @@
       result.append(glyph, caption);
       result.dataset.messageLabel = key;
       result.setAttribute("aria-label", label);
-      result.title = label;
+      result.title = buttonTitle(key);
       listen(result, "click", action);
       parent.appendChild(result);
       return result;
@@ -2419,6 +2424,8 @@
       // Change control visibility without replacing the document, selection, or history.
       setControls(visibility = {}) {
         if (!alive) return;
+        if (Object.hasOwn(visibility, "controlsCompact")) options.controlsCompact = Boolean(visibility.controlsCompact);
+        element.classList.toggle("byEDcompact", options.controlsCompact);
         for (const [name, control] of Object.entries(controlVisibility)) {
           if (Object.hasOwn(visibility, name)) options[name] = visibility[name] !== false;
           control.hidden = options[name] === false;
@@ -2545,7 +2552,7 @@
         if (instances.get(element) === api) {
           instances.delete(element);
           element.replaceChildren();
-          element.classList.remove("byMDeditor", "byMDdocument", "byVIEWmotion", "byVIEWappear", "byVIEWready");
+          element.classList.remove("byMDeditor", "byMDdocument", "byEDcompact", "byVIEWmotion", "byVIEWappear", "byVIEWready");
           element.removeAttribute("data-syntax");
         }
       }
