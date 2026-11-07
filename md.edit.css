@@ -135,6 +135,35 @@
 .byEDtoolbar .byEDselect {
   max-width: 11em;
 }
+@supports (appearance: base-select) {
+  .byEDheading,
+  .byEDheading::picker(select) {
+    appearance: base-select;
+  }
+  .byEDheading {
+    min-width: 8.5em;
+  }
+  .byEDheading::picker(select) {
+    /* Match document text despite the toolbar's smaller type. */
+    font-size: calc(1em / 0.8125);
+    border: 0.0625rem solid var(--by-ed-border);
+    border-radius: 0.5rem;
+    padding: 0.25rem;
+    background: var(--by-view-container-bg, var(--by-ed-bg));
+    color: var(--by-ed-text);
+  }
+  .byEDheading option {
+    padding: 0.35rem 0.5rem;
+  }
+  .byEDheading option:is(:checked, :hover, :focus) {
+    background: var(--by-ed-alt);
+  }
+  .byEDheading option > * {
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+}
 .byEDstatus {
   margin: 0;
   padding: 0 1rem;

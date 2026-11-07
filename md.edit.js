@@ -901,7 +901,7 @@
         for (const text of root.querySelectorAll("[data-message]")) {
           const key = text.dataset.message;
           let message = languageText[key];
-          if (key === "heading") message = message.replaceAll("{level}", text.value);
+          if (key === "heading") message = message.replaceAll("{level}", text.closest("option").value);
           if (key === "customPalette") message = message.replaceAll("{palette}", text.value);
           text.textContent = message;
         }
@@ -1040,12 +1040,15 @@
     listen(themeButton, "click", () => api.setTheme(isDark() ? "light" : "dark"));
     controls.append(themeButton);
     bar.append(picker, controls);
-    const heading = node("select", "byEDselect");
+    const heading = node("select", "byEDselect byEDheading");
     heading.setAttribute("aria-label", languageText.paragraphStyle);
     for (let level = 0; level <= 6; level++) {
-      const option = node("option", "", level ? languageText.heading.replaceAll("{level}", String(level)) : languageText.paragraph);
-      option.dataset.message = level ? "heading" : "paragraph";
+      const option = node("option");
+      const caption = node(level ? `h${level}` : "span", "", level ? languageText.heading.replaceAll("{level}", String(level)) : languageText.paragraph);
+      caption.dataset.message = level ? "heading" : "paragraph";
+      caption.setAttribute("role", "presentation");
       option.value = String(level);
+      option.append(caption);
       heading.append(option);
     }
     listen(heading, "change", () => {

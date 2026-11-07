@@ -81,7 +81,7 @@ No database, network requests, autosave, or browser storage are built in.
 | `onChange`         | —                                       | Called with the complete Markdown after a committed edit or `setMarkdown()`.                                                |
 | `onMeasure`        | —                                       | Optional development callback receiving `{ operation, duration, ... }` samples in milliseconds.                             |
 
-For a smaller toolbar: `tools: ["heading", "bold", "italic", "link", "undo", "redo"]`. Set `controlsCompact: true` to hide button labels. Button titles include the supported Ctrl/Cmd shortcuts for Bold, Italic, Undo, and Redo when `shortcuts` is enabled.
+For a smaller toolbar: `tools: ["heading", "bold", "italic", "link", "undo", "redo"]`. Set `controlsCompact: true` to hide button labels. Button titles include the supported Ctrl/Cmd shortcuts for Bold, Italic, Undo, and Redo when `shortcuts` is enabled. The paragraph-style menu previews the document's heading sizes in browsers supporting customizable selects; other browsers keep the standard text menu.
 
 Use `editor.setAnimations(false)` to change motion without recreating the editor or resetting selection/history.
 

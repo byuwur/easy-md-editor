@@ -441,6 +441,41 @@ test("No-code editing and control visibility", async (t) => {
       assert.equal(await page.evaluate(() => editor.getMarkdown()), source);
     });
 
+    await t.test("heading choices preview document typography without changing the closed toolbar", async () => {
+      const markdown = "Paragraph\n\n" + [1, 2, 3, 4, 5, 6].map((level) => "#".repeat(level) + " Heading " + level).join("\n\n");
+      try {
+        for (const fontSize of [1, 1.5])
+          for (const theme of ["light", "dark"]) {
+            await page.evaluate(({ markdown, fontSize, theme }) => render(markdown, { fontSize, theme, language: "en" }), { markdown, fontSize, theme });
+            const picker = page.locator(".byEDheading");
+            const closedHeight = (await picker.boundingBox()).height;
+            await picker.click();
+            const styles = await picker.locator("option").evaluateAll((options) =>
+              options.map((option, level) => {
+                const label = getComputedStyle(option.firstElementChild);
+                const document = getComputedStyle(level ? window.document.querySelector(`.byEDsurface h${level}`) : window.document.querySelector(".byEDsurface"));
+                return { level, actual: [label.fontSize, label.fontWeight, label.fontFamily], expected: [document.fontSize, document.fontWeight, document.fontFamily], height: option.getBoundingClientRect().height };
+              })
+            );
+            for (const { level, actual, expected, height } of styles) {
+              assert.deepEqual(actual, expected, `Heading ${level}, ${fontSize}rem, ${theme}`);
+              assert.ok(height >= parseFloat(actual[0]), "The open picker shows each full-size choice");
+            }
+            await page.getByRole("option", { name: "Heading 3", exact: true }).click();
+            assert.equal(await picker.inputValue(), "3");
+            assert.equal((await picker.boundingBox()).height, closedHeight);
+            assert.equal(await page.evaluate(() => editor.getMarkdown()), "### " + markdown);
+            await page.evaluate(() => editor.command("undo"));
+            assert.equal(await page.evaluate(() => editor.getMarkdown()), markdown);
+            await page.evaluate(() => editor.setLanguage("es"));
+            assert.equal(await picker.locator('option[value="3"]').textContent(), "T\u00edtulo 3");
+            assert.equal(await picker.locator('option[value="3"] h3').count(), 1);
+          }
+      } finally {
+        await page.locator("#editor").evaluate((root) => root.style.removeProperty("font-size"));
+      }
+    });
+
     await t.test("compact controls retain accessible names, button titles, selection and history", async () => {
       await page.evaluate(() => {
         render("Hello", { language: "en", controlsCompact: true });

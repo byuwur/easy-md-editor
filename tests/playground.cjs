@@ -426,7 +426,7 @@ test("playground edits documents and exports exact Markdown", async () => {
     await page.route("**/starter.html", (route) => route.fulfill({ body: localHTML, contentType: "text/html" }));
     await page.goto(`http://127.0.0.1:${server.address().port}/starter.html`);
     await page.locator("#document .byEDsurface").waitFor();
-    assert.equal(await page.locator("#document h1").textContent(), "# Hello");
+    assert.equal(await page.locator("#document .byEDsurface h1").textContent(), "# Hello");
     assert.equal(await page.locator("#document").getAttribute("data-theme"), "github");
   } finally {
     await browser.close();
