@@ -572,7 +572,7 @@ test("source-driven editor browser contracts", async (t) => {
         editor.focus();
       });
       await page.getByRole("button", { name: "Table", exact: true }).click();
-      await page.getByLabel("Data rows", { exact: true }).fill("3");
+      await page.getByLabel("Rows", { exact: true }).fill("3");
       await page.getByLabel("Columns", { exact: true }).fill("2");
       await page.getByRole("button", { name: "Insert", exact: true }).click();
       assert.equal(await page.locator(".byEDsurface table").count(), 1);
