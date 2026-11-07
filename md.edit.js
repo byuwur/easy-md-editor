@@ -2384,6 +2384,20 @@
       });
     }
     // --- SELECTION AND TOOLBAR EVENTS ---
+    listen(
+      document,
+      "pointerdown",
+      (event) => {
+        if (element.contains(event.target) || !element.contains(document.activeElement)) return;
+        position = selection();
+        // Empty host space can hit-test to the nearest editable line outside its bounds.
+        const caret = document.caretPositionFromPoint?.(event.clientX, event.clientY)?.offsetNode ?? document.caretRangeFromPoint?.(event.clientX, event.clientY)?.startContainer;
+        if (surface.contains(caret)) event.preventDefault();
+        document.activeElement.blur();
+        activate(null);
+      },
+      { capture: true }
+    );
     listen(document, "selectionchange", () => {
       if (!alive || previewing || composing || !element.contains(document.activeElement)) return;
       const started = metrics ? performance.now() : 0;

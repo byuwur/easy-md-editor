@@ -565,6 +565,49 @@ test("No-code editing and control visibility", async (t) => {
       }
     });
 
+    await t.test("outside clicks leave the editor caret unchanged and keep host controls working", async () => {
+      const layout = await page.addStyleTag({ content: "#editor { width: 35rem; margin: 4rem auto; }" });
+      await page.evaluate(() => {
+        const button = document.createElement("button");
+        button.id = "outside-action";
+        button.textContent = "Outside action";
+        button.onclick = () => (window.outsideClicks = (window.outsideClicks || 0) + 1);
+        document.body.prepend(button);
+      });
+      const source = "# First\n\nSecond\n\nThird";
+      const offset = source.indexOf("Second") + 2;
+      try {
+        for (const syntax of ["no-code", "clean", "assisted", "source"]) {
+          await page.evaluate(
+            ({ source, offset, syntax }) => {
+              render(source, { syntax });
+              editor.setSelection(offset);
+            },
+            { source, offset, syntax }
+          );
+          const area = await page.locator(syntax === "source" ? ".byEDsource" : ".byEDsurface").boundingBox();
+          await page.mouse.click(area.x - 20, area.y + 24);
+          assert.deepEqual(await page.evaluate(() => editor.getSelection()), { anchor: offset, focus: offset }, syntax);
+          assert.equal(await page.locator(".byEDline.is-active").count(), 0);
+          assert.equal(await page.evaluate(() => document.activeElement.matches(".byEDsurface, .byEDsource")), false);
+          assert.equal(await page.evaluate(() => editor.getMarkdown()), source);
+          assert.deepEqual(await page.evaluate(() => changes), []);
+          await page.evaluate(() => editor.focus());
+          await page.getByRole("button", { name: "Outside action", exact: true }).click();
+          assert.equal(await page.locator("#outside-action").evaluate((button) => document.activeElement === button), true);
+          await page.evaluate(() => editor.focus());
+          await page.keyboard.type("!");
+          assert.equal(await page.evaluate(() => editor.getMarkdown()), source.slice(0, offset) + "!" + source.slice(offset));
+          await page.evaluate(() => editor.command("undo"));
+          assert.equal(await page.evaluate(() => editor.getMarkdown()), source);
+        }
+        assert.equal(await page.evaluate(() => outsideClicks), 4);
+      } finally {
+        await layout.evaluate((node) => node.remove());
+        await page.locator("#outside-action").evaluate((node) => node.remove());
+      }
+    });
+
     await t.test("clicking outside insertion dialogs cancels without editing or losing the selection", async () => {
       for (const command of ["link", "image", "table", "codeBlock"])
         for (const outsideEditor of [false, true]) {
