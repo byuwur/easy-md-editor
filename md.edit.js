@@ -2450,7 +2450,7 @@
         toggle.setAttribute("aria-expanded", String(!toolbar.hidden));
         if (previewing) {
           const started = metrics ? performance.now() : 0;
-          preview.dataset.theme = element.dataset.theme || "monokai";
+          preview.dataset.theme = element.dataset.theme || "github";
           preview.classList.toggle("dark", isDark());
           global.byMDviewer(preview, source, { toolbar: false, animations: options.animations, codeHighlighting: options.codeHighlighting !== false && typeof global.byCODEviewer?.highlight === "function" });
           measure("preview", started);
@@ -2569,11 +2569,7 @@
     api.setToolbar(options.toolbar);
     api.setControls(options);
     toolbar.classList.remove("byVIEWreveal");
-    if (options.palette) api.setPalette(options.palette);
-    else {
-      selectPalette(["light", "dark"].includes(element.dataset.theme) ? "monokai" : element.dataset.theme || "monokai");
-      api.setTheme(isDark() ? "dark" : "light");
-    }
+    api.setPalette(["light", "dark"].includes(element.dataset.theme) ? "github" : element.dataset.theme || "github");
     updateToolbar();
     return api;
   }

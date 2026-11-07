@@ -822,7 +822,8 @@ test("source-driven editor browser contracts", async (t) => {
       assert.equal(await page.evaluate(() => document.activeElement.dataset.command), "bold");
       assert.equal(await page.locator('.byEDtoolbar [tabindex="0"]').count(), 1);
       await page.evaluate(() => editor.setTheme("dark"));
-      assert.equal(await page.locator("#editor").getAttribute("data-theme"), "dark");
+      assert.equal(await page.locator("#editor").getAttribute("data-theme"), "github");
+      assert.equal(await page.locator("#editor").evaluate((root) => root.classList.contains("dark")), true);
       await page.emulateMedia({ forcedColors: "active", reducedMotion: "reduce" });
       assert.equal(await page.locator(".byEDsurface").isVisible(), true);
       await page.emulateMedia({ forcedColors: "none" });
@@ -978,6 +979,7 @@ test("document and content backgrounds stay independent through theme and toolba
     await page.waitForFunction(() => getComputedStyle(document.querySelector("#viewer .byEDcontrols .byEDbutton")).backgroundColor === "rgb(18, 52, 86)");
     for (const changeMode of [false, true]) {
       if (changeMode) await root.locator(".byVIEWthemeToggle").click();
+      await page.waitForFunction(() => getComputedStyle(document.getElementById("viewer")).backgroundColor === "rgba(0, 0, 0, 0)");
       assert.equal(await root.evaluate((element) => getComputedStyle(element).backgroundColor), "rgba(0, 0, 0, 0)");
       assert.equal(await root.locator(".byEDsurface").evaluate((element) => getComputedStyle(element).backgroundColor), "rgb(18, 52, 86)");
       assert.equal(
@@ -991,7 +993,7 @@ test("document and content backgrounds stay independent through theme and toolba
     }
     assert.equal(await page.locator("#neighbor").evaluate((element) => getComputedStyle(element).backgroundColor), neighbor);
     await root.evaluate((element) => element.style.removeProperty("--by-view-container-bg"));
-    await page.waitForFunction(() => getComputedStyle(document.querySelector("#viewer .byEDcontrols .byEDbutton")).backgroundColor === "rgb(39, 40, 34)");
+    await page.waitForFunction(() => getComputedStyle(document.querySelector("#viewer .byEDcontrols .byEDbutton")).backgroundColor === "rgb(13, 17, 23)");
     assert.notEqual(
       await root
         .locator(".byEDcontrols .byEDbutton")
@@ -1275,7 +1277,7 @@ test("appearance options override markup and preserve independent viewer state",
       appearanceTarget.dataset.theme = "dark";
       return renderAppearance({ theme: "light", toolbar: false });
     });
-    assert.deepEqual(await page.locator("#appearance").evaluate((element) => [element.dataset.theme, element.classList.contains("dark"), element.classList.contains("light")]), ["light", false, true]);
+    assert.deepEqual(await page.locator("#appearance").evaluate((element) => [element.dataset.theme, element.classList.contains("dark"), element.classList.contains("light")]), ["github", false, true]);
     await page.evaluate(() => renderAppearance({ theme: "dark", palette: "custom-ocean", fontSize: 1.125, toolbar: false }));
     assert.deepEqual(await page.locator("#appearance").evaluate((element) => [element.dataset.theme, element.classList.contains("dark"), element.style.fontSize]), ["custom-ocean", true, "1.125rem"]);
     const preserved = await page.locator("#appearance").evaluate((element) => [element.className, element.dataset.theme, element.style.fontSize]);

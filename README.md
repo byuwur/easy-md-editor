@@ -32,7 +32,7 @@ The editor script fetches no assets. For offline use, keep the companion files l
 ## Usage
 
 ```html
-<div id="document" data-theme="light"></div>
+<div id="document" class="light" data-theme="github"></div>
 <script>
   document.addEventListener("DOMContentLoaded", () => {
     const editor = byMDeditor(document.getElementById("document"), "# Hello\n\nStart writing.", {
@@ -54,31 +54,31 @@ No database, network requests, autosave, or browser storage are built in.
 
 ## Options
 
-| Option             | Default                                  | Meaning                                                                                                                     |
-| ------------------ | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `syntax`           | `"clean"`                                | `"no-code"`, `"clean"`, `"assisted"`, or `"source"`.                                                                        |
-| `language`         | `"auto"`                                 | Controls language; a language tag such as `"es"`, or automatic detection.                                                   |
-| `translations`     | `{}`                                     | Per-instance text overrides, using the keys in `byMDeditor.locales.en`.                                                     |
-| `animations`       | `true`                                   | Brief interaction motion and shared-surface background fades; overrides the system motion preference.                       |
-| `appearAnimation`  | `false`                                  | Fade and gently move the editor in when `animations` is enabled.                                                            |
-| `toolbar`          | `true`                                   | Show formatting tools; users can collapse them.                                                                             |
-| `toolbarToggle`    | `true`                                   | Show the Formatting button that opens or closes the toolbar.                                                                |
-| `syntaxSelect`     | `true`                                   | Show the editing-mode selector.                                                                                             |
-| `previewToggle`    | `true`                                   | Show the Preview button.                                                                                                    |
-| `themeToggle`      | `true`                                   | Show the light/dark theme switch.                                                                                           |
-| `statusBar`        | `true`                                   | Show editing status and guidance.                                                                                           |
-| `shortcuts`        | `true`                                   | Enable Ctrl/Cmd+B, I, Z, Shift+Z, and Y.                                                                                    |
-| `codeHighlighting` | `true`                                   | Use easy-code-viewer for fenced-code colors while editing and in Preview.                                                   |
-| `theme`            | Container theme, otherwise light         | `"light"` or `"dark"`; named palettes use container attributes below.                                                       |
-| `palette`          | Container palette, otherwise `"monokai"` | `"monokai"`, `"github"`, `"solarized"`, `"high-contrast"`, or a custom CSS theme name.                                      |
-| `fontSize`         | Container size                           | Number in rem or a CSS size such as `"1.25em"` or `"20px"`; bounded to `0.5rem`–`3rem`.                                     |
-| `paletteSelect`    | `true`                                   | Show the palette selector; themes remain available through the API when hidden.                                             |
-| `label`            | Localized “Document”                     | Accessible name for the editable document; an explicit value survives language changes.                                     |
-| `placeholder`      | Localized “Start writing…”               | Hint for an empty editing surface; an explicit value survives language changes.                                             |
-| `tools`            | All tools                                | Array of command names, plus `"heading"` for the paragraph-style selector.                                                  |
-| `historyLimit`     | `200`                                    | Maximum undo entries, clamped to 0 to 1000. History also has a two-million-character budget; one large entry may exceed it. |
-| `onChange`         | —                                        | Called with the complete Markdown after a committed edit or `setMarkdown()`.                                                |
-| `onMeasure`        | —                                        | Optional development callback receiving `{ operation, duration, ... }` samples in milliseconds.                             |
+| Option             | Default                                 | Meaning                                                                                                                     |
+| ------------------ | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `syntax`           | `"clean"`                               | `"no-code"`, `"clean"`, `"assisted"`, or `"source"`.                                                                        |
+| `language`         | `"auto"`                                | Controls language; a language tag such as `"es"`, or automatic detection.                                                   |
+| `translations`     | `{}`                                    | Per-instance text overrides, using the keys in `byMDeditor.locales.en`.                                                     |
+| `animations`       | `true`                                  | Brief interaction motion and shared-surface background fades; overrides the system motion preference.                       |
+| `appearAnimation`  | `false`                                 | Fade and gently move the editor in when `animations` is enabled.                                                            |
+| `toolbar`          | `true`                                  | Show formatting tools; users can collapse them.                                                                             |
+| `toolbarToggle`    | `true`                                  | Show the Formatting button that opens or closes the toolbar.                                                                |
+| `syntaxSelect`     | `true`                                  | Show the editing-mode selector.                                                                                             |
+| `previewToggle`    | `true`                                  | Show the Preview button.                                                                                                    |
+| `themeToggle`      | `true`                                  | Show the light/dark theme switch.                                                                                           |
+| `statusBar`        | `true`                                  | Show editing status and guidance.                                                                                           |
+| `shortcuts`        | `true`                                  | Enable Ctrl/Cmd+B, I, Z, Shift+Z, and Y.                                                                                    |
+| `codeHighlighting` | `true`                                  | Use easy-code-viewer for fenced-code colors while editing and in Preview.                                                   |
+| `theme`            | Container theme, otherwise light        | `"light"` or `"dark"`; named palettes use container attributes below.                                                       |
+| `palette`          | Container palette, otherwise `"github"` | `"monokai"`, `"github"`, `"solarized"`, `"high-contrast"`, or a custom CSS theme name.                                      |
+| `fontSize`         | Container size                          | Number in rem or a CSS size such as `"1.25em"` or `"20px"`; bounded to `0.5rem`–`3rem`.                                     |
+| `paletteSelect`    | `true`                                  | Show the palette selector; themes remain available through the API when hidden.                                             |
+| `label`            | Localized “Document”                    | Accessible name for the editable document; an explicit value survives language changes.                                     |
+| `placeholder`      | Localized “Start writing…”              | Hint for an empty editing surface; an explicit value survives language changes.                                             |
+| `tools`            | All tools                               | Array of command names, plus `"heading"` for the paragraph-style selector.                                                  |
+| `historyLimit`     | `200`                                   | Maximum undo entries, clamped to 0 to 1000. History also has a two-million-character budget; one large entry may exceed it. |
+| `onChange`         | —                                       | Called with the complete Markdown after a committed edit or `setMarkdown()`.                                                |
+| `onMeasure`        | —                                       | Optional development callback receiving `{ operation, duration, ... }` samples in milliseconds.                             |
 
 For a smaller toolbar: `tools: ["heading", "bold", "italic", "link", "undo", "redo"]`.
 
@@ -227,8 +227,8 @@ Local installations can save `md.themes.css` beside `md.css`. The playground loa
 
 | Palette              | `data-theme`           | What it looks like                             |
 | -------------------- | ---------------------- | ---------------------------------------------- |
-| Monokai (default)    | `monokai`              | Warm light and dark colors; the default.       |
-| GitHub               | `github`               | Neutral GitHub surfaces and syntax.            |
+| Monokai              | `monokai`              | Warm light and dark colors.                    |
+| GitHub (default)     | `github`               | Neutral GitHub surfaces and syntax.            |
 | Solarized            | `solarized`            | Warm paper and deep blue-green surfaces.       |
 | High Contrast        | `high-contrast`        | Strong text, borders, and focus indicators.    |
 | Dracula              | `dracula`              | Purple with vivid pink, green, and cyan.       |

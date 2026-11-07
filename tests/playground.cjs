@@ -373,7 +373,7 @@ test("playground edits documents and exports exact Markdown", async () => {
     await theme.click();
     assert.equal(await page.locator("html").getAttribute("data-bs-theme"), "light");
     assert.equal(await page.locator("#site-theme span").textContent(), "Dark");
-    assert.equal(await page.locator("#editor").getAttribute("data-theme"), "light");
+    assert.equal(await page.locator("#editor").getAttribute("data-theme"), "github");
     await page.getByRole("button", { name: "Switch website to dark theme", exact: true }).click();
     await page.getByText("Local files", { exact: true }).click();
     const localHTML = await readStarter(page);
@@ -427,6 +427,7 @@ test("playground edits documents and exports exact Markdown", async () => {
     await page.goto(`http://127.0.0.1:${server.address().port}/starter.html`);
     await page.locator("#document .byEDsurface").waitFor();
     assert.equal(await page.locator("#document h1").textContent(), "# Hello");
+    assert.equal(await page.locator("#document").getAttribute("data-theme"), "github");
   } finally {
     await browser.close();
     await new Promise((resolve) => server.close(resolve));
