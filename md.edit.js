@@ -2005,8 +2005,12 @@
       const form = node("form");
       form.method = "dialog";
       const titleKey = { table: "insertTable", link: "insertLink", image: "insertImage", codeBlock: "insertCodeBlock" }[name];
-      const title = node("h2", "", languageText[titleKey]);
-      title.dataset.message = titleKey;
+      const title = node("h2");
+      const titleIcon = node("i", `fa-solid fa-${tools.find(([key]) => key === name)[1]}`);
+      titleIcon.setAttribute("aria-hidden", "true");
+      const titleCaption = node("span", "", languageText[titleKey]);
+      titleCaption.dataset.message = titleKey;
+      title.append(titleIcon, titleCaption);
       const titleId = `byEDdialog-${Math.random().toString(36).slice(2)}`;
       title.id = titleId;
       dialog.setAttribute("aria-labelledby", titleId);
@@ -2040,10 +2044,18 @@
         field("label", name === "image" ? "imageDescription" : "linkText", "text", source.slice(Math.min(savedPosition.anchor, savedPosition.focus), Math.max(savedPosition.anchor, savedPosition.focus)));
       }
       const actions = node("div", "byEDdialogActions"),
-        cancel = node("button", "", languageText.cancel),
-        submit = node("button", "", languageText.insert);
-      cancel.dataset.message = "cancel";
-      submit.dataset.message = "insert";
+        cancel = node("button", "byEDdialogCancel"),
+        submit = node("button", "byEDdialogConfirm");
+      for (const [control, key, icon] of [
+        [cancel, "cancel", "xmark"],
+        [submit, "insert", "check"]
+      ]) {
+        const glyph = node("i", `fa-solid fa-${icon}`);
+        glyph.setAttribute("aria-hidden", "true");
+        const caption = node("span", "", languageText[key]);
+        caption.dataset.message = key;
+        control.append(glyph, caption);
+      }
       cancel.type = "button";
       submit.type = "submit";
       actions.append(cancel, submit);
@@ -2071,6 +2083,26 @@
         close();
         command(name, value);
       });
+      // Native dialogs use viewport coordinates even when their owner is an editor.
+      const area = syntax === "source" ? raw : surface;
+      const positionDialog = () => {
+        const rect = area.getBoundingClientRect();
+        const top = Math.max(0, rect.top),
+          left = Math.max(0, rect.left);
+        Object.assign(dialog.style, {
+          top: `${top}px`,
+          left: `${left}px`,
+          width: `${Math.max(0, Math.min(global.innerWidth, rect.right) - left)}px`,
+          height: `${Math.max(0, Math.min(global.innerHeight, rect.bottom) - top)}px`
+        });
+      };
+      dialogListen(global, "resize", positionDialog);
+      listen(document, "scroll", positionDialog, { capture: true, signal: dialogAbort.signal });
+      const resizeObserver = new ResizeObserver(positionDialog);
+      resizeObserver.observe(area);
+      resizeObserver.observe(element);
+      dialogAbort.signal.addEventListener("abort", () => resizeObserver.disconnect(), { once: true });
+      positionDialog();
       dialog.showModal();
       Object.values(fields)[0].focus();
     };

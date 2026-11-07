@@ -476,6 +476,95 @@ test("No-code editing and control visibility", async (t) => {
       }
     });
 
+    await t.test("insertion dialogs shade and center within the visible document and retain native focus", async () => {
+      const originalViewport = page.viewportSize();
+      const layout = await page.addStyleTag({ content: "#editor { width: min(40rem, 100%); margin: 9rem 0 12rem auto; } #editor .byEDsurface, #editor .byEDsource { height: 24rem; overflow: auto; }" });
+      try {
+        await page.setViewportSize({ width: 1000, height: 800 });
+        const markdown = Array(40).fill("Document text.").join("\n\n");
+        await page.evaluate((markdown) => {
+          render(markdown, { language: "en", controlsCompact: true });
+          editor.setSelection(0, 8);
+        }, markdown);
+        const checkBounds = async () => {
+          const bounds = await page.locator("dialog").evaluate((dialog) => {
+            const area = document.querySelector('.byMDeditor[data-syntax="source"] .byEDsource') || document.querySelector(".byEDsurface");
+            const rect = area.getBoundingClientRect(),
+              overlay = dialog.getBoundingClientRect(),
+              panel = dialog.querySelector("form").getBoundingClientRect();
+            const left = Math.max(0, rect.left),
+              top = Math.max(0, rect.top),
+              right = Math.min(innerWidth, rect.right),
+              bottom = Math.min(innerHeight, rect.bottom);
+            return {
+              actual: [overlay.left, overlay.top, overlay.right, overlay.bottom],
+              expected: [left, top, right, bottom],
+              center: [panel.left + panel.width / 2, panel.top + panel.height / 2],
+              target: [(left + right) / 2, (top + bottom) / 2],
+              fits: panel.left >= left && panel.right <= right && panel.top >= top && panel.bottom <= bottom,
+              backdrop: getComputedStyle(dialog, "::backdrop").backgroundColor
+            };
+          });
+          for (let i = 0; i < 4; i++) assert.ok(Math.abs(bounds.actual[i] - bounds.expected[i]) < 1, JSON.stringify(bounds));
+          for (let i = 0; i < 2; i++) assert.ok(Math.abs(bounds.center[i] - bounds.target[i]) < 1, "Dialog stays centered in the document: " + JSON.stringify(bounds));
+          assert.equal(bounds.fits, true);
+          assert.equal(bounds.backdrop, "rgba(0, 0, 0, 0)", "The surrounding page stays undimmed");
+        };
+        for (const syntax of ["no-code", "source"]) {
+          await page.evaluate((syntax) => {
+            editor.setSyntaxMode(syntax);
+            editor.command("link");
+          }, syntax);
+          await checkBounds();
+          assert.equal(await page.locator('dialog input[name="url"]').evaluate((input) => input === document.activeElement), true);
+          assert.equal(await page.locator('dialog i[aria-hidden="true"]').count(), 3);
+          assert.equal(await page.getByRole("button", { name: "Cancel", exact: true }).locator("span").isVisible(), true);
+          const colors = await page.locator("dialog").evaluate((dialog) =>
+            [".byEDdialogCancel", ".byEDdialogConfirm"].map((selector) => {
+              const style = getComputedStyle(dialog.querySelector(selector));
+              return [style.backgroundColor, style.color, style.borderTopColor];
+            })
+          );
+          assert.notDeepEqual(colors[0], colors[1]);
+          for (let index = 0; index < 3; index++) await page.keyboard.press("Tab");
+          assert.equal(await page.getByRole("button", { name: "Insert", exact: true }).evaluate((button) => button === document.activeElement), true, "Native modal focus stays inside the form");
+          await page.evaluate(() => scrollTo(0, 120));
+          await page.waitForTimeout(40);
+          await checkBounds();
+          await page.setViewportSize({ width: 375, height: 620 });
+          await page.waitForTimeout(40);
+          await checkBounds();
+          await page.getByRole("button", { name: "Cancel", exact: true }).click();
+          assert.equal(await page.locator("dialog").count(), 0);
+          assert.equal(await page.evaluate(() => editor.getMarkdown()), markdown);
+          assert.deepEqual(await page.evaluate(() => editor.getSelection()), { anchor: 0, focus: 8 });
+          await page.setViewportSize({ width: 1000, height: 800 });
+          await page.evaluate(() => scrollTo(0, 0));
+        }
+        for (const command of ["table", "image", "codeBlock"]) {
+          await page.evaluate((command) => editor.command(command), command);
+          await checkBounds();
+          assert.equal(await page.locator("dialog h2 i").count(), 1);
+          await page.keyboard.press("Escape");
+        }
+        await page.evaluate(() => {
+          editor.setAnimations(true);
+          editor.command("link");
+        });
+        await checkBounds();
+        await page.getByLabel("URL", { exact: true }).fill("https://example.com");
+        await page.getByRole("button", { name: "Insert", exact: true }).click();
+        assert.match(await page.evaluate(() => editor.getMarkdown()), /^\[Document\]\(https:\/\/example.com\)/);
+        await page.evaluate(() => editor.command("undo"));
+        assert.equal(await page.evaluate(() => editor.getMarkdown()), markdown);
+      } finally {
+        await page.keyboard.press("Escape");
+        await layout.evaluate((node) => node.remove());
+        await page.setViewportSize(originalViewport);
+        await page.evaluate(() => scrollTo(0, 0));
+      }
+    });
+
     await t.test("compact controls retain accessible names, button titles, selection and history", async () => {
       await page.evaluate(() => {
         render("Hello", { language: "en", controlsCompact: true });
