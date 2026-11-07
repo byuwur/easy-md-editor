@@ -191,7 +191,7 @@
         --by-view-container-bg: #0000;
         border: 0;
         border-radius: 0;
-        height: 28rem;
+        height: 30.8rem;
         resize: none;
         white-space: pre-wrap;
         overflow-wrap: anywhere;
@@ -327,7 +327,70 @@
         <div class="playground border">
           <div class="playground-toolbar bg-body-tertiary px-4 py-3 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-3">
             <h2 id="playground-title" class="h6 m-0 fw-semibold">Playground</h2>
-            <div class="d-flex flex-column flex-sm-row gap-3 mw-100">
+            <div class="d-flex flex-column flex-sm-row align-items-sm-end gap-3 mw-100">
+              <div class="source-picker">
+                <label class="small font-monospace text-body-secondary d-block mb-1" for="playground-palette">Color palette</label>
+                <select id="playground-palette" class="form-select">
+                  <optgroup label="Essentials">
+                    <option value="monokai">Monokai</option>
+                    <option value="github" selected>GitHub (default)</option>
+                    <option value="solarized">Solarized</option>
+                    <option value="high-contrast">High Contrast</option>
+                  </optgroup>
+                  <optgroup label="Editor classics">
+                    <option value="dracula">Dracula</option>
+                    <option value="darcula">Darcula</option>
+                    <option value="nord">Nord</option>
+                    <option value="catppuccin">Catppuccin</option>
+                    <option value="catppuccin-frappe">Catppuccin Frappé</option>
+                    <option value="catppuccin-macchiato">Catppuccin Macchiato</option>
+                    <option value="rose-pine">Rosé Pine</option>
+                    <option value="rose-pine-moon">Rosé Pine Moon</option>
+                    <option value="gruvbox">Gruvbox</option>
+                    <option value="gruvbox-material">Gruvbox Material</option>
+                    <option value="tokyo-night">Tokyo Night</option>
+                    <option value="tokyo-storm">Tokyo Storm</option>
+                    <option value="tokyo-moon">Tokyo Moon</option>
+                    <option value="one">One</option>
+                    <option value="material">Material</option>
+                    <option value="material-ocean">Material Ocean</option>
+                    <option value="night-owl">Night Owl</option>
+                    <option value="synthwave">Synthwave</option>
+                    <option value="ayu">Ayu</option>
+                    <option value="everforest">Everforest</option>
+                    <option value="kanagawa">Kanagawa</option>
+                    <option value="selenized">Selenized</option>
+                    <option value="vscode">VS Code</option>
+                    <option value="monokai-dimmed">Monokai Dimmed</option>
+                  </optgroup>
+                  <optgroup label="App inspired">
+                    <option value="discord">Discord</option>
+                    <option value="slack">Slack</option>
+                  </optgroup>
+                  <optgroup label="Colorful">
+                    <option value="bonyur">BONYUR</option>
+                    <option value="sakura">Sakura</option>
+                    <option value="bubblegum">Bubblegum</option>
+                    <option value="candy">Candy</option>
+                    <option value="rose-gold">Rose Gold</option>
+                    <option value="lavender">Lavender</option>
+                    <option value="cyberpunk">Cyberpunk</option>
+                    <option value="sunset">Sunset</option>
+                    <option value="volcano">Volcano</option>
+                    <option value="amber">Amber</option>
+                    <option value="terminal">Terminal</option>
+                  </optgroup>
+                  <optgroup label="Reading &amp; nature">
+                    <option value="paper">Paper</option>
+                    <option value="ink">Ink</option>
+                    <option value="ocean">Ocean</option>
+                    <option value="forest">Forest</option>
+                    <option value="mint">Mint</option>
+                    <option value="ice">Ice</option>
+                    <option value="sepia">Sepia</option>
+                  </optgroup>
+                </select>
+              </div>
               <div class="source-picker">
                 <label class="small font-monospace text-body-secondary d-block mb-1" for="playground-language">Language</label>
                 <select id="playground-language" class="form-select" data-editor-language>
@@ -335,9 +398,9 @@
                 </select>
               </div>
               <div class="source-picker">
-                <label class="small font-monospace text-body-secondary d-block mb-1" for="document-source">Sample</label>
+                <label class="visually-hidden" for="document-source">Sample</label>
                 <select id="document-source" class="form-select">
-                  <option value="showcase">Default showcase</option>
+                  <option value="showcase">Default showcase sample</option>
                   <option value="custom">Blank document</option>
                 </select>
               </div>
@@ -398,6 +461,10 @@
               <label class="form-check-label flex-grow-1 py-2" for="paletteSelect">Palette selector</label>
             </div>
             <div class="form-switch d-flex align-items-center gap-3 ps-0 m-0">
+              <input class="form-check-input order-2 float-none flex-shrink-0 ms-0 my-0" id="controlsCompact" type="checkbox" role="switch" />
+              <label class="form-check-label flex-grow-1 py-2" for="controlsCompact">Compact controls</label>
+            </div>
+            <div class="form-switch d-flex align-items-center gap-3 ps-0 m-0">
               <input class="form-check-input order-2 float-none flex-shrink-0 ms-0 my-0" id="statusBar" type="checkbox" role="switch" checked />
               <label class="form-check-label flex-grow-1 py-2" for="statusBar">Status information</label>
             </div>
@@ -423,7 +490,7 @@
         </div>
         <div class="actions d-flex flex-wrap align-items-center gap-2 py-4">
           <span class="small font-monospace text-body-secondary me-2">Try it!</span>
-          <button id="open-file" class="btn btn-outline-secondary fw-semibold" type="button"><i class="fa-solid fa-folder-open me-1" aria-hidden="true"></i> Open .md file</button>
+          <button id="open-file" class="btn btn-outline-secondary fw-semibold" type="button"><i class="fa-solid fa-folder-open me-1" aria-hidden="true"></i> Upload your file</button>
           <input id="file" type="file" accept=".md,.markdown,.txt,text/plain,text/markdown" hidden />
           <button id="download" class="btn btn-outline-secondary fw-semibold" type="button"><i class="fa-solid fa-download me-1" aria-hidden="true"></i> Download Markdown</button>
           <button id="print" class="btn btn-outline-secondary fw-semibold" type="button"><i class="fa-solid fa-print me-1" aria-hidden="true"></i> Print / PDF</button>
@@ -574,8 +641,9 @@
         updateOutput(sample);
         window.playgroundEditor = editor;
         // --- EDITOR CONFIGURATION ---
-        const visibilityOptions = ["toolbarToggle", "syntaxSelect", "previewToggle", "themeToggle", "paletteSelect", "statusBar"];
+        const visibilityOptions = ["toolbarToggle", "syntaxSelect", "previewToggle", "themeToggle", "paletteSelect", "controlsCompact", "statusBar"];
         const modeSelect = document.getElementById("syntax-mode");
+        const paletteSelect = document.getElementById("playground-palette");
         const languageSelect = document.getElementById("editor-language");
         const languageSelects = document.querySelectorAll("[data-editor-language]");
         for (const picker of languageSelects) for (const [code, example] of Object.entries(samples)) picker.add(new Option(example.name, code));
@@ -596,6 +664,7 @@
           document.getElementById("options-json").value = JSON.stringify(
             {
               syntax: modeSelect.value,
+              palette: paletteSelect.value,
               language: languageSelect.value,
               toolbar: document.getElementById("toolbar").checked,
               ...Object.fromEntries(visibilityOptions.map((name) => [name, document.getElementById(name).checked])),
@@ -615,6 +684,10 @@
           editor.setToolbar(event.target.checked);
           updateConfiguration();
         });
+        paletteSelect.addEventListener("change", () => {
+          editor.setPalette(paletteSelect.value);
+          updateConfiguration();
+        });
         modeSelect.addEventListener("change", () => {
           editor.setSyntaxMode(modeSelect.value);
           updateConfiguration();
@@ -628,6 +701,7 @@
           });
         document.getElementById("editor").addEventListener("change", (event) => {
           if (event.target.matches('[data-control="syntax"]')) modeSelect.value = event.target.value;
+          if (event.target.matches(".byEDcontrols select")) paletteSelect.value = event.target.value;
           updateConfiguration();
         });
         document.getElementById("editor").addEventListener("click", (event) => {
