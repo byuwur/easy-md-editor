@@ -230,7 +230,8 @@
       insertCodeBlock: "Insert code block",
       dataRows: "Rows",
       columns: "Columns",
-      codeLanguage: "Language (optional)",
+      codeLanguage: "Language",
+      plainText: "Plain Text",
       imageUrl: "Image URL",
       url: "URL",
       cancel: "Cancel",
@@ -306,7 +307,8 @@
       insertCodeBlock: "Insertar bloque de código",
       dataRows: "Filas",
       columns: "Columnas",
-      codeLanguage: "Lenguaje (opcional)",
+      codeLanguage: "Lenguaje",
+      plainText: "Texto plano",
       imageUrl: "URL de la imagen",
       url: "URL",
       cancel: "Cancelar",
@@ -382,7 +384,8 @@
       insertCodeBlock: "Inserir bloco de código",
       dataRows: "Linhas",
       columns: "Colunas",
-      codeLanguage: "Linguagem (opcional)",
+      codeLanguage: "Linguagem",
+      plainText: "Texto simples",
       imageUrl: "URL da imagem",
       url: "URL",
       cancel: "Cancelar",
@@ -458,7 +461,8 @@
       insertCodeBlock: "Insérer un bloc de code",
       dataRows: "Lignes",
       columns: "Colonnes",
-      codeLanguage: "Langage (facultatif)",
+      codeLanguage: "Langage",
+      plainText: "Texte brut",
       imageUrl: "URL de l’image",
       url: "URL",
       cancel: "Annuler",
@@ -534,7 +538,8 @@
       insertCodeBlock: "Codeblock einfügen",
       dataRows: "Zeilen",
       columns: "Spalten",
-      codeLanguage: "Programmiersprache (optional)",
+      codeLanguage: "Programmiersprache",
+      plainText: "Klartext",
       imageUrl: "Bild-URL",
       url: "URL",
       cancel: "Abbrechen",
@@ -610,7 +615,8 @@
       insertCodeBlock: "Inserisci blocco di codice",
       dataRows: "Righe",
       columns: "Colonne",
-      codeLanguage: "Linguaggio (facoltativo)",
+      codeLanguage: "Linguaggio",
+      plainText: "Testo semplice",
       imageUrl: "URL dell’immagine",
       url: "URL",
       cancel: "Annulla",
@@ -686,7 +692,8 @@
       insertCodeBlock: "コードブロックを挿入",
       dataRows: "行数",
       columns: "列数",
-      codeLanguage: "プログラミング言語（任意）",
+      codeLanguage: "プログラミング言語",
+      plainText: "プレーンテキスト",
       imageUrl: "画像のURL",
       url: "URL",
       cancel: "キャンセル",
@@ -762,7 +769,8 @@
       insertCodeBlock: "插入代码块",
       dataRows: "行数",
       columns: "列数",
-      codeLanguage: "编程语言（可选）",
+      codeLanguage: "编程语言",
+      plainText: "纯文本",
       imageUrl: "图片URL",
       url: "URL",
       cancel: "取消",
@@ -2018,27 +2026,34 @@
       const fields = {};
       const field = (key, label, type, value, max) => {
         const wrapper = node("label", "byEDfield"),
-          input = node("input");
-        input.name = key;
-        input.type = type;
-        input.value = value;
-        input.required = true;
+          control = node(type === "select" ? "select" : "input");
+        control.name = key;
+        if (type !== "select") control.type = type;
+        control.value = value;
+        control.required = true;
         if (type === "number") {
-          input.min = "1";
-          input.max = String(max);
+          control.min = "1";
+          control.max = String(max);
         }
         const caption = node("span", "", languageText[label]);
         caption.dataset.message = label;
-        wrapper.append(caption, input);
+        wrapper.append(caption, control);
         form.append(wrapper);
-        fields[key] = input;
+        fields[key] = control;
       };
       if (name === "table") {
         field("rows", "dataRows", "number", "2", 100);
         field("columns", "columns", "number", "2", 20);
       } else if (name === "codeBlock") {
-        field("language", "codeLanguage", "text", "javascript");
-        fields.language.required = false;
+        field("language", "codeLanguage", "select", "plain");
+        const languages = global.byCODEviewer?.languages || [];
+        for (const value of ["plain", ...languages.filter((value) => value !== "plain")]) {
+          const option = node("option", "", value === "plain" ? languageText.plainText : value);
+          option.value = value;
+          if (value === "plain") option.dataset.message = "plainText";
+          fields.language.append(option);
+        }
+        fields.language.value = "plain";
       } else {
         field("url", name === "image" ? "imageUrl" : "url", "text", "https://");
         field("label", name === "image" ? "imageDescription" : "linkText", "text", source.slice(Math.min(savedPosition.anchor, savedPosition.focus), Math.max(savedPosition.anchor, savedPosition.focus)));

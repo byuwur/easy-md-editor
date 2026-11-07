@@ -565,6 +565,47 @@ test("No-code editing and control visibility", async (t) => {
       }
     });
 
+    await t.test("code-block dialog uses CODE languages, defaults to Plain Text, and preserves localized choices", async () => {
+      for (const language of ["plain", "javascript", "python"]) {
+        await page.evaluate(() => {
+          render("value", { language: "en" });
+          editor.setSelection(0, 5);
+          editor.command("codeBlock");
+        });
+        const picker = page.locator('dialog select[name="language"]');
+        assert.equal(await picker.inputValue(), "plain");
+        assert.equal(await picker.locator("option:checked").textContent(), "Plain Text");
+        const expected = await page.evaluate(() => ["plain", ...byCODEviewer.languages.filter((value) => value !== "plain")]);
+        assert.deepEqual(await picker.locator("option").evaluateAll((options) => options.map((option) => option.value)), expected);
+        await picker.selectOption(language);
+        await page.evaluate(() => editor.setLanguage("es"));
+        assert.equal(await picker.inputValue(), language);
+        assert.equal(await picker.locator('option[value="plain"]').textContent(), "Texto plano");
+        await page.evaluate(() => editor.setLanguage("en"));
+        await page.getByRole("button", { name: "Insert", exact: true }).click();
+        assert.equal(await page.evaluate(() => editor.getMarkdown()), "```" + language + "\nvalue\n```\n\n");
+        await page.evaluate(() => editor.command("undo"));
+        assert.equal(await page.evaluate(() => editor.getMarkdown()), "value");
+      }
+      try {
+        await page.evaluate(() => {
+          window.savedCodeViewer = byCODEviewer;
+          window.byCODEviewer = undefined;
+          render("value", { language: "en" });
+          editor.command("codeBlock");
+        });
+        assert.equal(await page.locator('dialog select[name="language"]').inputValue(), "plain");
+        assert.equal(await page.locator('dialog select[name="language"] option').count(), 1);
+        await page.getByRole("button", { name: "Cancel", exact: true }).click();
+        assert.equal(await page.evaluate(() => editor.getMarkdown()), "value");
+      } finally {
+        await page.evaluate(() => {
+          window.byCODEviewer = savedCodeViewer;
+          delete window.savedCodeViewer;
+        });
+      }
+    });
+
     await t.test("compact controls retain accessible names, button titles, selection and history", async () => {
       await page.evaluate(() => {
         render("Hello", { language: "en", controlsCompact: true });

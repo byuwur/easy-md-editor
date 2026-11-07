@@ -418,7 +418,7 @@
   gap: 0.35rem;
   margin: 0.75rem 0;
 }
-.byEDfield input {
+.byEDfield :is(input, select) {
   width: 100%;
   min-height: 2.5em;
   border: 0.0625rem solid var(--by-ed-border);
