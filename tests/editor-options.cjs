@@ -504,6 +504,14 @@ test("No-code editing and control visibility", async (t) => {
           editor.setSelection(0, 8);
         }, markdown);
         const checkBounds = async () => {
+          // Native scroll/resize positioning may finish after the triggering input action.
+          await page.waitForFunction(() => {
+            const dialog = document.querySelector("dialog"),
+              area = document.querySelector('.byMDeditor[data-syntax="source"] .byEDsource') || document.querySelector(".byEDsurface");
+            const rect = area.getBoundingClientRect(),
+              overlay = dialog.getBoundingClientRect();
+            return [overlay.left - Math.max(0, rect.left), overlay.top - Math.max(0, rect.top), overlay.right - Math.min(innerWidth, rect.right), overlay.bottom - Math.min(innerHeight, rect.bottom)].every((difference) => Math.abs(difference) < 1);
+          });
           const bounds = await page.locator("dialog").evaluate((dialog) => {
             const area = document.querySelector('.byMDeditor[data-syntax="source"] .byEDsource') || document.querySelector(".byEDsurface");
             const rect = area.getBoundingClientRect(),
@@ -546,10 +554,8 @@ test("No-code editing and control visibility", async (t) => {
           for (let index = 0; index < 3; index++) await page.keyboard.press("Tab");
           assert.equal(await page.getByRole("button", { name: "Insert", exact: true }).evaluate((button) => button === document.activeElement), true, "Native modal focus stays inside the form");
           await page.evaluate(() => scrollTo(0, 120));
-          await page.waitForTimeout(40);
           await checkBounds();
           await page.setViewportSize({ width: 375, height: 620 });
-          await page.waitForTimeout(40);
           await checkBounds();
           await page.getByRole("button", { name: "Cancel", exact: true }).click();
           assert.equal(await page.locator("dialog").count(), 0);
