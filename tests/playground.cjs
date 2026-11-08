@@ -70,9 +70,10 @@ async function routeAssets(page, assets) {
 test("playground configures No-code and individual controls without recreating the document", async () => {
   const assets = await getAssets();
   const server = require("./serve.cjs");
-  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  // A failed browser launch must not leave a listening server keeping Node alive.
   const browser = await launchBrowser();
   try {
+    await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
     const page = await browser.newPage();
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
@@ -177,9 +178,9 @@ test("playground configures No-code and individual controls without recreating t
 test("language selection translates demo documents and preserves user edits and imports", async () => {
   const assets = await getAssets();
   const server = require("./serve.cjs");
-  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   const browser = await launchBrowser();
   try {
+    await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
     const page = await browser.newPage();
     await routeAssets(page, assets);
     await page.goto(`http://127.0.0.1:${server.address().port}`);
@@ -240,9 +241,9 @@ test("language selection translates demo documents and preserves user edits and 
 test("playground edits documents and exports exact Markdown", async () => {
   const assets = await getAssets();
   const server = require("./serve.cjs");
-  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   const browser = await launchBrowser();
   try {
+    await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
     const page = await browser.newPage({ acceptDownloads: true, viewport: { width: 1100, height: 800 } });
     await routeAssets(page, assets);
     await page.goto(`http://127.0.0.1:${server.address().port}`);
