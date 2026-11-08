@@ -6,8 +6,20 @@ const assert = require("node:assert/strict");
 const path = require("node:path");
 const fs = require("node:fs/promises");
 const test = require("node:test");
-const { chromium } = require("playwright");
-const launch = () => chromium.launch({ channel: process.env.BROWSER_CHANNEL || "chrome", executablePath: process.env.CHROMIUM_EXECUTABLE_PATH || undefined });
+const { chromium, firefox, webkit } = require("playwright");
+const browserEngine = process.env.BROWSER_ENGINE || "chromium";
+assert.ok(["chromium", "firefox", "webkit"].includes(browserEngine), "Unsupported BROWSER_ENGINE");
+const browserType = { chromium, firefox, webkit }[browserEngine];
+// Browser channels and executable overrides apply only to Chromium.
+const launchBrowser = () =>
+  browserType.launch(
+    browserEngine === "chromium"
+      ? {
+          channel: process.env.BROWSER_CHANNEL || undefined,
+          executablePath: process.env.CHROMIUM_EXECUTABLE_PATH || undefined
+        }
+      : {}
+  );
 const root = path.join(__dirname, "..");
 const codeCDNBase = require("node:fs")
   .readFileSync(path.join(root, "index.html"), "utf8")
@@ -21,6 +33,7 @@ const readStarter = async (page) => {
 
 // --- PINNED PLAYGROUND DEPENDENCIES ---
 let assetsPromise;
+// Cache the pinned page dependencies once; editor and companion source still come from local files.
 const getAssets = () =>
   (assetsPromise ||= (async () => {
     const files = ["css/pickr.min.css", "js/pickr.min.js", "css/bootstrap.min.css", "css/shards.min.css", "css/fontawesome.min.css", "js/bootstrap.min.js"].map((file) => `https://cdn.jsdelivr.net/gh/byuwur/spa.js@v20.7/${file}`);
@@ -46,6 +59,7 @@ async function routeAssets(page, assets) {
   await page.route("https://cdn.jsdelivr.net/**", async (route) => {
     const url = new URL(route.request().url());
     if (assets.has(url.href)) return route.fulfill(assets.get(url.href));
+    // Resolve versioned companion URLs to authored files so unpublished local changes are exercised.
     const companion = url.pathname.match(/^\/gh\/byuwur\/(easy-(?:md|code)-viewer)@v\d+(?:\.\d+)*\/((?:md|code)(?:\.themes)?(?:\.min)?\.(?:css|js))$/);
     if (companion) return route.fulfill({ path: path.join(root, "..", companion[1], companion[2].replace(/\.min(?=\.(?:css|js)$)/, "")), contentType: companion[2].endsWith("css") ? "text/css" : "text/javascript" });
     return route.abort();
@@ -57,7 +71,7 @@ test("playground configures No-code and individual controls without recreating t
   const assets = await getAssets();
   const server = require("./serve.cjs");
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
-  const browser = await launch();
+  const browser = await launchBrowser();
   try {
     const page = await browser.newPage();
     const errors = [];
@@ -164,7 +178,7 @@ test("language selection translates demo documents and preserves user edits and 
   const assets = await getAssets();
   const server = require("./serve.cjs");
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
-  const browser = await launch();
+  const browser = await launchBrowser();
   try {
     const page = await browser.newPage();
     await routeAssets(page, assets);
@@ -227,7 +241,7 @@ test("playground edits documents and exports exact Markdown", async () => {
   const assets = await getAssets();
   const server = require("./serve.cjs");
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
-  const browser = await launch();
+  const browser = await launchBrowser();
   try {
     const page = await browser.newPage({ acceptDownloads: true, viewport: { width: 1100, height: 800 } });
     await routeAssets(page, assets);
@@ -358,6 +372,7 @@ test("playground edits documents and exports exact Markdown", async () => {
     await page.getByRole("button", { name: "Download Markdown" }).click();
     assert.equal(await fs.readFile(await (await download).path(), "utf8"), original);
     await page.evaluate(() => {
+      // Capture exported text without depending on system clipboard access.
       Object.defineProperty(navigator, "clipboard", {
         configurable: true,
         value: {
@@ -432,7 +447,9 @@ test("playground edits documents and exports exact Markdown", async () => {
     await page.locator("#copy-integration").click();
     assert.equal(await page.locator("#copy-integration span").textContent(), "Failed");
     assert.equal(
-      await page.locator("#integration-code").evaluate((element) => document.activeElement === element && document.getSelection().toString() === [...element.querySelectorAll(".byCODEtext")].map((line) => line.textContent).join("\n")),
+      await page
+        .locator("#integration-code")
+        .evaluate((element) => document.activeElement === element && document.getSelection().toString().replace(/\r\n/g, "\n").replace(/\n$/, "") === [...element.querySelectorAll(".byCODEtext")].map((line) => line.textContent).join("\n")),
       true
     );
     const starterDownload = page.waitForEvent("download");

@@ -7,10 +7,23 @@ const assert = require("node:assert/strict");
 const path = require("node:path");
 const fs = require("node:fs/promises");
 const test = require("node:test");
-const { chromium } = require("playwright");
+const { chromium, firefox, webkit } = require("playwright");
+const browserEngine = process.env.BROWSER_ENGINE || "chromium";
+assert.ok(["chromium", "firefox", "webkit"].includes(browserEngine), "Unsupported BROWSER_ENGINE");
+const browserType = { chromium, firefox, webkit }[browserEngine];
+// Browser channels and executable overrides apply only to Chromium.
+const launchBrowser = () =>
+  browserType.launch(
+    browserEngine === "chromium"
+      ? {
+          channel: process.env.BROWSER_CHANNEL || undefined,
+          executablePath: process.env.CHROMIUM_EXECUTABLE_PATH || undefined
+        }
+      : {}
+  );
 
-const launch = () => chromium.launch({ channel: process.env.BROWSER_CHANNEL || "chrome", executablePath: process.env.CHROMIUM_EXECUTABLE_PATH || undefined });
 const root = path.join(__dirname, "..");
+// Use local companions and suppress the optional icon download to isolate editor behavior.
 async function install(page, viewer = true) {
   await page.route("https://cdn.jsdelivr.net/**", async (route) => {
     if (route.request().url().endsWith("fontawesome.min.css")) return route.fulfill({ body: "", contentType: "text/css" });
@@ -36,13 +49,15 @@ async function install(page, viewer = true) {
 
 // --- IMAGE SIZING ---
 test("Image sizes share source, history, and rendering across editor modes", async (t) => {
-  const browser = await launch();
+  const browser = await launchBrowser();
   try {
     const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
     await install(page);
-    await page.route("https://images.example/image.svg", (route) => route.fulfill({ contentType: "image/svg+xml", body: '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="400"><rect width="800" height="400" fill="#0969da"/></svg>' }));
+    await page.route("https://images.example/image.svg", (route) =>
+      route.fulfill({ contentType: "image/svg+xml", body: '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="400"><rect width="800" height="400" fill="#0969da"/></svg>' })
+    );
     const image = '![A logo](https://images.example/image.svg "Original title")';
     for (const mode of ["no-code", "clean", "assisted"]) {
       await t.test(`${mode} sizes an existing image and removes metadata for Default`, async () => {
@@ -53,13 +68,21 @@ test("Image sizes share source, history, and rendering across editor modes", asy
         const sizes = page.locator(".byEDimageToolbar");
         assert.equal(await sizes.locator('[aria-pressed="true"]').getAttribute("value"), "default");
         assert.equal(await sizes.locator("select").count(), 0);
-        for (const [size, width] of [["original", 800], ["xs", 96], ["small", 160], ["regular", 320], ["large", 480], ["xl", 720]]) {
+        for (const [size, width] of [
+          ["original", 800],
+          ["xs", 96],
+          ["small", 160],
+          ["regular", 320],
+          ["large", 480],
+          ["xl", 720]
+        ]) {
           await sizes.locator(`button[value="${size}"]`).click();
           assert.equal(await page.evaluate(() => editor.getMarkdown()), `Before\n\n${image}<!-- bymd:size=${size} -->\n\nAfter`);
           assert.equal(await sizes.locator('[aria-pressed="true"]').getAttribute("value"), size);
           const box = await img.boundingBox();
-          assert.equal(box.width, width);
-          assert.equal(box.height, width / 2);
+          // SVG proportions can round to fractional CSS pixels in Firefox.
+          assert.ok(Math.abs(box.width - width) < 0.01, "Image geometry allows subpixel rounding");
+          assert.ok(Math.abs(box.height - width / 2) < 0.01, "Image proportions allow subpixel rounding");
           assert.equal(await img.getAttribute("title"), "Original title");
           assert.equal(await page.locator('.byEDline[data-type="source"]').count(), 0, "Sized images stay visually editable");
         }
@@ -115,13 +138,13 @@ test("Image sizes share source, history, and rendering across editor modes", asy
       for (const mode of ["no-code", "clean", "assisted"]) {
         await page.evaluate((mode) => editor.setSyntaxMode(mode), mode);
         const box = await page.locator(".byEDimage").boundingBox();
-        assert.equal(box.width, 320);
-        assert.equal(box.height, 160);
+        assert.ok(Math.abs(box.width - 320) < 0.01, "Image geometry allows subpixel rounding");
+        assert.ok(Math.abs(box.height - 160) < 0.01, "Image geometry allows subpixel rounding");
       }
       await page.evaluate(() => editor.setPreview(true));
       const box = await page.locator(".byEDpreview img").boundingBox();
-      assert.equal(box.width, 320);
-      assert.equal(box.height, 160);
+      assert.ok(Math.abs(box.width - 320) < 0.01, "Image geometry allows subpixel rounding");
+      assert.ok(Math.abs(box.height - 160) < 0.01, "Image geometry allows subpixel rounding");
       assert.equal(await page.evaluate(() => editor.getMarkdown()), source);
     });
     await t.test("the image dialog inserts a size in one undo entry and localizes its choices", async () => {
@@ -160,7 +183,9 @@ test("Image sizes share source, history, and rendering across editor modes", asy
       await page.keyboard.press("Escape");
       assert.equal(await page.locator(".byEDimageToolbar:visible").count(), 0);
       await img.click();
-      await page.locator("#other").evaluate((other) => { other.textContent = "Outside"; });
+      await page.locator("#other").evaluate((other) => {
+        other.textContent = "Outside";
+      });
       await page.locator("#other").click();
       assert.equal(await page.locator(".byEDimageToolbar:visible").count(), 0);
       assert.equal(await page.evaluate(() => changes.length), 1);
@@ -211,22 +236,24 @@ test("Image sizes share source, history, and rendering across editor modes", asy
       assert.deepEqual(await page.evaluate(() => changes), []);
     });
     await t.test("explicit sizes preserve tall-image proportions while Default retains the existing height limit", async () => {
-      await page.route("https://images.example/portrait.svg", (route) => route.fulfill({ contentType: "image/svg+xml", body: '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="1200"><rect width="200" height="1200" fill="#0969da"/></svg>' }));
+      await page.route("https://images.example/portrait.svg", (route) =>
+        route.fulfill({ contentType: "image/svg+xml", body: '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="1200"><rect width="200" height="1200" fill="#0969da"/></svg>' })
+      );
       await page.evaluate(() => render("![Portrait](https://images.example/portrait.svg)", { syntax: "no-code", language: "en" }));
       const img = page.locator(".byEDimage");
       await page.waitForFunction(() => document.querySelector(".byEDimage")?.naturalHeight === 1200);
-      assert.equal((await img.boundingBox()).height, 400);
+      assert.ok(Math.abs((await img.boundingBox()).height - 400) < 0.01, "Image height allows subpixel rounding");
       await img.click();
       await page.locator('.byEDimageToolbar button[value="original"]').click();
       let box = await img.boundingBox();
-      assert.equal(box.width, 200);
-      assert.equal(box.height, 1200);
+      assert.ok(Math.abs(box.width - 200) < 0.01, "Image geometry allows subpixel rounding");
+      assert.ok(Math.abs(box.height - 1200) < 0.01, "Image geometry allows subpixel rounding");
       await page.locator('.byEDimageToolbar button[value="small"]').click();
       box = await img.boundingBox();
-      assert.equal(box.width, 160);
-      assert.equal(box.height, 960);
+      assert.ok(Math.abs(box.width - 160) < 0.01, "Image geometry allows subpixel rounding");
+      assert.ok(Math.abs(box.height - 960) < 0.01, "Image geometry allows subpixel rounding");
       await page.locator('.byEDimageToolbar button[value="default"]').click();
-      assert.equal((await img.boundingBox()).height, 400);
+      assert.ok(Math.abs((await img.boundingBox()).height - 400) < 0.01, "Image height allows subpixel rounding");
     });
     assert.deepEqual(errors, []);
   } finally {
@@ -236,7 +263,7 @@ test("Image sizes share source, history, and rendering across editor modes", asy
 
 // --- LOCALIZED CONTROLS ---
 test("control languages preserve source, native editing, and instance state", async (t) => {
-  const browser = await launch();
+  const browser = await launchBrowser();
   try {
     const page = await browser.newPage({ locale: "pt-BR" });
     const errors = [];
@@ -453,7 +480,7 @@ test("control languages preserve source, native editing, and instance state", as
 
 // --- SOURCE, EDITING, AND LIFECYCLE ---
 test("source-driven editor browser contracts", async (t) => {
-  const browser = await launch();
+  const browser = await launchBrowser();
   try {
     const page = await browser.newPage();
     const errors = [];
@@ -833,7 +860,8 @@ test("source-driven editor browser contracts", async (t) => {
       const copied = await page.evaluate(() => {
         editor.setSelection(0, editor.getMarkdown().length);
         const clipboard = new DataTransfer();
-        document.querySelector(".byEDsurface").dispatchEvent(new ClipboardEvent("copy", { bubbles: true, cancelable: true, clipboardData: clipboard }));
+        // Firefox ignores clipboardData in constructed ClipboardEvents; attach it to a plain event.
+        document.querySelector(".byEDsurface").dispatchEvent(Object.assign(new Event("copy", { bubbles: true, cancelable: true }), { clipboardData: clipboard }));
         return clipboard.getData("text/plain");
       });
       assert.equal(copied, edited);
@@ -959,11 +987,11 @@ test("source-driven editor browser contracts", async (t) => {
         const clipboard = new DataTransfer();
         clipboard.setData("text/plain", '<img src=x onerror="window.injected=1"> **safe**');
         clipboard.setData("text/html", '<img src=x onerror="window.injected=1">');
-        document.querySelector(".byEDsurface").dispatchEvent(new ClipboardEvent("paste", { bubbles: true, cancelable: true, clipboardData: clipboard }));
+        document.querySelector(".byEDsurface").dispatchEvent(Object.assign(new Event("paste", { bubbles: true, cancelable: true }), { clipboardData: clipboard }));
         const value = editor.getMarkdown();
         editor.setSelection(0, value.length);
         const copy = new DataTransfer();
-        document.querySelector(".byEDsurface").dispatchEvent(new ClipboardEvent("copy", { bubbles: true, cancelable: true, clipboardData: copy }));
+        document.querySelector(".byEDsurface").dispatchEvent(Object.assign(new Event("copy", { bubbles: true, cancelable: true }), { clipboardData: copy }));
         return { value, copied: copy.getData("text/plain"), injected: Boolean(window.injected), images: document.querySelectorAll(".byEDsurface img").length };
       });
       assert.equal(result.value, result.copied);
@@ -1124,7 +1152,7 @@ test("source-driven editor browser contracts", async (t) => {
 
 // --- COMPANION FALLBACK ---
 test("without companions, source editing and formatting remain usable", async () => {
-  const browser = await launch();
+  const browser = await launchBrowser();
   try {
     const page = await browser.newPage();
     const warnings = [];
@@ -1156,7 +1184,7 @@ test("without companions, source editing and formatting remain usable", async ()
 
 // --- SURFACES ---
 test("document and content backgrounds stay independent through theme and toolbar changes", async () => {
-  const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_EXECUTABLE_PATH || undefined, channel: process.env.BROWSER_CHANNEL || "chrome" });
+  const browser = await launchBrowser();
   try {
     const page = await browser.newPage();
     await page.route("https://cdn.jsdelivr.net/**", (route) => (route.request().url().endsWith("fontawesome.min.css") ? route.fulfill({ body: "", contentType: "text/css" }) : route.abort()));
@@ -1181,7 +1209,7 @@ test("document and content backgrounds stay independent through theme and toolba
     for (const changeMode of [false, true]) {
       if (changeMode) await root.locator(".byVIEWthemeToggle").click();
       await page.waitForFunction(() => getComputedStyle(document.getElementById("viewer")).backgroundColor === "rgba(0, 0, 0, 0)");
-      assert.equal(await root.evaluate((element) => getComputedStyle(element).backgroundColor), "rgba(0, 0, 0, 0)");
+      assert.match(await root.evaluate((element) => getComputedStyle(element).backgroundColor), /^rgba\([^)]*, 0\)$/);
       assert.equal(await root.locator(".byEDsurface").evaluate((element) => getComputedStyle(element).backgroundColor), "rgb(18, 52, 86)");
       assert.equal(
         await root
@@ -1209,7 +1237,7 @@ test("document and content backgrounds stay independent through theme and toolba
 
 // --- INTERACTION MOTION ---
 test("Clean markers animate closed after line breaks and local reparses", async () => {
-  const browser = await launch();
+  const browser = await launchBrowser();
   try {
     const page = await browser.newPage();
     await install(page);
@@ -1235,9 +1263,11 @@ test("Clean markers animate closed after line breaks and local reparses", async 
         })
       );
       await page.keyboard.press(key);
-      await page.waitForFunction(() => markerTransitions.some((event) => ["inline-size", "width"].includes(event.property) && !event.active), null, { timeout: 2000 });
+      if (await page.evaluate(() => CSS.supports("interpolate-size", "allow-keywords"))) {
+        await page.waitForFunction(() => markerTransitions.some((event) => ["inline-size", "width"].includes(event.property) && !event.active), null, { timeout: 2000 });
+      }
       await page.evaluate(() => Promise.allSettled(leavingMarker.getAnimations().map((animation) => animation.finished)));
-      assert.equal(await page.evaluate(() => getComputedStyle(leavingMarker).opacity), "0");
+      assert.equal(await page.evaluate(() => leavingMarker.getBoundingClientRect().width), 0, "Inactive syntax is hidden with or without motion support");
       assert.equal(await page.evaluate(() => editor.getMarkdown()), expected);
       const caret = offset + (key === "Shift+Enter" ? 3 : 1);
       assert.deepEqual(await page.evaluate(() => editor.getSelection()), { anchor: caret, focus: caret });
@@ -1255,7 +1285,7 @@ test("Clean markers animate closed after line breaks and local reparses", async 
 });
 
 test("animation options preserve initial visibility and override system motion preferences", async () => {
-  const browser = await chromium.launch({ channel: process.env.BROWSER_CHANNEL || "chrome", executablePath: process.env.CHROMIUM_EXECUTABLE_PATH || undefined });
+  const browser = await launchBrowser();
   try {
     const page = await browser.newPage({ reducedMotion: "reduce" });
     await page.route("https://cdn.jsdelivr.net/**", (route) => (route.request().url().endsWith("fontawesome.min.css") ? route.fulfill({ body: "", contentType: "text/css" }) : route.abort()));
@@ -1282,28 +1312,30 @@ test("animation options preserve initial visibility and override system motion p
         .evaluate((element) => getComputedStyle(element).transitionDuration.split(",")[0]),
       "0.18s"
     );
-    const disclosure = await root.evaluateHandle((element) => {
-      const details = document.createElement("details");
-      details.id = "motion-disclosure";
-      details.innerHTML = "<summary>Details</summary><p>Already available content</p>";
-      element.append(details);
-      getComputedStyle(details, "::details-content").blockSize;
-      return details;
-    });
-    await disclosure.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-    await page.waitForFunction(() => getComputedStyle(document.getElementById("motion-disclosure"), "::details-content").opacity === "0");
-    const opening = await disclosure.evaluate(async (details) => {
-      details.open = true;
-      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-      return Number(getComputedStyle(details, "::details-content").opacity);
-    });
-    assert.ok(opening > 0 && opening < 1, "A deliberate disclosure eases in even with reduced motion requested");
-    await page.waitForFunction(() => getComputedStyle(document.getElementById("motion-disclosure"), "::details-content").opacity === "1");
-    await disclosure.evaluate((details) => {
-      details.open = false;
-    });
-    await page.waitForFunction(() => getComputedStyle(document.getElementById("motion-disclosure"), "::details-content").opacity === "0");
-    assert.equal(await disclosure.evaluate((details) => details.open), false);
+    if (await page.evaluate(() => CSS.supports("interpolate-size", "allow-keywords"))) {
+      const disclosure = await root.evaluateHandle((element) => {
+        const details = document.createElement("details");
+        details.id = "motion-disclosure";
+        details.innerHTML = "<summary>Details</summary><p>Already available content</p>";
+        element.append(details);
+        getComputedStyle(details, "::details-content").blockSize;
+        return details;
+      });
+      await disclosure.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      await page.waitForFunction(() => getComputedStyle(document.getElementById("motion-disclosure"), "::details-content").opacity === "0");
+      const opening = await disclosure.evaluate(async (details) => {
+        details.open = true;
+        await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        return Number(getComputedStyle(details, "::details-content").opacity);
+      });
+      assert.ok(opening > 0 && opening < 1, "A deliberate disclosure eases in even with reduced motion requested");
+      await page.waitForFunction(() => getComputedStyle(document.getElementById("motion-disclosure"), "::details-content").opacity === "1");
+      await disclosure.evaluate((details) => {
+        details.open = false;
+      });
+      await page.waitForFunction(() => getComputedStyle(document.getElementById("motion-disclosure"), "::details-content").opacity === "0");
+      assert.equal(await disclosure.evaluate((details) => details.open), false);
+    }
     const before = await page.evaluate(() => ({ markdown: motionController.getMarkdown(), selection: motionController.getSelection() }));
     await page.evaluate(() => motionController.setAnimations(false));
     assert.deepEqual(await page.evaluate(() => ({ markdown: motionController.getMarkdown(), selection: motionController.getSelection() })), before);
@@ -1324,7 +1356,11 @@ test("animation options preserve initial visibility and override system motion p
     });
     const syntax = root.locator(".byEDline.byEDvisited.is-active .byEDsyntax").first();
     await syntax.waitFor();
-    assert.equal(await syntax.evaluate((element) => element.getAnimations().some((animation) => ["inline-size", "width"].includes(animation.transitionProperty))), true, "Only the active markers ease into place");
+    if (await page.evaluate(() => CSS.supports("interpolate-size", "allow-keywords"))) {
+      assert.equal(await syntax.evaluate((element) => element.getAnimations().some((animation) => ["inline-size", "width"].includes(animation.transitionProperty))), true, "Only the active markers ease into place");
+    } else {
+      assert.equal(await syntax.isVisible(), true, "Active syntax remains available without size transitions");
+    }
     await syntax.evaluate((element) => Promise.allSettled(element.getAnimations().map((animation) => animation.finished)));
     assert.deepEqual(await page.evaluate(() => motionController.getSelection()), { anchor: 2, focus: 2 });
     await page.keyboard.type("New ");
@@ -1334,6 +1370,8 @@ test("animation options preserve initial visibility and override system motion p
     assert.equal(await page.evaluate(() => motionController.getMarkdown()), before.markdown);
     await page.evaluate(() => motionController.setPreview(true));
     await page.emulateMedia({ media: "print" });
+    // Firefox can apply print styles before retiring the previous transition objects.
+    await page.waitForFunction(() => document.getElementById("motion-viewer").getAnimations({ subtree: true }).length === 0);
     assert.equal(await root.locator(".byEDpreview").evaluate((element) => getComputedStyle(element).opacity), "1", "Print never captures a partially faded document");
     assert.equal(await root.evaluate((element) => element.getAnimations({ subtree: true }).length), 0);
     await page.emulateMedia({ media: "screen", reducedMotion: "reduce" });
@@ -1388,7 +1426,7 @@ test("animation options preserve initial visibility and override system motion p
 
 // --- INITIAL APPEARANCE ---
 test("appearance options override markup and preserve independent viewer state", async () => {
-  const browser = await chromium.launch({ channel: process.env.BROWSER_CHANNEL || undefined, executablePath: process.env.CHROMIUM_EXECUTABLE_PATH || undefined });
+  const browser = await launchBrowser();
   try {
     const page = await browser.newPage();
     await page.route("https://cdn.jsdelivr.net/**", (route) => route.fulfill({ body: "", contentType: "text/css" }));
@@ -1511,6 +1549,64 @@ test("appearance options override markup and preserve independent viewer state",
     await page.evaluate(() => appearanceInstance.setPreview(true));
     assert.equal(await page.locator("#appearance .byEDpreview").evaluate((element) => getComputedStyle(element).fontSize), "22.5px");
     assert.equal(await page.locator("#neighbor").evaluate((element) => element.outerHTML), neighbor);
+  } finally {
+    await browser.close();
+  }
+});
+
+// --- MOBILE AND COMPOSITION ---
+test("mobile composition preserves source, selection, and one undo transaction in every mode", async (t) => {
+  const browser = await launchBrowser();
+  try {
+    // Firefox supports the touch viewport, but Playwright does not support isMobile for that engine.
+    const page = await browser.newPage({ viewport: { width: 390, height: 844 }, hasTouch: true, ...(browserEngine === "firefox" ? {} : { isMobile: true }) });
+    await install(page);
+    await page.evaluate(() => {
+      const viewport = document.createElement("meta");
+      viewport.name = "viewport";
+      viewport.content = "width=device-width, initial-scale=1";
+      document.head.append(viewport);
+    });
+    for (const syntax of ["no-code", "clean", "assisted", "source"]) {
+      await t.test(syntax, async () => {
+        // Replace a selected word while preserving the unrelated CRLF paragraph boundaries.
+        const original = "Hello OLD\r\n\r\nTail";
+        await page.evaluate(({ original, syntax }) => render(original, { syntax, language: "en" }), { original, syntax });
+        const surface = page.getByRole("textbox", { name: syntax === "source" ? "Document — Markdown source" : "Document", exact: true });
+        // Exercise touch focus before setting the exact source range for the IME fixture.
+        await surface.tap({ position: { x: 20, y: 15 } });
+        const during = await page.evaluate((syntax) => {
+          editor.setSelection(6, 9);
+          const target = document.querySelector(syntax === "source" ? ".byEDsource" : ".byEDsurface");
+          const line = target.querySelector(".byEDline");
+          // Simulate browser-owned DOM changes; committed Markdown must wait for compositionend.
+          target.dispatchEvent(new CompositionEvent("compositionstart", { bubbles: true }));
+          if (syntax === "source") target.value = "Hello 日本語\n\nTail";
+          else line.firstChild.data = "Hello 日本語";
+          target.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertCompositionText", isComposing: true, data: "日本語" }));
+          // Formatting shortcuts must not interrupt an active IME composition.
+          const shortcut = new KeyboardEvent("keydown", { key: "b", ctrlKey: true, isComposing: true, bubbles: true, cancelable: true });
+          target.dispatchEvent(shortcut);
+          return { source: editor.getMarkdown(), changes: changes.length, shortcutPrevented: shortcut.defaultPrevented, ownsLine: !line || target.contains(line) };
+        }, syntax);
+        assert.deepEqual(during, { source: original, changes: 0, shortcutPrevented: false, ownsLine: true });
+        const committed = await page.evaluate((syntax) => {
+          const target = document.querySelector(syntax === "source" ? ".byEDsource" : ".byEDsurface");
+          target.dispatchEvent(new CompositionEvent("compositionend", { bubbles: true, data: "日本語" }));
+          // Some browsers send one last input after compositionend.
+          target.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText", data: "日本語" }));
+          return { source: editor.getMarkdown(), changes: [...changes], selection: editor.getSelection() };
+        }, syntax);
+        const expected = "Hello 日本語\r\n\r\nTail";
+        assert.deepEqual(committed, { source: expected, changes: [expected], selection: { anchor: 9, focus: 9 } });
+        // Composition and the final input event must form one source/history transaction.
+        await page.evaluate(() => editor.command("undo"));
+        assert.equal(await page.evaluate(() => editor.getMarkdown()), original);
+        await page.evaluate(() => editor.command("redo"));
+        assert.equal(await page.evaluate(() => editor.getMarkdown()), expected);
+        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+      });
+    }
   } finally {
     await browser.close();
   }

@@ -929,6 +929,7 @@
       renderedNoCode = false,
       composing = null,
       nativeEdit = null,
+      shiftEnter = false,
       dialog = null,
       dialogAbort = null,
       active = null,
@@ -2348,12 +2349,37 @@
       Object.values(fields)[0].focus();
     };
 
+    // WebKit can omit beforeinput at the visible edge of hidden source syntax.
+    // Share that boundary operation with keydown while mobile input retains beforeinput.
+    const deleteBoundary = (type, position) => {
+      if (syntax !== "no-code" || position.anchor !== position.focus) return false;
+      const from = position.focus,
+        record = lines[lineAt(from)],
+        backward = type === "deleteContentBackward";
+      let edge = from,
+        token;
+      while ((token = record.formats.find((item) => (backward ? edge === record.from + item.bodyFrom || edge === record.from + item.to : edge === record.from + item.bodyTo || edge === record.from + item.from)))) {
+        const next = record.from + (backward ? (edge === record.from + token.to ? token.bodyTo : token.from) : token.to);
+        if (next === edge) break;
+        edge = next;
+      }
+      if (backward && record.meta.bodyFrom > 0 && edge === record.from + record.meta.bodyFrom && ["heading", "quote", "bullet", "ordered", "task"].includes(record.meta.type)) {
+        change(record.from, edge, "", { anchor: record.from, focus: record.from }, type);
+        return true;
+      }
+      if (edge === from) return false;
+      change(backward ? boundary(source, edge, -1) : edge, backward ? edge : boundary(source, edge, 1), "", null, type);
+      return true;
+    };
+
     // --- INPUT ---
     const beforeInput = (event) => {
       if (composing || event.isComposing || !event.cancelable) return;
       const started = metrics ? performance.now() : 0;
       nativeEdit = null;
-      const type = event.inputType;
+      // WebKit can report Shift+Enter as insertParagraph in a contenteditable surface.
+      const type = shiftEnter && event.inputType === "insertParagraph" ? "insertLineBreak" : event.inputType;
+      shiftEnter = false;
       position = selection();
       if (syntax === "no-code" && position.anchor === position.focus && lines[lineAt(position.focus)]?.meta.type === "source") {
         event.preventDefault();
@@ -2363,28 +2389,9 @@
       let from = Math.min(position.anchor, position.focus),
         to = Math.max(position.anchor, position.focus),
         inserted = null;
-      if (syntax === "no-code" && from === to && ["deleteContentBackward", "deleteContentForward"].includes(type)) {
-        const record = lines[lineAt(from)],
-          backward = type === "deleteContentBackward";
-        let edge = from,
-          token;
-        // Walk through every enclosing format, not just the innermost delimiter.
-        while ((token = record.formats.find((item) => (backward ? edge === record.from + item.bodyFrom || edge === record.from + item.to : edge === record.from + item.bodyTo || edge === record.from + item.from)))) {
-          const next = record.from + (backward ? (edge === record.from + token.to ? token.bodyTo : token.from) : token.to);
-          if (next === edge) break;
-          edge = next;
-        }
-        if (backward && record.meta.bodyFrom > 0 && edge === record.from + record.meta.bodyFrom && ["heading", "quote", "bullet", "ordered", "task"].includes(record.meta.type)) {
-          event.preventDefault();
-          change(record.from, edge, "", { anchor: record.from, focus: record.from }, type);
-          return;
-        }
-        // Cross hidden inline delimiters without deleting the formatting itself.
-        if (edge !== from) {
-          event.preventDefault();
-          change(backward ? boundary(source, edge, -1) : edge, backward ? edge : boundary(source, edge, 1), "", null, type);
-          return;
-        }
+      if (["deleteContentBackward", "deleteContentForward"].includes(type) && deleteBoundary(type, position)) {
+        event.preventDefault();
+        return;
       }
       if (type === "deleteContentBackward" && from === to && syntax !== "source" && syntax !== "no-code") {
         const record = lines[lineAt(from)];
@@ -2395,10 +2402,22 @@
         }
       }
       const targetRange = syntax !== "source" && event.getTargetRanges?.()[0];
+      let nativeRangeMatches = true;
       if (targetRange && !(from === 0 && to === source.length)) {
-        const start = offsetOf(targetRange.startContainer, targetRange.startOffset),
+        let start = offsetOf(targetRange.startContainer, targetRange.startOffset),
           end = offsetOf(targetRange.endContainer, targetRange.endOffset);
         if (start !== null && end !== null) {
+          // After replacing a block, WebKit's insertion range can lag behind its selection.
+          if (type === "insertText" && from === to) {
+            nativeRangeMatches = start === from && end === to;
+            start = from;
+            end = to;
+          }
+          // Native deletion ranges can cover only part of a grapheme in Firefox.
+          if (from === to && ["deleteContentBackward", "deleteContentForward"].includes(type)) {
+            start = type === "deleteContentBackward" ? boundary(source, from, -1) : from;
+            end = type === "deleteContentForward" ? boundary(source, to, 1) : to;
+          }
           from = start;
           to = end;
         }
@@ -2407,7 +2426,7 @@
       // and structural edits still pass through the parser and the mapped DOM patch.
       const wordInput = type === "insertText" && from === to && /^[\p{L}\p{N} ,.;?!'-]+$/u.test(event.data || "") && !(event.data.endsWith("!") && source[to] === "[");
       const wordDelete = ["deleteContentBackward", "deleteContentForward"].includes(type) && from < to && position.anchor === position.focus && /^[\p{L}\p{N} ,.;?!'-]+$/u.test(source.slice(from, to));
-      if (syntax !== "source" && event.isTrusted && (wordInput || wordDelete) && source.length + (event.data?.length || 0) <= 2000000 && !(/ $/.test(event.data || "") && /[*_~`]/.test(source[to] || ""))) {
+      if (syntax !== "source" && event.isTrusted && nativeRangeMatches && (wordInput || wordDelete) && source.length + (event.data?.length || 0) <= 2000000 && !(/ $/.test(event.data || "") && /[*_~`]/.test(source[to] || ""))) {
         const selected = document.getSelection(),
           target = wordDelete ? targetRange?.startContainer : selected?.focusNode,
           mapped = textMap.get(target);
@@ -2569,6 +2588,11 @@
       });
       listen(target, "keydown", (event) => {
         if (event.isComposing || composing) return;
+        shiftEnter = event.key === "Enter" && event.shiftKey;
+        if (!event.ctrlKey && !event.metaKey && !event.altKey && ["Backspace", "Delete"].includes(event.key) && deleteBoundary(event.key === "Backspace" ? "deleteContentBackward" : "deleteContentForward", selection())) {
+          event.preventDefault();
+          return;
+        }
         if (syntax !== "source" && (event.ctrlKey || event.metaKey) && !event.altKey && event.key.toLowerCase() === "a") {
           event.preventDefault();
           restore({ anchor: 0, focus: source.length });
@@ -2602,6 +2626,9 @@
         }
       });
     }
+    listen(element, "keyup", (event) => {
+      if (event.key === "Enter") shiftEnter = false;
+    });
     // --- SELECTION AND TOOLBAR EVENTS ---
     listen(
       document,

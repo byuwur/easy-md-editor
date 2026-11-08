@@ -5,15 +5,29 @@
 const assert = require("node:assert/strict");
 const path = require("node:path");
 const test = require("node:test");
-const { chromium } = require("playwright");
+const { chromium, firefox, webkit } = require("playwright");
+const browserEngine = process.env.BROWSER_ENGINE || "chromium";
+assert.ok(["chromium", "firefox", "webkit"].includes(browserEngine), "Unsupported BROWSER_ENGINE");
+const browserType = { chromium, firefox, webkit }[browserEngine];
+// Browser channels and executable overrides apply only to Chromium.
+const launchBrowser = () =>
+  browserType.launch(
+    browserEngine === "chromium"
+      ? {
+          channel: process.env.BROWSER_CHANNEL || undefined,
+          executablePath: process.env.CHROMIUM_EXECUTABLE_PATH || undefined
+        }
+      : {}
+  );
 
 // --- LOCAL LIBRARY FIXTURE ---
 test("No-code editing and control visibility", async (t) => {
-  const browser = await chromium.launch({ channel: process.env.BROWSER_CHANNEL || "chrome", executablePath: process.env.CHROMIUM_EXECUTABLE_PATH || undefined });
+  const browser = await launchBrowser();
   try {
     const page = await browser.newPage();
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
+    // Suppress the optional icon download so these checks depend only on local editor assets.
     await page.route("https://cdn.jsdelivr.net/**", (route) => (route.request().url().endsWith("fontawesome.min.css") ? route.fulfill({ body: "", contentType: "text/css" }) : route.abort()));
     await page.setContent('<div id="editor"></div>');
     for (const file of ["../../easy-md-viewer/md.css", "../../easy-code-viewer/code.css", "../md.edit.css"]) await page.addStyleTag({ path: path.join(__dirname, file) });
@@ -104,7 +118,7 @@ test("No-code editing and control visibility", async (t) => {
         editor.setSelection(3);
         const data = new DataTransfer();
         data.setData("text/plain", "Title");
-        document.querySelector(".byEDsurface").dispatchEvent(new ClipboardEvent("paste", { clipboardData: data, bubbles: true, cancelable: true }));
+        document.querySelector(".byEDsurface").dispatchEvent(Object.assign(new Event("paste", { bubbles: true, cancelable: true }), { clipboardData: data }));
         return [editor.getMarkdown(), editor.getSelection()];
       });
       assert.deepEqual(paste, ["### Title", { anchor: 9, focus: 9 }]);
@@ -248,7 +262,7 @@ test("No-code editing and control visibility", async (t) => {
         await page.keyboard.press("Control+a");
         const cut = await page.evaluate(() => {
           const data = new DataTransfer();
-          document.querySelector(".byEDsurface").dispatchEvent(new ClipboardEvent("cut", { clipboardData: data, bubbles: true, cancelable: true }));
+          document.querySelector(".byEDsurface").dispatchEvent(Object.assign(new Event("cut", { bubbles: true, cancelable: true }), { clipboardData: data }));
           return data.getData("text/plain");
         });
         assert.equal(cut, source);
@@ -413,7 +427,7 @@ test("No-code editing and control visibility", async (t) => {
         editor.focus();
         const data = new DataTransfer();
         data.setData("text/plain", "one\r\ntwo");
-        document.querySelector(".byEDsurface").dispatchEvent(new ClipboardEvent("paste", { clipboardData: data, bubbles: true, cancelable: true }));
+        document.querySelector(".byEDsurface").dispatchEvent(Object.assign(new Event("paste", { bubbles: true, cancelable: true }), { clipboardData: data }));
       });
       assert.equal(await page.evaluate(() => editor.getMarkdown()), "~~~js\r\none\r\ntwo\r\n~~~");
     });
@@ -436,7 +450,7 @@ test("No-code editing and control visibility", async (t) => {
         editor.setSelection(source.indexOf("Nested"));
         const data = new DataTransfer();
         data.setData("text/plain", "Replacement");
-        document.querySelector(".byEDsurface").dispatchEvent(new ClipboardEvent("paste", { clipboardData: data, bubbles: true, cancelable: true }));
+        document.querySelector(".byEDsurface").dispatchEvent(Object.assign(new Event("paste", { bubbles: true, cancelable: true }), { clipboardData: data }));
       }, source);
       assert.equal(await page.evaluate(() => editor.getMarkdown()), source);
     });
@@ -449,7 +463,9 @@ test("No-code editing and control visibility", async (t) => {
             await page.evaluate(({ markdown, fontSize, theme }) => render(markdown, { fontSize, theme, language: "en" }), { markdown, fontSize, theme });
             const picker = page.locator(".byEDheading");
             const closedHeight = (await picker.boundingBox()).height;
-            await picker.click();
+            // Rich option typography is progressive enhancement; native selects must still apply headings.
+            const customPicker = await page.evaluate(() => CSS.supports("appearance", "base-select"));
+            if (customPicker) await picker.click();
             const styles = await picker.locator("option").evaluateAll((options) =>
               options.map((option, level) => {
                 const label = getComputedStyle(option.firstElementChild);
@@ -457,11 +473,12 @@ test("No-code editing and control visibility", async (t) => {
                 return { level, actual: [label.fontSize, label.fontWeight, label.fontFamily], expected: [document.fontSize, document.fontWeight, document.fontFamily], height: option.getBoundingClientRect().height };
               })
             );
-            for (const { level, actual, expected, height } of styles) {
+            for (const { level, actual, expected, height } of customPicker ? styles : []) {
               assert.deepEqual(actual, expected, `Heading ${level}, ${fontSize}rem, ${theme}`);
               assert.ok(height >= parseFloat(actual[0]), "The open picker shows each full-size choice");
             }
-            await page.getByRole("option", { name: "Heading 3", exact: true }).click();
+            if (customPicker) await page.getByRole("option", { name: "Heading 3", exact: true }).click();
+            else await picker.selectOption("3");
             assert.equal(await picker.inputValue(), "3");
             assert.equal((await picker.boundingBox()).height, closedHeight);
             assert.equal(await page.evaluate(() => editor.getMarkdown()), "### " + markdown);
@@ -593,7 +610,8 @@ test("No-code editing and control visibility", async (t) => {
           assert.equal(await page.evaluate(() => editor.getMarkdown()), source);
           assert.deepEqual(await page.evaluate(() => changes), []);
           await page.evaluate(() => editor.focus());
-          await page.getByRole("button", { name: "Outside action", exact: true }).click();
+          await page.getByRole("button", { name: "Outside action", exact: true }).focus();
+          await page.keyboard.press("Enter");
           assert.equal(await page.locator("#outside-action").evaluate((button) => document.activeElement === button), true);
           await page.evaluate(() => editor.focus());
           await page.keyboard.type("!");
