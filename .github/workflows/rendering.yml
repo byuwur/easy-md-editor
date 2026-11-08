@@ -53,6 +53,8 @@ jobs:
       - name: Check ${{ matrix.suite }}
         working-directory: easy-md-editor
         env:
+          # Firefox requires HOME to belong to the root user running this container.
+          HOME: /root
           NODE_PATH: ${{ runner.temp }}/editor-tests/node_modules
         run: |
           node --check md.edit.js
