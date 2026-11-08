@@ -131,6 +131,7 @@
       offsets.push(end);
       return direction < 0 ? (offsets.filter((offset) => offset < index).at(-1) ?? 0) : (offsets.find((offset) => offset > index) ?? text.length);
     }
+    // Without grapheme segmentation, at least keep UTF-16 surrogate pairs together during deletion.
     let next = index + direction;
     if (direction < 0 && /[\uDC00-\uDFFF]/.test(text[next] || "") && /[\uD800-\uDBFF]/.test(text[next - 1] || "")) next--;
     if (direction > 0 && /[\uD800-\uDBFF]/.test(text[index] || "") && /[\uDC00-\uDFFF]/.test(text[next] || "")) next++;
@@ -154,6 +155,7 @@
     warnMissingThemes(element, palette ?? element.dataset.theme);
     const size = typeof fontSize === "number" ? `${Math.max(0.5, Math.min(3, fontSize))}rem` : typeof fontSize === "string" ? `clamp(0.5rem, ${fontSize}, 3rem)` : "";
     if (fontSize != null && (typeof fontSize === "number" ? !Number.isFinite(fontSize) : typeof fontSize !== "string" || !CSS.supports("font-size", size))) throw new RangeError("Font size must be a finite multiplier or a CSS size.");
+    // Keep palette identity in data-theme while light/dark classes select its mode.
     if (theme != null || palette != null) {
       const mode = theme ?? (["light", "dark"].includes(element.dataset.theme) ? element.dataset.theme : element.classList.contains("dark") ? "dark" : "light");
       element.classList.toggle("light", mode === "light");
@@ -865,6 +867,7 @@
     }
     let candidate = canonical;
     const available = Object.keys(byMDeditor.locales);
+    // Resolve region or script variants through their parent language before falling back to English.
     while (candidate) {
       const matched = available.find((code) => code.toLowerCase() === candidate);
       if (matched) return matched;
@@ -1179,6 +1182,7 @@
     // --- SOURCE MAPPING ---
     const split = (text, from = 0) => {
       const result = [];
+      // Retain each physical separator so edits can preserve mixed source line endings.
       const pattern = /\r\n|\r|\n/g;
       let cursor = 0,
         match;
@@ -1726,6 +1730,7 @@
         original = lines[first];
       const combined = original.text.slice(0, from - original.from) + inserted + lines[last].text.slice(to - lines[last].from) + lines[last].eol;
       const replacement = split(combined, original.from);
+      // Splitting a terminated fragment adds an empty tail that belongs to the following untouched line.
       if (lines[last].eol) replacement.pop();
       const deleted = lines.slice(first, last + 1);
       if (replacement.length > 10000) lines = lines.slice(0, first).concat(replacement, lines.slice(last + 1));
@@ -1956,16 +1961,19 @@
       } else if (native?.stable) acceptNativeText(native);
       else patch(from, to, inserted);
       if (remember) {
+        // A new edit forks history at the current undo position, making the previous redo branch unreachable.
         const discarded = history.splice(historyIndex);
         for (const entry of discarded) historyBytes -= entry.removed.length + entry.inserted.length;
         const prior = history.at(-1),
           time = performance.now();
+        // Coalesce only adjacent typing within the short time window; structural edits remain separate undo steps.
         if (type === "insertText" && !removed && !/[\r\n]/.test(inserted) && prior?.type === type && prior.from + prior.inserted.length === from && time - prior.time < 750) {
           prior.inserted += inserted;
           prior.after = after;
           prior.time = time;
         } else history.push({ from, removed, inserted, before, after, type, time });
         historyBytes += removed.length + inserted.length;
+        // Bound retained source text; with history enabled, one large edit still remains an atomic undo step.
         while (history.length > options.historyLimit || (historyBytes > 2000000 && history.length > 1)) {
           const entry = history.shift();
           historyBytes -= entry.removed.length + entry.inserted.length;
@@ -1996,6 +2004,7 @@
       let from = 0,
         oldEnd = before.length,
         newEnd = next.length;
+      // Isolate the composition delta so unrelated source and line endings remain untouched.
       while (from < oldEnd && from < newEnd && before[from] === next[from]) from++;
       while (oldEnd > from && newEnd > from && before[oldEnd - 1] === next[newEnd - 1]) {
         oldEnd--;
@@ -2141,12 +2150,14 @@
               end = formatting.from + token.to,
               body = formatting.from + token.bodyFrom,
               text = source.slice(body, formatting.from + token.bodyTo);
+            // Removing one style from combined emphasis must retain the other style's delimiters.
             const remaining = token.type === "strongEm" ? source.slice(start, start + (name === "bold" ? 1 : 2)) : "";
             const anchor = start + remaining.length + Math.max(0, Math.min(text.length, position.anchor - body)),
               focus = start + remaining.length + Math.max(0, Math.min(text.length, position.focus - body));
             return change(start, end, remaining + text + remaining, { anchor, focus }, name);
           }
         }
+        // Use a delimiter longer than every selected backtick run so the code body cannot close it early.
         if (name === "inlineCode" && selected.includes("`")) marker = "`".repeat(Math.max(...[...selected.matchAll(/`+/g)].map((match) => match[0].length)) + 1);
         if (!formatting && hasWrapper(from, to, marker)) return change(from - marker.length, to + marker.length, selected, { anchor: from - marker.length, focus: to - marker.length }, name);
         if (!formatting && selected.length >= marker.length * 2 && hasWrapper(from + marker.length, to - marker.length, marker))
@@ -2358,6 +2369,7 @@
         backward = type === "deleteContentBackward";
       let edge = from,
         token;
+      // Walk outward through nested formats before crossing their hidden delimiters.
       while ((token = record.formats.find((item) => (backward ? edge === record.from + item.bodyFrom || edge === record.from + item.to : edge === record.from + item.bodyTo || edge === record.from + item.from)))) {
         const next = record.from + (backward ? (edge === record.from + token.to ? token.bodyTo : token.from) : token.to);
         if (next === edge) break;
@@ -2402,6 +2414,7 @@
         }
       }
       const targetRange = syntax !== "source" && event.getTargetRanges?.()[0];
+      // Native word edits are safe only when the browser range agrees with the source caret.
       let nativeRangeMatches = true;
       if (targetRange && !(from === 0 && to === source.length)) {
         let start = offsetOf(targetRange.startContainer, targetRange.startOffset),
@@ -2589,6 +2602,7 @@
       listen(target, "keydown", (event) => {
         if (event.isComposing || composing) return;
         shiftEnter = event.key === "Enter" && event.shiftKey;
+        // Handle hidden-syntax deletion here when WebKit would omit beforeinput.
         if (!event.ctrlKey && !event.metaKey && !event.altKey && ["Backspace", "Delete"].includes(event.key) && deleteBoundary(event.key === "Backspace" ? "deleteContentBackward" : "deleteContentForward", selection())) {
           event.preventDefault();
           return;
@@ -2626,6 +2640,7 @@
         }
       });
     }
+    // A canceled Enter may never reach beforeinput; discard its modifier state on release.
     listen(element, "keyup", (event) => {
       if (event.key === "Enter") shiftEnter = false;
     });
@@ -2703,12 +2718,14 @@
       },
       { capture: true }
     );
+    // Keep the source selection when pointer activation would otherwise move focus into a toolbar button.
     listen(toolbar, "pointerdown", (event) => {
       if (event.target.closest("button")) {
         position = selection();
         event.preventDefault();
       }
     });
+    // Expose one toolbar tab stop while arrow keys move among the enabled formatting controls.
     listen(toolbar, "focusin", (event) => {
       if (!event.target.matches("button, select")) return;
       for (const control of toolbar.querySelectorAll("button, select")) control.tabIndex = control === event.target ? 0 : -1;
