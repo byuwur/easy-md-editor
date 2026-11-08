@@ -735,6 +735,8 @@
             copyMarkdown.removeAttribute("title");
           } catch {
             output.closest("details").open = true;
+            // Let WebKit render the opened disclosure before focusing its textarea.
+            await new Promise(requestAnimationFrame);
             output.value = editor.getMarkdown();
             output.focus();
             output.select();

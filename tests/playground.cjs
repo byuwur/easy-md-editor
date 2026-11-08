@@ -384,6 +384,7 @@ test("playground edits documents and exports exact Markdown", async () => {
       });
     });
     await page.locator(".source-output summary").click();
+    await page.locator(".source-output details[open]").waitFor();
     const latest = "# Latest\r\n\r\n**Fresh** Markdown — not the delayed output.";
     await page.evaluate((source) => {
       playgroundEditor.setMarkdown(source);
@@ -396,12 +397,14 @@ test("playground edits documents and exports exact Markdown", async () => {
     await page.keyboard.press("Enter");
     assert.equal(await page.locator(".source-output details").getAttribute("open"), "");
     await page.locator(".source-output summary").click();
+    await page.locator(".source-output details:not([open])").waitFor();
     await page.evaluate(() => {
       navigator.clipboard.writeText = async () => {
         throw new Error("denied");
       };
     });
     await page.locator("#copy-markdown").click();
+    await page.waitForFunction(() => document.querySelector("#copy-markdown span").textContent === "Failed");
     assert.equal(await page.locator(".source-output details").getAttribute("open"), "");
     assert.equal(await page.locator("#copy-markdown span").textContent(), "Failed");
     assert.match(await page.locator("#markdown-copy-feedback").textContent(), /Ctrl\+C/);
