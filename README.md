@@ -29,6 +29,14 @@ Visual editing requires the MD viewer's `parseInline()` and `scanLine()` APIs; l
 
 The editor script fetches no assets. For offline use, keep the companion files locally too. To keep the icons offline, download Font Awesome and its fonts and point the import in `md.edit.css` to your local stylesheet. `@latest` follows published releases; pin a tag or commit when you need a fixed version.
 
+## Offline use and Content Security Policy
+
+For an offline host, serve `md.edit.js`, `md.edit.css`, `md.js`, and `md.css` locally, plus `code.js` and `code.css` when highlighting is wanted. MD is required for visual modes and Preview; CODE is optional. Extra palettes require local `md.themes.css`. Remove the Font Awesome `@import` from your local editor stylesheet to use text labels, or host that stylesheet and its referenced fonts locally. Keep `controlsCompact: false` when omitting icons. Content images also need local URLs for offline display.
+
+For CSP, allow the script and stylesheet origins. Move example inline initialization into an allowed external script, or authorize it with a nonce/hash; no `unsafe-eval` is needed. Font Awesome needs `style-src` permission for its import and `font-src` permission for its fonts unless removed or self-hosted. Allow Markdown image origins in `img-src`. Appearance controls write individual style properties; host-authored inline style attributes and custom theme `<style>` blocks need their own policy authorization. A script nonce does not authorize those styles. Control templates use `innerHTML` for static markup and do not currently support enforced Trusted Types (`require-trusted-types-for 'script'`).
+
+The online playground and exported CDN starter require network access. The playground additionally loads Bootstrap, Pickr, companions, inline scripts/styles, and generated previews; its requirements exceed those of a standalone host. Local starters still need the CSS import and content image requirements above handled by the host.
+
 ## Usage
 
 ```html
@@ -154,16 +162,16 @@ editor.destroy();
 
 `command(name, value?)` exposes the same formatting actions:
 
-| Commands                                                                              | Value                                                                  |
-| ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| `bold`, `italic`, `strikethrough`, `inlineCode`                                       | None                                                                   |
-| `heading`                                                                             | Level 1–6; `0` means paragraph                                         |
-| `paragraph`, `bulletList`, `orderedList`, `checklist`, `blockquote`, `horizontalRule` | None                                                                   |
-| `link`, `image`                                                                       | `{ url, label }`; images also accept optional `size`; omit to open the insertion dialog |
+| Commands                                                                              | Value                                                                                                                                        |
+| ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bold`, `italic`, `strikethrough`, `inlineCode`                                       | None                                                                                                                                         |
+| `heading`                                                                             | Level 1–6; `0` means paragraph                                                                                                               |
+| `paragraph`, `bulletList`, `orderedList`, `checklist`, `blockquote`, `horizontalRule` | None                                                                                                                                         |
+| `link`, `image`                                                                       | `{ url, label }`; images also accept optional `size`; omit to open the insertion dialog                                                      |
 | `imageSize`                                                                           | `"default"`, `"original"`, `"xs"`, `"small"`, `"regular"`, `"large"`, or `"xl"`; resize the selected image or the image containing the caret |
-| `table`                                                                               | `{ rows, columns }`; omit for the size dialog; rows exclude the header |
-| `codeBlock`                                                                           | Language string, or `""` for plain code; omit for the language dialog  |
-| `undo`, `redo`                                                                        | None                                                                   |
+| `table`                                                                               | `{ rows, columns }`; omit for the size dialog; rows exclude the header                                                                       |
+| `codeBlock`                                                                           | Language string, or `""` for plain code; omit for the language dialog                                                                        |
+| `undo`, `redo`                                                                        | None                                                                                                                                         |
 
 `destroy()` removes owned DOM and listeners and releases history. Keep the source before destroying if your application needs it. Read the library version with `byMDeditor.VERSION`.
 
@@ -353,15 +361,7 @@ CI runs library and playground suites independently in Chromium, Firefox, and We
 
 Need another format, maybe an editor? Explore the family:
 
-<a href="https://byuwur.github.io/easy-md-viewer/"><img src="https://raw.githubusercontent.com/byuwur/easy-md-viewer/main/assets/favicon.png" height="24" align="top" alt="" /> MD</a> ·
-<a href="https://byuwur.github.io/easy-md-editor/"><img src="https://raw.githubusercontent.com/byuwur/easy-md-editor/main/assets/favicon.png" height="24" align="top" alt="" /> MD.edit</a> ·
-<a href="https://byuwur.github.io/easy-code-viewer/"><img src="https://raw.githubusercontent.com/byuwur/easy-code-viewer/main/assets/favicon.png" height="24" align="top" alt="" /> CODE</a> ·
-<a href="https://byuwur.github.io/easy-json-viewer/"><img src="https://raw.githubusercontent.com/byuwur/easy-json-viewer/main/assets/favicon.png" height="24" align="top" alt="" /> JSON</a> ·
-<a href="https://byuwur.github.io/easy-csv-viewer/"><img src="https://raw.githubusercontent.com/byuwur/easy-csv-viewer/main/assets/favicon.png" height="24" align="top" alt="" /> CSV</a> ·
-<a href="https://byuwur.github.io/easy-diff-viewer/"><img src="https://raw.githubusercontent.com/byuwur/easy-diff-viewer/main/assets/favicon.png" height="24" align="top" alt="" /> DIFF</a> ·
-<a href="https://byuwur.github.io/easy-log-viewer/"><img src="https://raw.githubusercontent.com/byuwur/easy-log-viewer/main/assets/favicon.png" height="24" align="top" alt="" /> LOG</a> ·
-<a href="https://byuwur.github.io/easy-xml-viewer/"><img src="https://raw.githubusercontent.com/byuwur/easy-xml-viewer/main/assets/favicon.png" height="24" align="top" alt="" /> XML</a> ·
-<a href="https://byuwur.github.io/easy-yaml-viewer/"><img src="https://raw.githubusercontent.com/byuwur/easy-yaml-viewer/main/assets/favicon.png" height="24" align="top" alt="" /> YAML</a>
+<a href="https://byuwur.github.io/easy-md-viewer/"><img src="https://raw.githubusercontent.com/byuwur/easy-md-viewer/main/assets/favicon.png" height="24" align="top" alt="" /> MD</a> · <a href="https://byuwur.github.io/easy-md-editor/"><img src="https://raw.githubusercontent.com/byuwur/easy-md-editor/main/assets/favicon.png" height="24" align="top" alt="" /> MD.edit</a> · <a href="https://byuwur.github.io/easy-code-viewer/"><img src="https://raw.githubusercontent.com/byuwur/easy-code-viewer/main/assets/favicon.png" height="24" align="top" alt="" /> CODE</a> · <a href="https://byuwur.github.io/easy-json-viewer/"><img src="https://raw.githubusercontent.com/byuwur/easy-json-viewer/main/assets/favicon.png" height="24" align="top" alt="" /> JSON</a> · <a href="https://byuwur.github.io/easy-csv-viewer/"><img src="https://raw.githubusercontent.com/byuwur/easy-csv-viewer/main/assets/favicon.png" height="24" align="top" alt="" /> CSV</a> · <a href="https://byuwur.github.io/easy-diff-viewer/"><img src="https://raw.githubusercontent.com/byuwur/easy-diff-viewer/main/assets/favicon.png" height="24" align="top" alt="" /> DIFF</a> · <a href="https://byuwur.github.io/easy-log-viewer/"><img src="https://raw.githubusercontent.com/byuwur/easy-log-viewer/main/assets/favicon.png" height="24" align="top" alt="" /> LOG</a> · <a href="https://byuwur.github.io/easy-xml-viewer/"><img src="https://raw.githubusercontent.com/byuwur/easy-xml-viewer/main/assets/favicon.png" height="24" align="top" alt="" /> XML</a> · <a href="https://byuwur.github.io/easy-yaml-viewer/"><img src="https://raw.githubusercontent.com/byuwur/easy-yaml-viewer/main/assets/favicon.png" height="24" align="top" alt="" /> YAML</a>
 
 ## License
 

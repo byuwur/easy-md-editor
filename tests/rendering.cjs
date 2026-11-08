@@ -1611,3 +1611,57 @@ test("mobile composition preserves source, selection, and one undo transaction i
     await browser.close();
   }
 });
+
+// --- SELF-HOSTED DEPENDENCIES AND CSP ---
+test("self-hosted editor remains usable under CSP without optional icons or CODE", async () => {
+  const browser = await launchBrowser();
+  try {
+    const page = await browser.newPage();
+    const violations = [],
+      externalRequests = [],
+      errors = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await page.exposeFunction("recordViolation", (directive) => violations.push(directive));
+    await page.addInitScript(() => document.addEventListener("securitypolicyviolation", (event) => window.recordViolation(event.effectiveDirective)));
+    // Load the MD companion locally and deliberately omit optional CODE and external assets.
+    await page.route("**/*", async (route) => {
+      const url = new URL(route.request().url());
+      if (url.origin !== "https://editor.test") {
+        externalRequests.push(url.href);
+        return route.abort();
+      }
+      const files = { "/md.js": "../../easy-md-viewer/md.js", "/md.css": "../../easy-md-viewer/md.css", "/md.edit.js": "../md.edit.js", "/md.edit.css": "../md.edit.css" };
+      if (files[url.pathname]) return route.fulfill({ path: path.join(__dirname, files[url.pathname]), contentType: url.pathname.endsWith(".js") ? "application/javascript" : "text/css" });
+      if (url.pathname === "/init.js")
+        return route.fulfill({
+          contentType: "application/javascript",
+          body: 'window.editor = byMDeditor(document.getElementById("editor"), "**Local** text", { syntax: "no-code", language: "en", animations: false, controlsCompact: false });'
+        });
+      return route.fulfill({
+        contentType: "text/html",
+        headers: { "Content-Security-Policy": "default-src 'none'; script-src 'self'; style-src 'self'; style-src-attr 'none'; img-src 'self'" },
+        body: '<!doctype html><meta charset="utf-8"><link rel="stylesheet" href="md.css"><link rel="stylesheet" href="md.edit.css"><div id="editor"></div><script src="md.js"></script><script src="md.edit.js"></script><script src="init.js"></script>'
+      });
+    });
+    await page.goto("https://editor.test/");
+    await page.getByRole("textbox", { name: "Document", exact: true }).waitFor();
+    const bold = page.getByRole("button", { name: "Bold", exact: true });
+    assert.equal(await bold.locator("span").isVisible(), true, "Labels remain readable without the icon font");
+    await page.evaluate(() => editor.setSelection(2, 7));
+    await bold.focus();
+    await page.keyboard.press("Enter");
+    assert.equal(await page.evaluate(() => editor.getMarkdown()), "Local text");
+    assert.equal(await page.evaluate(() => typeof byCODEviewer), "undefined", "CODE is optional");
+    // Permit the expected icon-import style violation while rejecting failures from other CSP directives.
+    assert.ok(violations.length > 0, "The unmodified stylesheet's optional CDN icon import is blocked");
+    assert.equal(
+      violations.every((directive) => directive.startsWith("style-src")),
+      true,
+      JSON.stringify(violations)
+    );
+    assert.deepEqual(externalRequests, []);
+    assert.deepEqual(errors, []);
+  } finally {
+    await browser.close();
+  }
+});
