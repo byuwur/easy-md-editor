@@ -21,8 +21,10 @@ const summary = (values) => ({ median: percentile(values, 0.5), p95: percentile(
     await page.setContent('<style>body{margin:1rem}#editor{max-width:60rem}</style><div id="editor"></div>');
     for (const file of ["../../easy-md-viewer/md.css", "../../easy-code-viewer/code.css", "../md.edit.css"]) await page.addStyleTag({ path: path.join(__dirname, file) });
     for (const file of ["../../easy-code-viewer/code.js", "../../easy-md-viewer/md.js", "../md.edit.js"]) await page.addScriptTag({ path: path.join(__dirname, file) });
+    // CPU throttling and heap collection use Chromium DevTools, so this benchmark is Chromium-only.
     const cdp = await page.context().newCDPSession(page);
     await cdp.send("Performance.enable");
+    // Place the edit target inside each large document to expose work outside the active block.
     const fixtures = [1000, 5000, 10000].map((count) => ({
       name: `${count} lines`,
       source: Array.from({ length: count }, (_, index) => (index === Math.floor(count / 2) ? "Target paragraph **bold**." : `Paragraph ${index} with **bold** and *emphasis*.`)).join("\n")
@@ -44,6 +46,7 @@ const summary = (values) => ({ median: percentile(values, 0.5), p95: percentile(
           document.getSelection().focusNode.parentElement.scrollIntoView({ block: "center" });
           window.lastNode = document.querySelector(".byEDsurface").lastElementChild;
         }, fixture.source);
+        // Let initial rendering settle before clearing samples and measuring typing.
         await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
         await page.evaluate(() => {
           samples.length = 0;
@@ -97,6 +100,7 @@ const summary = (values) => ({ median: percentile(values, 0.5), p95: percentile(
       editor.setPreview(false);
       samples.length = 0;
     });
+    // Collect before each heap reading to separate retained growth from reclaimable allocations.
     await cdp.send("HeapProfiler.collectGarbage");
     const heap = async () => (await cdp.send("Performance.getMetrics")).metrics.find((metric) => metric.name === "JSHeapUsedSize").value;
     const before = await heap();
