@@ -144,7 +144,8 @@
     const document = element.ownerDocument;
     if (document.defaultView.getComputedStyle(document.documentElement).getPropertyValue("--by-md-themes-loaded").trim() === "1") return;
     warnedPalettes.add(palette);
-    console.warn(`easy-md-editor: Palette "${palette}" requires md.themes.css. Import it after md.css. https://byuwur.github.io/easy-md-viewer/`);
+    // console.warn(`easy-md-editor: Palette "${palette}" requires md.themes.css. Import it after md.css. https://byuwur.github.io/easy-md-viewer/`);
+    console.warn(`easy-md-editor: Palette "${palette}" requires md.themes.css. Import it after md.css. https://md.byuwur.co/`);
   };
 
   // Explicit appearance options override markup; omitted values preserve the container's state.
@@ -921,7 +922,8 @@
     // Companion capabilities are captured at mount; loading a newer MD viewer requires reinitialization.
     const rich = typeof global.byMDviewer?.parseInline === "function" && typeof global.byMDviewer?.scanLine === "function";
     if (!rich) {
-      console.warn("easy-md-editor: Visual editing requires easy-md-viewer with parseInline() and scanLine(). Source editing remains available. https://byuwur.github.io/easy-md-viewer/");
+      // console.warn("easy-md-editor: Visual editing requires easy-md-viewer with parseInline() and scanLine(). Source editing remains available. https://byuwur.github.io/easy-md-viewer/");
+      console.warn("easy-md-editor: Visual editing requires easy-md-viewer with parseInline() and scanLine(). Source editing remains available. https://md.byuwur.co/");
       syntax = "source";
     }
     const abort = new AbortController(),

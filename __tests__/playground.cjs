@@ -262,7 +262,8 @@ test("playground edits documents and exports exact Markdown", async () => {
     );
     assert.equal(await page.locator(".navbar-brand").innerText(), "md↑easy-md-editor");
     assert.equal(await page.locator(".viewer-suite a").count(), 9);
-    assert.equal(await page.locator(".viewer-suite").getByRole("link", { name: "MD.edit", exact: true }).getAttribute("href"), "https://byuwur.github.io/easy-md-editor/");
+    // assert.equal(await page.locator(".viewer-suite").getByRole("link", { name: "MD.edit", exact: true }).getAttribute("href"), "https://byuwur.github.io/easy-md-editor/");
+    assert.equal(await page.locator(".viewer-suite").getByRole("link", { name: "MD.edit", exact: true }).getAttribute("href"), "./");
     assert.equal(await page.locator(".viewer-suite").getByRole("link", { name: "MD.edit", exact: true }).getAttribute("aria-current"), "page");
     assert.equal(await page.locator("#integration-cdn").isChecked(), true);
     await page.locator("#preview-bg").evaluate((field) => (field.closest("details").open = true));

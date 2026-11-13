@@ -6,6 +6,7 @@ const path = require("node:path");
 const files = {
   "/": "index.html",
   "/index.html": "index.html",
+  "/assets/favicon.png": "assets/favicon.png",
   "/md.edit.js": "md.edit.js",
   "/md.edit.css": "md.edit.css",
   "/LICENSE": "LICENSE",
@@ -30,7 +31,7 @@ const server = http.createServer(async (request, response) => {
   }
   try {
     const content = await fs.readFile(path.join(__dirname, "..", file));
-    response.writeHead(200, { "Content-Type": file.endsWith("html") ? "text/html; charset=utf-8" : file.endsWith("css") ? "text/css" : file === "LICENSE" ? "text/plain; charset=utf-8" : "text/javascript", "Cache-Control": "no-store" });
+    response.writeHead(200, { "Content-Type": file.endsWith("html") ? "text/html; charset=utf-8" : file.endsWith("css") ? "text/css" : file.endsWith(".png") ? "image/png" : file === "LICENSE" ? "text/plain; charset=utf-8" : "text/javascript", "Cache-Control": "no-store" });
     response.end(content);
   } catch {
     response.writeHead(500);
