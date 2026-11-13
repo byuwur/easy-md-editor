@@ -1,5 +1,5 @@
 /*
- * File: tests/playground.cjs
+ * File: __tests__/playground.cjs
  * Desc: Editor playground configuration, document actions, and starter exports.
  */
 const assert = require("node:assert/strict");

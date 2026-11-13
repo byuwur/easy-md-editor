@@ -1,5 +1,5 @@
 /*
- * File: tests/rendering.cjs
+ * File: __tests__/rendering.cjs
  * Desc: Editor library contracts using real companions; playground checks live in playground.cjs.
  */
 // --- DEPENDENCIES AND LOCAL FIXTURES ---

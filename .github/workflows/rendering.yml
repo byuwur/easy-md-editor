@@ -28,9 +28,9 @@ jobs:
         # Run option contracts with the library suite and keep playground checks separate.
         include:
           - suite: library
-            files: tests/rendering.cjs tests/editor-options.cjs
+            files: __tests__/rendering.cjs __tests__/editor-options.cjs
           - suite: playground
-            files: tests/playground.cjs
+            files: __tests__/playground.cjs
     steps:
       - uses: actions/checkout@v4
         with:

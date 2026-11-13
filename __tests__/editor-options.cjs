@@ -1,5 +1,5 @@
 /*
- * File: tests/editor-options.cjs
+ * File: __tests__/editor-options.cjs
  * Desc: No-code editing and independently configurable controls, without playground assets.
  */
 const assert = require("node:assert/strict");
@@ -510,7 +510,9 @@ test("No-code editing and control visibility", async (t) => {
               area = document.querySelector('.byMDeditor[data-syntax="source"] .byEDsource') || document.querySelector(".byEDsurface");
             const rect = area.getBoundingClientRect(),
               overlay = dialog.getBoundingClientRect();
-            return [overlay.left - Math.max(0, rect.left), overlay.top - Math.max(0, rect.top), overlay.right - Math.min(innerWidth, rect.right), overlay.bottom - Math.min(innerHeight, rect.bottom)].every((difference) => Math.abs(difference) < 1);
+            return [overlay.left - Math.max(0, rect.left), overlay.top - Math.max(0, rect.top), overlay.right - Math.min(innerWidth, rect.right), overlay.bottom - Math.min(innerHeight, rect.bottom)].every(
+              (difference) => Math.abs(difference) < 1
+            );
           });
           const bounds = await page.locator("dialog").evaluate((dialog) => {
             const area = document.querySelector('.byMDeditor[data-syntax="source"] .byEDsource') || document.querySelector(".byEDsurface");

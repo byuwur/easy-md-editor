@@ -333,7 +333,7 @@ Keyboard access, labeled controls, native dialogs, focus indicators, reduced mot
 To serve the playground locally:
 
 ```sh
-node tests/serve.cjs
+node __tests__/serve.cjs
 ```
 
 Open [the local playground](http://127.0.0.1:4173), or use WAMP at `http://localhost/easy-md-editor/`. The playground loads its pinned companions from jsDelivr and requires those releases to be published. Open/download Markdown and Print / PDF belong to the demo, not the editor API. Printing uses the read-only viewer preview and the browser's print dialog.
@@ -343,10 +343,10 @@ The Get started section exports a complete HTML starter with CDN selected by def
 Install Playwright outside the source tree or make it available through `NODE_PATH`, then run:
 
 ```sh
-node --test tests/rendering.cjs
-node --test tests/editor-options.cjs
-node --test tests/playground.cjs
-node tests/performance.cjs
+node --test __tests__/rendering.cjs
+node --test __tests__/editor-options.cjs
+node --test __tests__/playground.cjs
+node __tests__/performance.cjs
 ```
 
 Tests default to Playwright Chromium. Set `BROWSER_ENGINE=firefox` or `BROWSER_ENGINE=webkit` for other engines; install matching engines with `npx playwright install chromium firefox webkit` from your external Playwright setup. `BROWSER_CHANNEL=chrome` selects installed Chrome and `CHROMIUM_EXECUTABLE_PATH` selects a Chromium executable; these overrides apply only to Chromium. Performance benchmarks remain Chromium-only because they use CDP. Tests exercise actual companion files, not parser mocks. Library and option checks run separately from playground checks, which fetch pinned SPA.js assets from the CDN; `BOOTSTRAP_CSS_PATH` can supply a cached Bootstrap stylesheet. No SPA.js checkout is needed. [GitHub Actions](.github/workflows/rendering.yml) reports Library and Playground independently. Benchmarks cover 1,000/5,000/10,000 lines, large tables, nested lists, and fences at normal and 6× CPU slowdown. They report parse, edit, DOM patch, selection, preview, long-task, and heap measurements. `BENCHMARK_OUTPUT` optionally writes JSON outside the repository. Targets are measured engineering goals, not timing guarantees.
