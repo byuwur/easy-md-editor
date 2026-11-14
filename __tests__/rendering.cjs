@@ -1641,7 +1641,7 @@ test("self-hosted editor remains usable under CSP without optional icons or CODE
       return route.fulfill({
         contentType: "text/html",
         headers: { "Content-Security-Policy": "default-src 'none'; script-src 'self'; style-src 'self'; style-src-attr 'none'; img-src 'self'" },
-        body: '<!doctype html><meta charset="utf-8"><link rel="stylesheet" href="md.css"><link rel="stylesheet" href="md.edit.css"><div id="editor"></div><script src="md.js"></script><script src="md.edit.js"></script><script src="init.js"></script>'
+        body: '<!doctype html><meta charset="UTF-8"><link rel="stylesheet" href="md.css"><link rel="stylesheet" href="md.edit.css"><div id="editor"></div><script src="md.js"></script><script src="md.edit.js"></script><script src="init.js"></script>'
       });
     });
     await page.goto("https://editor.test/");

@@ -32,7 +32,7 @@ const server = http.createServer(async (request, response) => {
   try {
     const content = await fs.readFile(path.join(__dirname, "..", file));
     response.writeHead(200, {
-      "Content-Type": file.endsWith("html") ? "text/html; charset=utf-8" : file.endsWith("css") ? "text/css" : file.endsWith(".png") ? "image/png" : file === "LICENSE" ? "text/plain; charset=utf-8" : "text/javascript",
+      "Content-Type": file.endsWith("html") ? "text/html; charset=UTF-8" : file.endsWith("css") ? "text/css" : file.endsWith(".png") ? "image/png" : file === "LICENSE" ? "text/plain; charset=UTF-8" : "text/javascript",
       "Cache-Control": "no-store"
     });
     response.end(content);

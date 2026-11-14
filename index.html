@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en" data-bs-theme="dark">
   <head>
-    <meta charset="utf-8" />
+    <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="Write Markdown visually with familiar formatting tools, tables, checklists, and an exact document preview. A free, accessible JavaScript editor by BONYUR." />
     <meta name="theme-color" content="#141618" />
@@ -811,7 +811,7 @@
           documents.showcase = { source: sample, original: sample };
           editor.setMarkdown(sample);
         });
-        document.getElementById("download").addEventListener("click", () => downloadText(editor.getMarkdown(), "document.md", "text/markdown;charset=utf-8"));
+        document.getElementById("download").addEventListener("click", () => downloadText(editor.getMarkdown(), "document.md", "text/markdown;charset=UTF-8"));
         document.getElementById("print").addEventListener("click", () => {
           const wasPreview = !document.querySelector("#editor > .byEDpreview").hidden;
           editor.setPreview(true);
@@ -848,7 +848,7 @@
             "<!doctype html>",
             '<html lang="en">',
             "  <head>",
-            '    <meta charset="utf-8" />',
+            '    <meta charset="UTF-8" />',
             '    <meta name="viewport" content="width=device-width, initial-scale=1" />',
             "    <title>easy-md-editor</title>",
             `    <link rel="stylesheet" href="${mdPath}md${min}.css" />`,
@@ -911,7 +911,7 @@
         copyButton.addEventListener("mouseleave", resetCopy);
         copyButton.addEventListener("focusout", resetCopy);
         document.getElementById("download-html").addEventListener("click", () => {
-          downloadText(generateIntegration(), "easy-md-editor.html", "text/html;charset=utf-8");
+          downloadText(generateIntegration(), "easy-md-editor.html", "text/html;charset=UTF-8");
           document.getElementById("integration-feedback").textContent = "Downloaded. The starter uses default editor settings.";
         });
 
