@@ -33,26 +33,44 @@
     <!-- <meta name="twitter:image" content="https://byuwur.github.io/easy-md-editor/prev.jpg" /> -->
     <meta name="twitter:image" content="https://mdedit.byuwur.co/prev.jpg" />
     <meta name="twitter:image:alt" content="easy-md-editor by BONYUR: Markdown editing, formatting tools, and live preview." />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/byuwur/spa.js@v20.7/css/shards.min.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/byuwur/spa.js@v20.7/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/byuwur/spa.js@v20.7/css/pickr.min.css" />
+    <script id="spa-loader" src="https://cdn.jsdelivr.net/gh/byuwur/spa.js@v20.10/_load.min.js"></script>
+    <script>
+      const SPA_VERSION = "v20.10";
+      const HOST = `https://cdn.jsdelivr.net/gh/byuwur/spa.js@${SPA_VERSION}`;
+      const SPA_STYLES = [
+        { path: "/css/shards.min.css", optional: false },
+        { path: "/css/bootstrap.min.css", optional: false },
+        { path: "/_fonts.min.css", optional: false },
+        { path: "/_transitions.min.css", optional: true },
+        { path: "/css/pickr.min.css", optional: false }
+      ];
+      const SPA_SCRIPTS = [
+        { path: "/_transitions.min.js", optional: true },
+        { path: "/js/pickr.min.js", optional: false },
+        { path: "/js/bootstrap.min.js", optional: false }
+      ];
+      const spaReady = (async () => {
+        await byLoad(SPA_STYLES, { host: HOST, before: document.getElementById("spa-loader"), defer: false });
+        await byLoad(SPA_SCRIPTS, { host: HOST, before: document.getElementById("spa-loader") });
+      })().catch(console.error);
+    </script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@v2.8/md.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@v2.8/md.themes.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/byuwur/easy-code-viewer@v1.7/code.min.css" />
     <link rel="stylesheet" href="md.edit.css" />
-    <script src="https://cdn.jsdelivr.net/gh/byuwur/spa.js@v20.7/js/pickr.min.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/gh/byuwur/spa.js@v20.7/js/bootstrap.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/gh/byuwur/easy-code-viewer@v1.7/code.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@v2.8/md.min.js" defer></script>
     <script src="md.edit.js" defer></script>
     <style>
-      /* --- FAMILY THEME --- */
-      @font-face {
-        font-family: Archivo;
-        src: url("https://cdn.jsdelivr.net/gh/byuwur/spa.js@v20.7/css/webfonts/archivo.ttf") format("truetype");
-        font-weight: 100 900;
-        font-display: swap;
+      .byCODEdocument,
+      .byCODEdocument *,
+      .byMDdocument,
+      .byMDdocument *,
+      .byMDeditor,
+      .byMDeditor * {
+        transition: none !important;
       }
+      /* --- FAMILY THEME --- */
       :root {
         --accent: #c4b5fd;
         --accent-text: var(--accent);
@@ -252,7 +270,7 @@
         --by-view-motion-duration: 0s;
       }
       body.byVIEWmotion {
-        --by-view-motion-duration: 0.18s;
+        --by-view-motion-duration: 0.3s;
       }
       body :is(.btn, .form-control, .form-select, .form-check-input, .accordion-button, summary, a) {
         transition:
@@ -615,7 +633,9 @@
       ><p class="site-width container-fluid">Enable JavaScript to use the playground. The <a href="https://github.com/byuwur/easy-md-editor#readme">README</a> includes integration examples.</p></noscript
     >
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
+      document.addEventListener("DOMContentLoaded", async () => {
+        // DOMContentLoaded does not wait for dynamically loaded SPA styles and scripts.
+        await spaReady;
         // prettier-ignore
         const samples = {
           en: { name: "English", source: "# A little writing. A real document.\n\nWrite something useful. Let **easy-md-editor** handle the Markdown.\n\n## Start small\n\nUse the toolbar, or type *a little emphasis*, **bold text**, ***both together***,\n~~cross something out~~, and `keep a little code inline`.\n\n## Lists that work for you\n\n- A bullet for the first idea\n- Another idea, with **formatting inside**\n\n1. Write a first draft\n2. Read it once more\n3. Make it yours\n\n- [x] Write a document\n- [ ] Try a table from the toolbar\n- [ ] Switch to Preview\n\n## Links and an image\n\nVisit [BONYUR's portfolio](https://byuwur.co), or paste https://example.com.\nAutolinks work too: \u003chttps://byuwur.co> and \u003chello@example.com>.\n\n![BONYUR's mark](https://byuwur.github.io/img/logo.png \"BONYUR\")\n\n## A table worth editing\n\n| Name | Role |\n| --- | --- |\n| Andres | Developer |\n| Sam | Designer |\n\n## A thought to keep\n\n> Simple is complicated enough.\n> A quote can have **emphasis**, too.\n\nA hard break keeps these lines together.\\\nThis is the next line, inside the same paragraph in Preview.\n\n---\n\n## Code stays code\n\n~~~javascript\nconst markdown = editor.getMarkdown();\n/* Store Markdown as text.\n   Render it when reading. */\nconst document = { title: \"A little writing\", published: true, revision: 1 };\nconsole.log(markdown, document);\n~~~\n\n## Every heading has its place\n\n### Make room for an idea\n\n#### Give it some detail\n\n##### Add a small note\n\n###### Even the smallest heading is editable\n\nEdit any example above. No-code, Clean, Assisted, Source, and Preview all use this same Markdown.\n" },
@@ -933,7 +953,9 @@
     </script>
     <script>
       (function initColorPickers() {
-        document.addEventListener("DOMContentLoaded", () => {
+        document.addEventListener("DOMContentLoaded", async () => {
+          // DOMContentLoaded does not wait for dynamically loaded SPA styles and scripts.
+          await spaReady;
           const pickers = [];
           for (const button of document.querySelectorAll("[data-color-picker]")) {
             const field = document.getElementById(button.dataset.colorPicker);
@@ -985,7 +1007,9 @@
       })();
     </script>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
+      document.addEventListener("DOMContentLoaded", async () => {
+        // DOMContentLoaded does not wait for dynamically loaded SPA styles and scripts.
+        await spaReady;
         const target = document.getElementById("editor");
         const fields = [document.getElementById("preview-bg"), document.getElementById("preview-container-bg")];
         const properties = ["--by-view-document-bg", "--by-view-container-bg"];

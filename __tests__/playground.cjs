@@ -6,6 +6,10 @@ const assert = require("node:assert/strict");
 const path = require("node:path");
 const fs = require("node:fs/promises");
 const test = require("node:test");
+const spaVersion = require("node:fs")
+  .readFileSync(path.join(__dirname, "../index.html"), "utf8")
+  .match(/const SPA_VERSION = "([^"]+)"/)[1];
+const spaBase = `https://cdn.jsdelivr.net/gh/byuwur/spa.js@${spaVersion}/`;
 const { chromium, firefox, webkit } = require("playwright");
 const browserEngine = process.env.BROWSER_ENGINE || "chromium";
 assert.ok(["chromium", "firefox", "webkit"].includes(browserEngine), "Unsupported BROWSER_ENGINE");
@@ -36,7 +40,18 @@ let assetsPromise;
 // Cache the pinned page dependencies once; editor and companion source still come from local files.
 const getAssets = () =>
   (assetsPromise ||= (async () => {
-    const files = ["css/pickr.min.css", "js/pickr.min.js", "css/bootstrap.min.css", "css/shards.min.css", "css/fontawesome.min.css", "js/bootstrap.min.js"].map((file) => `https://cdn.jsdelivr.net/gh/byuwur/spa.js@v20.7/${file}`);
+    const files = [
+      "_load.min.js",
+      "_transitions.min.css",
+      "_transitions.min.js",
+      "_fonts.min.css",
+      "css/pickr.min.css",
+      "js/pickr.min.js",
+      "css/bootstrap.min.css",
+      "css/shards.min.css",
+      "css/fontawesome.min.css",
+      "js/bootstrap.min.js"
+    ].map((file) => `${spaBase}${file}`);
     files.push(`${codeCDNBase}code.min.css`, `${codeCDNBase}code.min.js`);
     return new Map(
       await Promise.all(
@@ -78,7 +93,37 @@ test("playground configures No-code and individual controls without recreating t
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
     await routeAssets(page, assets);
-    await page.goto(`http://127.0.0.1:${server.address().port}`);
+    let resumeCSS;
+    const heldCSS = new Promise((resolve) => {
+      resumeCSS = resolve;
+    });
+    const cssRequested = page.waitForRequest(`${spaBase}css/shards.min.css`);
+    await page.route(`${spaBase}css/shards.min.css`, async (route) => {
+      await heldCSS;
+      await route.fallback();
+    });
+    let resumeJS;
+    const heldJS = new Promise((resolve) => {
+      resumeJS = resolve;
+    });
+    const jsRequested = page.waitForRequest(`${spaBase}js/pickr.min.js`);
+    await page.route(`${spaBase}js/pickr.min.js`, async (route) => {
+      await heldJS;
+      await route.fallback();
+    });
+    const pageNavigation = page.goto(`http://127.0.0.1:${server.address().port}`);
+    pageNavigation.catch(() => {});
+    await cssRequested;
+    await page.locator("body").waitFor({ state: "attached" });
+    const visibilityBeforeStyles = await page.locator("body").evaluate((body) => getComputedStyle(body).visibility);
+    const opacityBeforeStyles = await page.locator("html").evaluate((root) => getComputedStyle(root).opacity);
+    resumeCSS();
+    await jsRequested;
+    assert.equal(await page.locator("body").evaluate((body) => getComputedStyle(body).visibility), "visible", "Styled content is visible while JavaScript is still loading");
+    resumeJS();
+    await pageNavigation;
+    assert.equal(visibilityBeforeStyles, "visible", "Content stays visible while stylesheets load");
+    assert.equal(opacityBeforeStyles, "1", "Startup does not force page transparency");
     await page.locator(".byEDsurface").waitFor();
     const source = await page.evaluate(() => playgroundEditor.getMarkdown());
     const palette = page.locator(".playground-toolbar #playground-palette");
