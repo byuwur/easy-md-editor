@@ -40,18 +40,9 @@ let assetsPromise;
 // Cache the pinned page dependencies once; editor and companion source still come from local files.
 const getAssets = () =>
   (assetsPromise ||= (async () => {
-    const files = [
-      "_load.min.js",
-      "_transitions.min.css",
-      "_transitions.min.js",
-      "_fonts.min.css",
-      "css/pickr.min.css",
-      "js/pickr.min.js",
-      "css/bootstrap.min.css",
-      "css/shards.min.css",
-      "css/fontawesome.min.css",
-      "js/bootstrap.min.js"
-    ].map((file) => `${spaBase}${file}`);
+    const files = ["_load.min.js", "_transitions.min.css", "_fonts.min.css", "css/pickr.min.css", "js/pickr.min.js", "css/bootstrap.min.css", "css/shards.min.css", "css/fontawesome.min.css", "js/bootstrap.min.js"].map(
+      (file) => `${spaBase}${file}`
+    );
     files.push(`${codeCDNBase}code.min.css`, `${codeCDNBase}code.min.js`);
     return new Map(
       await Promise.all(
@@ -124,6 +115,29 @@ test("playground configures No-code and individual controls without recreating t
     await pageNavigation;
     assert.equal(visibilityBeforeStyles, "visible", "Content stays visible while stylesheets load");
     assert.equal(opacityBeforeStyles, "1", "Startup does not force page transparency");
+    assert.equal(await page.locator("body > style").count(), 1);
+    assert.equal(await page.locator("head script:not([src])").count(), 1);
+    assert.equal(await page.locator("body > script:not([src])").count(), 1);
+    assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--transition-duration").trim()), "0.3s");
+    // Exercise motion through the real playground, including its host stylesheets.
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    const motionViewer = page.locator("#editor");
+    await motionViewer.locator(".byVIEWthemeToggle").waitFor();
+    await motionViewer.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    assert.equal(
+      await motionViewer.evaluate((element) => {
+        getComputedStyle(element).backgroundColor;
+        element.querySelector(".byVIEWthemeToggle").click();
+        const fading = element.getAnimations().some((animation) => animation.transitionProperty === "background-color");
+        for (const animation of element.getAnimations()) animation.finish();
+        element.querySelector(".byVIEWthemeToggle").click();
+        for (const animation of element.getAnimations()) animation.finish();
+        return fading;
+      }),
+      true,
+      "Enabled viewer motion survives the page styles and system motion preference"
+    );
+    await page.emulateMedia({ reducedMotion: "no-preference" });
     await page.locator(".byEDsurface").waitFor();
     const source = await page.evaluate(() => playgroundEditor.getMarkdown());
     const palette = page.locator(".playground-toolbar #playground-palette");
@@ -170,6 +184,15 @@ test("playground configures No-code and individual controls without recreating t
     assert.equal(JSON.parse(await page.locator("#options-json").inputValue()).appearAnimation, true);
     assert.equal(await page.locator("#editor").evaluate((element) => element.classList.contains("byVIEWappear")), true);
     await page.locator("#animations").uncheck();
+    assert.equal(await page.locator("#editor").evaluate((element) => getComputedStyle(element).transitionDuration), "0s", "Disabling animations cancels viewer motion");
+    assert.equal(
+      await page
+        .locator(".btn")
+        .first()
+        .evaluate((element) => getComputedStyle(element).transitionDuration),
+      "0s",
+      "Disabling animations also cancels page motion"
+    );
     assert.equal(await page.locator("#appearAnimation").isDisabled(), true);
     assert.equal(await page.locator("#appearAnimation").isChecked(), true);
     await page.locator("#animations").check();
@@ -325,6 +348,8 @@ test("playground edits documents and exports exact Markdown", async () => {
     await picker.locator(".pcr-result").press("Enter");
     await picker.locator(".pcr-save").click();
     assert.equal((await page.locator("#preview-container-bg").inputValue()).toLowerCase(), "#345678cc");
+    // Closing the picker can expose an editor button under the pointer; check its resting color.
+    await page.mouse.move(0, 0);
     await page.waitForFunction(() => {
       const document = window.document;
       return getComputedStyle(document.querySelector(".byEDcontrols .byEDbutton")).backgroundColor === "rgba(52, 86, 120, 0.8)";
