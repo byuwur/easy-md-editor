@@ -1030,9 +1030,12 @@
     element.replaceChildren();
     element.classList.add("byMDeditor", "byMDdocument");
     element.classList.toggle("byVIEWmotion", options.animations !== false);
-    element.classList.toggle("byVIEWappear", options.appearAnimation === true);
-    if (painted) element.classList.add("byVIEWready");
+    const appear = options.animations !== false && options.appearAnimation === true;
+    element.classList.toggle("byVIEWappear", appear);
+    if (painted && !appear) element.classList.add("byVIEWready");
     else {
+      // Paint opacity 0 before starting each requested fade.
+      element.classList.remove("byVIEWready");
       motionFrame = requestAnimationFrame(() => {
         motionFrame = requestAnimationFrame(() => {
           if (alive) element.classList.add("byVIEWready");

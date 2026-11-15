@@ -68,7 +68,7 @@ No database, network requests, autosave, or browser storage are built in.
 | `language`         | `"auto"`                                | Controls language; a language tag such as `"es"`, or automatic detection.                                                   |
 | `translations`     | `{}`                                    | Per-instance text overrides, using the keys in `byMDeditor.locales.en`.                                                     |
 | `animations`       | `true`                                  | Brief interaction motion and shared-surface background fades; overrides the system motion preference.                       |
-| `appearAnimation`  | `false`                                 | Fade and gently move the editor in when `animations` is enabled.                                                            |
+| `appearAnimation`  | `false`                                 | Fade the editor in on each mount when `animations` is enabled.                                                              |
 | `toolbar`          | `true`                                  | Show formatting tools; users can collapse them.                                                                             |
 | `toolbarToggle`    | `true`                                  | Show the Formatting button that opens or closes the toolbar.                                                                |
 | `controlsCompact`  | `false`                                 | Hide button labels while retaining icons, tooltips, and accessible names.                                                   |
