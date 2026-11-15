@@ -321,11 +321,11 @@ test("playground edits documents and exports exact Markdown", async () => {
     assert.deepEqual(
       await page.locator('head [href*="easy-md-viewer"], head [href*="easy-code-viewer"], head [src*="easy-md-viewer"], head [src*="easy-code-viewer"]').evaluateAll((assets) => assets.map((asset) => asset.href || asset.src).sort()),
       [
-        "https://cdn.jsdelivr.net/gh/byuwur/easy-code-viewer@v1.7/code.min.css",
-        "https://cdn.jsdelivr.net/gh/byuwur/easy-code-viewer@v1.7/code.min.js",
-        "https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@v2.8/md.min.css",
-        "https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@v2.8/md.min.js",
-        "https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@v2.8/md.themes.min.css"
+        "https://cdn.jsdelivr.net/gh/byuwur/easy-code-viewer@v1.8/code.min.css",
+        "https://cdn.jsdelivr.net/gh/byuwur/easy-code-viewer@v1.8/code.min.js",
+        "https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@v2.9/md.min.css",
+        "https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@v2.9/md.min.js",
+        "https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@v2.9/md.themes.min.css"
       ]
     );
     assert.equal(await page.locator(".navbar-brand").innerText(), "md↑easy-md-editor");
@@ -365,7 +365,7 @@ test("playground edits documents and exports exact Markdown", async () => {
     assert.match(cdnHTML, /^ {4}<script>$/m);
     assert.match(cdnHTML, /^ {6}document\.addEventListener\("DOMContentLoaded", \(\) => \{$/m);
     const starterViewer = page.locator("#integration-code.byCODEdocument");
-    assert.equal(await page.evaluate(() => byCODEviewer.VERSION), "1.7");
+    assert.equal(await page.evaluate(() => byCODEviewer.VERSION), "1.8");
     assert.equal(await starterViewer.getAttribute("data-theme"), "dark");
     await starterViewer.locator(".byCODEtext").first().waitFor();
     assert.ok((await starterViewer.locator(".byCODElineNumber").count()) > 0);
