@@ -897,25 +897,40 @@
     applyAppearance(element, options);
     const painted = element.classList.contains("byVIEWready");
     instances.get(element)?.destroy();
+    const {
+      animations = true,
+      appearAnimation = false,
+      toolbar: showToolbar = true,
+      toolbarToggle = true,
+      controlsCompact = false,
+      syntaxSelect = true,
+      previewToggle = true,
+      themeToggle = true,
+      paletteSelect = true,
+      statusBar = true,
+      shortcuts = true,
+      codeHighlighting = true,
+      ...otherOptions
+    } = options;
     options = {
       syntax: "clean",
       language: "auto",
-      animations: true,
-      appearAnimation: false,
-      toolbar: true,
-      toolbarToggle: true,
-      controlsCompact: false,
-      syntaxSelect: true,
-      previewToggle: true,
-      themeToggle: true,
-      paletteSelect: true,
-      statusBar: true,
-      shortcuts: true,
-      codeHighlighting: true,
       label: null,
       placeholder: null,
       historyLimit: 200,
-      ...options
+      ...otherOptions,
+      animations,
+      appearAnimation,
+      toolbar: showToolbar,
+      toolbarToggle,
+      controlsCompact,
+      syntaxSelect,
+      previewToggle,
+      themeToggle,
+      paletteSelect,
+      statusBar,
+      shortcuts,
+      codeHighlighting
     };
     options.historyLimit = Math.max(0, Math.min(1000, Math.trunc(Number(options.historyLimit)) || 0));
     let syntax = modes.includes(options.syntax) ? options.syntax : "clean";
@@ -1029,8 +1044,8 @@
     // --- CONTROLS ---
     element.replaceChildren();
     element.classList.add("byMDeditor", "byMDdocument");
-    element.classList.toggle("byVIEWmotion", options.animations !== false);
-    const appear = options.animations !== false && options.appearAnimation === true;
+    element.classList.toggle("byVIEWmotion", options.animations);
+    const appear = options.animations && options.appearAnimation;
     element.classList.toggle("byVIEWappear", appear);
     if (painted && !appear) element.classList.add("byVIEWready");
     else {
@@ -1854,7 +1869,7 @@
     // Debounce code coloring independently of text input and skip it while IME owns the active DOM.
     const queueCode = () => {
       cancelCode();
-      if (options.codeHighlighting === false || typeof global.byCODEviewer?.tokenize !== "function") return;
+      if (!options.codeHighlighting || typeof global.byCODEviewer?.tokenize !== "function") return;
       codeTimer = setTimeout(() => {
         codeTimer = 0;
         if (!alive || composing || dirty || previewing || syntax === "source") return;
@@ -2813,8 +2828,11 @@
         if (Object.hasOwn(visibility, "controlsCompact")) options.controlsCompact = Boolean(visibility.controlsCompact);
         element.classList.toggle("byEDcompact", options.controlsCompact);
         for (const [name, control] of Object.entries(controlVisibility)) {
-          if (Object.hasOwn(visibility, name)) options[name] = visibility[name] !== false;
-          control.hidden = options[name] === false;
+          if (Object.hasOwn(visibility, name)) {
+            const { [name]: visible = true } = visibility;
+            options[name] = Boolean(visible);
+          }
+          control.hidden = !options[name];
         }
         if (palettePicker.hidden) palettePicker.remove();
         else if (palettePicker.parentNode !== controls) controls.prepend(palettePicker);
@@ -2846,7 +2864,7 @@
           const started = metrics ? performance.now() : 0;
           preview.dataset.theme = element.dataset.theme || "github";
           preview.classList.toggle("dark", isDark());
-          global.byMDviewer(preview, source, { toolbar: false, animations: options.animations, codeHighlighting: options.codeHighlighting !== false && typeof global.byCODEviewer?.highlight === "function" });
+          global.byMDviewer(preview, source, { toolbar: false, animations: options.animations, codeHighlighting: options.codeHighlighting && typeof global.byCODEviewer?.highlight === "function" });
           measure("preview", started);
           announce("readOnlyPreview");
         } else {
