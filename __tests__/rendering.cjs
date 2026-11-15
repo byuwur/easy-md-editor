@@ -407,7 +407,7 @@ test("control languages preserve source, native editing, and instance state", as
       await page.evaluate(() => editor.setLanguage("fr"));
       assert.equal(await page.locator(".byEDsurface").getAttribute("aria-label"), "Notes");
       assert.equal(await page.locator(".byEDsurface").getAttribute("data-placeholder"), "Your notes");
-      assert.equal(await page.locator(".byEDsource").getAttribute("aria-label"), "Notes — Source Markdown");
+      assert.equal(await page.locator(".byEDsource").getAttribute("aria-label"), "Notes - Source Markdown");
       assert.equal(await page.locator('[data-command="bold"]').getAttribute("aria-label"), "<img src=x onerror=alert(1)>");
       await page.evaluate(() => {
         render("- [ ] Price $&", { language: "en", label: "Notes $&", translations: { sourceLabel: "{document} / {document}", completeTask: "{task} / {task}" } });
@@ -1628,7 +1628,7 @@ test("mobile composition preserves source, selection, and one undo transaction i
         // Replace a selected word while preserving the unrelated CRLF paragraph boundaries.
         const original = "Hello OLD\r\n\r\nTail";
         await page.evaluate(({ original, syntax }) => render(original, { syntax, language: "en" }), { original, syntax });
-        const surface = page.getByRole("textbox", { name: syntax === "source" ? "Document — Markdown source" : "Document", exact: true });
+        const surface = page.getByRole("textbox", { name: syntax === "source" ? "Document - Markdown source" : "Document", exact: true });
         // Exercise touch focus before setting the exact source range for the IME fixture.
         await surface.tap({ position: { x: 20, y: 15 } });
         const during = await page.evaluate((syntax) => {

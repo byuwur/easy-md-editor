@@ -80,14 +80,14 @@ No database, network requests, autosave, or browser storage are built in.
 | `codeHighlighting` | `true`                                  | Use easy-code-viewer for fenced-code colors while editing and in Preview.                                                   |
 | `theme`            | Container theme, otherwise light        | `"light"` or `"dark"`; named palettes use container attributes below.                                                       |
 | `palette`          | Container palette, otherwise `"github"` | `"monokai"`, `"github"`, `"solarized"`, `"high-contrast"`, or a custom CSS theme name.                                      |
-| `fontSize`         | Container size                          | Number in rem or a CSS size such as `"1.25em"` or `"20px"`; bounded to `0.5rem`–`3rem`.                                     |
+| `fontSize`         | Container size                          | Number in rem or a CSS size such as `"1.25em"` or `"20px"`; bounded to `0.5rem`-`3rem`.                                     |
 | `paletteSelect`    | `true`                                  | Show the palette selector; themes remain available through the API when hidden.                                             |
-| `label`            | Localized “Document”                    | Accessible name for the editable document; an explicit value survives language changes.                                     |
-| `placeholder`      | Localized “Start writing…”              | Hint for an empty editing surface; an explicit value survives language changes.                                             |
+| `label`            | Localized "Document"                    | Accessible name for the editable document; an explicit value survives language changes.                                     |
+| `placeholder`      | Localized "Start writing..."              | Hint for an empty editing surface; an explicit value survives language changes.                                             |
 | `tools`            | All tools                               | Array of command names, plus `"heading"` for the paragraph-style selector.                                                  |
 | `historyLimit`     | `200`                                   | Maximum undo entries, clamped to 0 to 1000. History also has a two-million-character budget; one large entry may exceed it. |
-| `onChange`         | —                                       | Called with the complete Markdown after a committed edit or `setMarkdown()`.                                                |
-| `onMeasure`        | —                                       | Optional development callback receiving `{ operation, duration, ... }` samples in milliseconds.                             |
+| `onChange`         | -                                       | Called with the complete Markdown after a committed edit or `setMarkdown()`.                                                |
+| `onMeasure`        | -                                       | Optional development callback receiving `{ operation, duration, ... }` samples in milliseconds.                             |
 
 For a smaller toolbar: `tools: ["heading", "bold", "italic", "link", "undo", "redo"]`. Set `controlsCompact: true` to hide button labels. Button titles include the supported Ctrl/Cmd shortcuts for Bold, Italic, Undo, and Redo when `shortcuts` is enabled. The paragraph-style menu previews the document's heading sizes in browsers supporting customizable selects; other browsers keep the standard text menu.
 
@@ -165,7 +165,7 @@ editor.destroy();
 | Commands                                                                              | Value                                                                                                                                        |
 | ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | `bold`, `italic`, `strikethrough`, `inlineCode`                                       | None                                                                                                                                         |
-| `heading`                                                                             | Level 1–6; `0` means paragraph                                                                                                               |
+| `heading`                                                                             | Level 1-6; `0` means paragraph                                                                                                               |
 | `paragraph`, `bulletList`, `orderedList`, `checklist`, `blockquote`, `horizontalRule` | None                                                                                                                                         |
 | `link`, `image`                                                                       | `{ url, label }`; images also accept optional `size`; omit to open the insertion dialog                                                      |
 | `imageSize`                                                                           | `"default"`, `"original"`, `"xs"`, `"small"`, `"regular"`, `"large"`, or `"xl"`; resize the selected image or the image containing the caret |
@@ -314,7 +314,7 @@ Custom palettes use the viewer's `--by-md-*` variables on `.byMDdocument[data-th
 
 ## Supported Markdown and limits
 
-Visual editing supports ATX headings, emphasis/strike, ordinary code spans, flat lists and checklists, single-level quotes, links, image descriptions, GFM tables, fences, and dividers. Tables can be inserted with 1–100 data rows and 1–20 columns. Source editing preserves other constructs.
+Visual editing supports ATX headings, emphasis/strike, ordinary code spans, flat lists and checklists, single-level quotes, links, image descriptions, GFM tables, fences, and dividers. Tables can be inserted with 1-100 data rows and 1-20 columns. Source editing preserves other constructs.
 
 The toolbar covers these formatting commands, rather than every viewer setting or Markdown structure. The default playground document demonstrates all six heading levels and each editable formatting feature, including mixed emphasis, autolinks, an image, both list types, tasks, tables, quotes, a hard break, a divider, and highlighted code.
 
@@ -353,7 +353,7 @@ Tests default to Playwright Chromium. Set `BROWSER_ENGINE=firefox` or `BROWSER_E
 
 Ordinary input patches the affected line or row. Native word input preserves text nodes; Markdown punctuation and structure go through the shared parser. Offscreen groups use `content-visibility: auto` while retaining their DOM; code fences keep their natural height to avoid clipped content in WebKit. Source mode builds no hidden visual document until needed. A full editor-line scan is reserved for initialization, source replacement, returning from changed Source mode, and changing the No-code representation. Full document rendering belongs to Preview. Code highlighting runs separately, caches unchanged fences, and cancels obsolete work on edits or teardown.
 
-Measured locally in Chrome with CODE loaded on 2026-11-07 using the fixtures above: edit-handler p95 ranged from 0.2–1.1 ms normally and 1.2–2.5 ms at 6× CPU slowdown. Selection p95 stayed at or below 0.4 ms. The normal run recorded no long tasks; the throttled run still recorded layout long tasks on large tables, nested lists, and fenced code. Source mode remains the practical option for heavy documents on slower devices. These observations are machine-specific, not guarantees.
+Measured locally in Chrome with CODE loaded on 2026-11-07 using the fixtures above: edit-handler p95 ranged from 0.2-1.1 ms normally and 1.2-2.5 ms at 6× CPU slowdown. Selection p95 stayed at or below 0.4 ms. The normal run recorded no long tasks; the throttled run still recorded layout long tasks on large tables, nested lists, and fenced code. Source mode remains the practical option for heavy documents on slower devices. These observations are machine-specific, not guarantees.
 
 CI runs library and playground suites independently in Chromium, Firefox, and WebKit. Touch/mobile-width checks cover Chromium and WebKit emulation, with a narrow touch viewport in Firefox. WebKit is not certification of shipping Safari or iOS devices. Synthetic editor composition checks do not reproduce an OS IME. Real mobile keyboards, VoiceOver/NVDA, clipboard permissions, and device-specific rendering still require manual testing; automated checks are not a complete WCAG audit.
 

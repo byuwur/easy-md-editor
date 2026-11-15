@@ -234,9 +234,9 @@ test("language selection translates demo documents and preserves user edits and 
     const headings = {
       es: "# Un poco de escritura. Un documento de verdad.",
       pt: "# Um pouco de escrita. Um documento de verdade.",
-      fr: "# Un peu d’écriture. Un vrai document.",
+      fr: "# Un peu d'écriture. Un vrai document.",
       de: "# Ein wenig schreiben. Ein echtes Dokument.",
-      it: "# Un po’ di scrittura. Un documento vero.",
+      it: "# Un po' di scrittura. Un documento vero.",
       ja: "# 少し書くだけで、本物のドキュメントに。",
       zh: "# 写一点文字，成就一份文档。",
       en: "# A little writing. A real document."
@@ -431,7 +431,7 @@ test("playground edits documents and exports exact Markdown", async () => {
     });
     await page.locator(".source-output summary").click();
     await page.locator(".source-output details[open]").waitFor();
-    const latest = "# Latest\r\n\r\n**Fresh** Markdown — not the delayed output.";
+    const latest = "# Latest\r\n\r\n**Fresh** Markdown - not the delayed output.";
     await page.evaluate((source) => {
       playgroundEditor.setMarkdown(source);
       document.getElementById("copy-markdown").click();
