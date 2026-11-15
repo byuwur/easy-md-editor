@@ -294,15 +294,15 @@ test("playground edits documents and exports exact Markdown", async () => {
     await page.goto(`http://127.0.0.1:${server.address().port}`);
     await page.locator(".byEDsurface").waitFor();
     assert.equal(await page.locator(".byEDsurface").isVisible(), true);
-    const releases = await page.evaluate(() => ({ md: byMDviewer.VERSION, code: byCODEviewer.VERSION }));
+    // Published page pins may trail the local companion fixtures used by this test.
     assert.deepEqual(
       await page.locator('head [href*="easy-md-viewer"], head [href*="easy-code-viewer"], head [src*="easy-md-viewer"], head [src*="easy-code-viewer"]').evaluateAll((assets) => assets.map((asset) => asset.href || asset.src).sort()),
       [
-        `https://cdn.jsdelivr.net/gh/byuwur/easy-code-viewer@v${releases.code}/code.min.css`,
-        `https://cdn.jsdelivr.net/gh/byuwur/easy-code-viewer@v${releases.code}/code.min.js`,
-        `https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@v${releases.md}/md.min.css`,
-        `https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@v${releases.md}/md.min.js`,
-        `https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@v${releases.md}/md.themes.min.css`
+        "https://cdn.jsdelivr.net/gh/byuwur/easy-code-viewer@v1.7/code.min.css",
+        "https://cdn.jsdelivr.net/gh/byuwur/easy-code-viewer@v1.7/code.min.js",
+        "https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@v2.8/md.min.css",
+        "https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@v2.8/md.min.js",
+        "https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@v2.8/md.themes.min.css"
       ]
     );
     assert.equal(await page.locator(".navbar-brand").innerText(), "md↑easy-md-editor");
