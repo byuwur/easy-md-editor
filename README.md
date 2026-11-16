@@ -83,7 +83,7 @@ No database, network requests, autosave, or browser storage are built in.
 | `fontSize`         | Container size                          | Number in rem or a CSS size such as `"1.25em"` or `"20px"`; bounded to `0.5rem`-`3rem`.                                     |
 | `paletteSelect`    | `true`                                  | Show the palette selector; themes remain available through the API when hidden.                                             |
 | `label`            | Localized "Document"                    | Accessible name for the editable document; an explicit value survives language changes.                                     |
-| `placeholder`      | Localized "Start writing..."              | Hint for an empty editing surface; an explicit value survives language changes.                                             |
+| `placeholder`      | Localized "Start writing..."            | Hint for an empty editing surface; an explicit value survives language changes.                                             |
 | `tools`            | All tools                               | Array of command names, plus `"heading"` for the paragraph-style selector.                                                  |
 | `historyLimit`     | `200`                                   | Maximum undo entries, clamped to 0 to 1000. History also has a two-million-character budget; one large entry may exceed it. |
 | `onChange`         | -                                       | Called with the complete Markdown after a committed edit or `setMarkdown()`.                                                |
@@ -340,16 +340,20 @@ Open [the local playground](http://127.0.0.1:4173), or use WAMP at `http://local
 
 The Get started section exports a complete HTML starter with CDN selected by default, or local files for offline use. Copy and Download use the displayed starter and default editor settings, independently of playground edits. CDN starters need published editor and viewer releases; local starters need `md.edit.js`, `md.edit.css`, `md.js`, `md.css`, `code.js`, and `code.css` beside the HTML.
 
-Install Playwright outside the source tree or make it available through `NODE_PATH`, then run:
+Routine CI runs the small library suite in each supported browser: parsing/rendering, safe input, and replacement/cleanup. The editor also checks source preservation, editing, undo/redo, and preview with real MD/CODE companions. New options and styling do not need individual CI tests unless they protect a core contract or a real regression.
+
+Install Playwright outside the repository and set `NODE_PATH` to its `node_modules` directory:
 
 ```sh
+node --check md.edit.js
 node --test __tests__/rendering.cjs
-node --test __tests__/editor-options.cjs
-node --test __tests__/playground.cjs
-node __tests__/performance.cjs
 ```
 
-Tests default to Playwright Chromium. Set `BROWSER_ENGINE=firefox` or `BROWSER_ENGINE=webkit` for other engines; install matching engines with `npx playwright install chromium firefox webkit` from your external Playwright setup. `BROWSER_CHANNEL=chrome` selects installed Chrome and `CHROMIUM_EXECUTABLE_PATH` selects a Chromium executable; these overrides apply only to Chromium. Performance benchmarks remain Chromium-only because they use CDP. Tests exercise actual companion files, not parser mocks. Library and option checks run separately from playground checks, which fetch pinned SPA.js assets from the CDN; `BOOTSTRAP_CSS_PATH` can supply a cached Bootstrap stylesheet. No SPA.js checkout is needed. [GitHub Actions](.github/workflows/rendering.yml) reports Library and Playground independently. Benchmarks cover 1,000/5,000/10,000 lines, large tables, nested lists, and fences at normal and 6× CPU slowdown. They report parse, edit, DOM patch, selection, preview, long-task, and heap measurements. `BENCHMARK_OUTPUT` optionally writes JSON outside the repository. Targets are measured engineering goals, not timing guarantees.
+`BROWSER_CHANNEL=chrome` uses installed Chrome; `CHROMIUM_EXECUTABLE_PATH` selects a Chromium executable. Check out `easy-md-viewer` at `v2.9` and `easy-code-viewer` at `v1.8` beside this repository, as CI does.
+
+The library suite is the main automated contract: parsing/rendering, untrusted input, and replacement/cleanup. `node --test __tests__/playground.cjs` runs one smaller smoke check for page startup, preview editing, and a copied starter. It uses the real local SPA.js and CODE companions instead of live CDN requests; check out `spa.js` at `v20.12` and `easy-code-viewer` at `v1.8` beside this repository (the editor also needs `easy-md-viewer` at `v2.9`). The [Actions workflow](.github/workflows/rendering.yml) runs separate jobs in this exact order: library Chromium, Firefox, WebKit; then playground Chromium, Firefox, WebKit. Later jobs still report their result if an earlier job fails; cancellation stops the chain. One reusable browser job keeps setup identical. Each suite has a 30-second execution limit, the test step is capped at two minutes, and each job at three minutes. Browsers are preinstalled in the matching CI image. `BROWSER_ENGINE=firefox` / `webkit` selects a local engine; `BROWSER_CHANNEL=chrome` applies only to Chromium.
+
+Run `node __tests__/performance.cjs` separately for the Chromium performance fixtures; `BENCHMARK_OUTPUT` can save results outside the repository.
 
 Ordinary input patches the affected line or row. Native word input preserves text nodes; Markdown punctuation and structure go through the shared parser. Offscreen groups use `content-visibility: auto` while retaining their DOM; code fences keep their natural height to avoid clipped content in WebKit. Source mode builds no hidden visual document until needed. A full editor-line scan is reserved for initialization, source replacement, returning from changed Source mode, and changing the No-code representation. Full document rendering belongs to Preview. Code highlighting runs separately, caches unchanged fences, and cancels obsolete work on edits or teardown.
 

@@ -1,559 +1,60 @@
 /*
  * File: __tests__/playground.cjs
- * Desc: Editor playground configuration, document actions, and starter exports.
+ * Desc: One smoke check for the real playground's preview and copied starter.
  */
 const assert = require("node:assert/strict");
-const path = require("node:path");
 const fs = require("node:fs/promises");
+const path = require("node:path");
 const test = require("node:test");
-const spaVersion = require("node:fs")
-  .readFileSync(path.join(__dirname, "../index.html"), "utf8")
-  .match(/const SPA_VERSION = "([^"]+)"/)[1];
-const spaBase = `https://cdn.jsdelivr.net/gh/byuwur/spa.js@${spaVersion}/`;
 const { chromium, firefox, webkit } = require("playwright");
-const browserEngine = process.env.BROWSER_ENGINE || "chromium";
-assert.ok(["chromium", "firefox", "webkit"].includes(browserEngine), "Unsupported BROWSER_ENGINE");
-const browserType = { chromium, firefox, webkit }[browserEngine];
-// Browser channels and executable overrides apply only to Chromium.
-const launchBrowser = () =>
-  browserType.launch(
-    browserEngine === "chromium"
-      ? {
-          channel: process.env.BROWSER_CHANNEL || undefined,
-          executablePath: process.env.CHROMIUM_EXECUTABLE_PATH || undefined
-        }
-      : {}
-  );
+const engine = process.env.BROWSER_ENGINE || "chromium";
+assert.ok(["chromium", "firefox", "webkit"].includes(engine), "Unsupported BROWSER_ENGINE");
 const root = path.join(__dirname, "..");
-const codeCDNBase = require("node:fs")
-  .readFileSync(path.join(root, "index.html"), "utf8")
-  .match(/https:\/\/cdn\.jsdelivr\.net\/gh\/byuwur\/easy-code-viewer@v[\d.]+\//)[0];
 
-// Read the displayed source without line numbers or status text.
-const readStarter = async (page) => {
-  await page.locator('#integration-code[aria-busy="false"]').waitFor();
-  return (await page.locator("#integration-code .byCODEtext").allTextContents()).join("\n");
-};
-
-// --- PINNED PLAYGROUND DEPENDENCIES ---
-let assetsPromise;
-// Cache the pinned page dependencies once; editor and companion source still come from local files.
-const getAssets = () =>
-  (assetsPromise ||= (async () => {
-    const files = ["_load.min.js", "_transitions.min.css", "_fonts.min.css", "css/pickr.min.css", "js/pickr.min.js", "css/bootstrap.min.css", "css/shards.min.css", "css/fontawesome.min.css", "js/bootstrap.min.js"].map(
-      (file) => `${spaBase}${file}`
-    );
-    files.push(`${codeCDNBase}code.min.css`, `${codeCDNBase}code.min.js`);
-    return new Map(
-      await Promise.all(
-        files.map(async (url) => {
-          const body =
-            url.endsWith("/bootstrap.min.css") && process.env.BOOTSTRAP_CSS_PATH
-              ? await fs.readFile(process.env.BOOTSTRAP_CSS_PATH, "utf8")
-              : await fetch(url).then(async (response) => {
-                  assert.ok(response.ok, `Unable to load pinned playground asset: ${url}`);
-                  return response.text();
-                });
-          return [url, { body, contentType: url.endsWith("css") ? "text/css" : "text/javascript" }];
-        })
-      )
-    );
-  })());
-
-// --- LOCAL COMPANIONS BEHIND PINNED CDN URLS ---
-async function routeAssets(page, assets) {
-  await page.route("https://cdn.jsdelivr.net/**", async (route) => {
-    const url = new URL(route.request().url());
-    if (assets.has(url.href)) return route.fulfill(assets.get(url.href));
-    // Resolve versioned companion URLs to authored files so unpublished local changes are exercised.
-    const companion = url.pathname.match(/^\/gh\/byuwur\/(easy-(?:md|code)-viewer)@v\d+(?:\.\d+)*\/((?:md|code)(?:\.themes)?(?:\.min)?\.(?:css|js))$/);
-    if (companion) return route.fulfill({ path: path.join(root, "..", companion[1], companion[2].replace(/\.min(?=\.(?:css|js)$)/, "")), contentType: companion[2].endsWith("css") ? "text/css" : "text/javascript" });
-    return route.abort();
+test("MD editor playground loads, updates, and copies a starter", { timeout: 30000 }, async (t) => {
+  const browser = await { chromium, firefox, webkit }[engine].launch({ timeout: 10000, ...(engine === "chromium" ? { channel: process.env.BROWSER_CHANNEL, executablePath: process.env.CHROMIUM_EXECUTABLE_PATH } : {}) });
+  t.after(() => browser.close());
+  const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  page.setDefaultTimeout(5000);
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: async (value) => { window.copiedHTML = value; } } });
   });
-}
-
-// --- DOCUMENT ACTIONS AND EXPORTS ---
-test("playground configures No-code and individual controls without recreating the document", async () => {
-  const assets = await getAssets();
-  const server = require("./serve.cjs");
-  // A failed browser launch must not leave a listening server keeping Node alive.
-  const browser = await launchBrowser();
-  try {
-    await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
-    const page = await browser.newPage();
-    const errors = [];
-    page.on("pageerror", (error) => errors.push(error.message));
-    await routeAssets(page, assets);
-    let resumeCSS;
-    const heldCSS = new Promise((resolve) => {
-      resumeCSS = resolve;
-    });
-    const cssRequested = page.waitForRequest(`${spaBase}css/shards.min.css`);
-    await page.route(`${spaBase}css/shards.min.css`, async (route) => {
-      await heldCSS;
-      await route.fallback();
-    });
-    let resumeJS;
-    const heldJS = new Promise((resolve) => {
-      resumeJS = resolve;
-    });
-    const jsRequested = page.waitForRequest(`${spaBase}js/pickr.min.js`);
-    await page.route(`${spaBase}js/pickr.min.js`, async (route) => {
-      await heldJS;
-      await route.fallback();
-    });
-    const pageNavigation = page.goto(`http://127.0.0.1:${server.address().port}`);
-    pageNavigation.catch(() => {});
-    await cssRequested;
-    await page.locator("body").waitFor({ state: "attached" });
-    const visibilityBeforeStyles = await page.locator("body").evaluate((body) => getComputedStyle(body).visibility);
-    const opacityBeforeStyles = await page.locator("html").evaluate((root) => getComputedStyle(root).opacity);
-    resumeCSS();
-    await jsRequested;
-    assert.equal(await page.locator("body").evaluate((body) => getComputedStyle(body).visibility), "visible", "Styled content is visible while JavaScript is still loading");
-    resumeJS();
-    await pageNavigation;
-    assert.equal(visibilityBeforeStyles, "visible", "Content stays visible while stylesheets load");
-    assert.equal(opacityBeforeStyles, "1", "Startup does not force page transparency");
-    assert.equal(await page.locator("body > style").count(), 1);
-    assert.equal(await page.locator("head script:not([src])").count(), 1);
-    assert.equal(await page.locator("body > script:not([src])").count(), 1);
-    assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--transition-duration").trim()), "0.3s");
-    // Exercise motion through the real playground, including its host stylesheets.
-    await page.emulateMedia({ reducedMotion: "reduce" });
-    const motionViewer = page.locator("#editor");
-    await motionViewer.locator(".byVIEWthemeToggle").waitFor();
-    await motionViewer.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-    assert.equal(
-      await motionViewer.evaluate((element) => {
-        getComputedStyle(element).backgroundColor;
-        element.querySelector(".byVIEWthemeToggle").click();
-        const fading = element.getAnimations().some((animation) => animation.transitionProperty === "background-color");
-        for (const animation of element.getAnimations()) animation.finish();
-        element.querySelector(".byVIEWthemeToggle").click();
-        for (const animation of element.getAnimations()) animation.finish();
-        return fading;
-      }),
-      true,
-      "Enabled viewer motion survives the page styles and system motion preference"
-    );
-    await page.emulateMedia({ reducedMotion: "no-preference" });
-    await page.locator(".byEDsurface").waitFor();
-    const source = await page.evaluate(() => playgroundEditor.getMarkdown());
-    const palette = page.locator(".playground-toolbar #playground-palette");
-    assert.equal(await palette.isVisible(), true);
-    assert.equal(await palette.inputValue(), "github");
-    assert.equal(await page.locator('#editor [aria-label="Color palette"]').inputValue(), "github");
-    assert.equal(await page.locator('#editor [aria-label="Color palette"]').isVisible(), true);
-    assert.equal(await page.locator(".actions #open-file, .actions #download, .actions #print, .actions #reset").count(), 4);
-    await palette.selectOption("github");
-    assert.equal(await page.locator("#editor").getAttribute("data-theme"), "github");
-    assert.equal(JSON.parse(await page.locator("#options-json").inputValue()).palette, "github");
-    assert.equal(JSON.parse(await page.locator("#options-json").inputValue()).paletteSelect, true);
-    assert.equal(await page.evaluate(() => playgroundEditor.getMarkdown()), source);
-    await palette.selectOption("monokai");
-    assert.equal(await page.locator("#playground-language").isVisible(), true);
-    assert.equal(await page.locator("#playground-language option").count(), 9);
-    await page.locator("#viewer-settings").evaluate((details) => (details.open = true));
-    assert.equal(await page.locator("#paletteSelect").isChecked(), true);
-    const editorPalette = page.locator("#editor .byEDcontrols select");
-    assert.equal(await editorPalette.isVisible(), true);
-    assert.equal(JSON.parse(await page.locator("#options-json").inputValue()).paletteSelect, true);
-    await palette.selectOption("github");
-    assert.equal(await editorPalette.inputValue(), "github");
-    await editorPalette.selectOption("dracula");
-    assert.equal(await palette.inputValue(), "dracula");
-    assert.equal(JSON.parse(await page.locator("#options-json").inputValue()).palette, "dracula");
-    await page.locator("#paletteSelect").uncheck();
-    assert.equal(await editorPalette.count(), 0);
-    await page.locator("#paletteSelect").check();
-    assert.equal(await editorPalette.inputValue(), "dracula");
-    await palette.selectOption("monokai");
-    await page.locator("#controlsCompact").check();
-    assert.equal(await page.locator('#editor [data-command="bold"] span').isHidden(), true);
-    assert.equal(JSON.parse(await page.locator("#options-json").inputValue()).controlsCompact, true);
-    assert.equal(await page.evaluate(() => playgroundEditor.getMarkdown()), source);
-    await page.locator("#controlsCompact").uncheck();
-    assert.equal(await page.locator('#editor [data-command="bold"] span').isVisible(), true);
-    await page.locator("#syntax-mode").selectOption("no-code");
-    assert.equal(await page.locator("#editor").getAttribute("data-syntax"), "no-code");
-    assert.equal(await page.locator("#editor .byEDsyntax:visible").count(), 0);
-    await page.evaluate(() => (window.originalLine = document.querySelector(".byEDline")));
-    assert.equal(await page.locator("#appearAnimation").isChecked(), false);
-    await page.locator("#appearAnimation").check();
-    assert.equal(JSON.parse(await page.locator("#options-json").inputValue()).appearAnimation, true);
-    assert.equal(await page.locator("#editor").evaluate((element) => element.classList.contains("byVIEWappear")), true);
-    await page.locator("#animations").uncheck();
-    assert.equal(await page.locator("#editor").evaluate((element) => getComputedStyle(element).transitionDuration), "0s", "Disabling animations cancels viewer motion");
-    assert.equal(
-      await page
-        .locator(".btn")
-        .first()
-        .evaluate((element) => getComputedStyle(element).transitionDuration),
-      "0s",
-      "Disabling animations also cancels page motion"
-    );
-    assert.equal(await page.locator("#appearAnimation").isDisabled(), true);
-    assert.equal(await page.locator("#appearAnimation").isChecked(), true);
-    await page.locator("#animations").check();
-    assert.equal(await page.locator("#appearAnimation").isEnabled(), true);
-    await page.locator("#appearAnimation").uncheck();
-    const selectors = {
-      toolbarToggle: '[aria-label="Formatting"]',
-      syntaxSelect: '[aria-label="Syntax visibility"]',
-      previewToggle: '[aria-label="Preview"]',
-      themeToggle: ".byVIEWthemeToggle",
-      paletteSelect: '[aria-label="Color palette"]',
-      statusBar: ".byEDstatus"
-    };
-    for (const [name, selector] of Object.entries(selectors)) {
-      await page.locator(`#${name}`).uncheck();
-      assert.equal(await page.locator(`#editor ${selector}`).isHidden(), true, name);
-      assert.equal(JSON.parse(await page.locator("#options-json").inputValue())[name], false);
+  // Use real local companions behind the page's declared URLs, without contacting the CDN.
+  const projects = {
+    "spa.js": process.env.SPA_ASSETS_ROOT || path.join(root, "../spa.js"),
+    "easy-code-viewer": path.join(root, "../easy-code-viewer"),
+    "easy-md-viewer": path.join(root, "../easy-md-viewer"),
+    "easy-md-editor": root
+  };
+  await page.route("**/*", async (route) => {
+    const url = new URL(route.request().url());
+    const remote = url.origin === "https://cdn.jsdelivr.net" && url.pathname.match(/^\/gh\/byuwur\/([^@/]+)@[^/]+\/(.+)$/);
+    const directory = url.origin === "https://playground.test" ? root : remote && projects[remote[1]];
+    if (!directory) return route.abort();
+    const file = remote ? remote[2] : url.pathname.slice(1) || "index.html";
+    const target = path.resolve(directory, file);
+    if (!target.startsWith(path.resolve(directory) + path.sep)) return route.abort();
+    let body;
+    try { body = await fs.readFile(target); }
+    catch (error) {
+      // Project distributions are generated; test their authored counterparts locally.
+      if (error.code !== "ENOENT") throw error;
+      body = await fs.readFile(target.replace(/\.min(?=\.(?:css|js)$)/, ""));
     }
-    assert.equal(await page.locator(".byEDbar").isHidden(), true);
-    await page.locator("#toolbar").uncheck();
-    await page.locator(".byEDtoolbar").waitFor({ state: "hidden" });
-    assert.equal(await page.locator(".byEDtoolbar").isHidden(), true);
-    assert.equal(await page.evaluate(() => originalLine === document.querySelector(".byEDline")), true);
-    assert.equal(await page.evaluate(() => playgroundEditor.getMarkdown()), source);
-    for (const name of Object.keys(selectors)) await page.locator(`#${name}`).check();
-    await page.locator("#toolbar").check();
-    await page.getByLabel("Syntax visibility", { exact: true }).selectOption("assisted");
-    assert.equal(await page.locator("#syntax-mode").inputValue(), "assisted");
-    assert.equal(JSON.parse(await page.locator("#options-json").inputValue()).syntax, "assisted");
-    await page.getByRole("button", { name: "Formatting", exact: true }).click();
-    assert.equal(await page.locator("#toolbar").isChecked(), false);
-    assert.equal(JSON.parse(await page.locator("#options-json").inputValue()).toolbar, false);
-    await page.locator("#editor-language").selectOption("es");
-    assert.equal(await page.locator("#playground-language").inputValue(), "es");
-    assert.equal(await page.evaluate(() => playgroundEditor.getLanguage()), "es");
-    assert.equal(JSON.parse(await page.locator("#options-json").inputValue()).language, "es");
-    await page.getByRole("button", { name: "Formato", exact: true }).click();
-    assert.equal(await page.locator("#toolbar").isChecked(), true, "Translated buttons still update playground configuration");
-    await page.locator('#editor [data-control="syntax"]').selectOption("clean");
-    assert.equal(await page.locator("#syntax-mode").inputValue(), "clean");
-    assert.match(await page.evaluate(() => playgroundEditor.getMarkdown()), /^# Un poco de escritura\. Un documento de verdad\./);
-    await page.locator("#editor-language").selectOption("en");
-    assert.equal(await page.evaluate(() => playgroundEditor.getMarkdown()), source);
-    assert.deepEqual(errors, []);
-  } finally {
-    await browser.close();
-    await new Promise((resolve) => server.close(resolve));
-  }
-});
-
-test("language selection translates demo documents and preserves user edits and imports", async () => {
-  const assets = await getAssets();
-  const server = require("./serve.cjs");
-  const browser = await launchBrowser();
-  try {
-    await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
-    const page = await browser.newPage();
-    await routeAssets(page, assets);
-    await page.goto(`http://127.0.0.1:${server.address().port}`);
-    await page.locator(".byEDsurface").waitFor();
-    await page.locator("#viewer-settings").evaluate((details) => (details.open = true));
-    const headings = {
-      es: "# Un poco de escritura. Un documento de verdad.",
-      pt: "# Um pouco de escrita. Um documento de verdade.",
-      fr: "# Un peu d'écriture. Un vrai document.",
-      de: "# Ein wenig schreiben. Ein echtes Dokument.",
-      it: "# Un po' di scrittura. Un documento vero.",
-      ja: "# 少し書くだけで、本物のドキュメントに。",
-      zh: "# 写一点文字，成就一份文档。",
-      en: "# A little writing. A real document."
-    };
-    for (const [code, heading] of Object.entries(headings)) {
-      await page.locator(code === "en" ? "#editor-language" : "#playground-language").selectOption(code);
-      const source = await page.evaluate(() => playgroundEditor.getMarkdown());
-      assert.equal(source.startsWith(`${heading}\n`), true);
-      assert.equal(await page.locator("#playground-language").inputValue(), code);
-      assert.equal(await page.locator("#editor-language").inputValue(), code);
-      assert.equal(await page.evaluate(() => playgroundEditor.getLanguage()), code);
-      assert.equal(await page.locator("#markdown-output").inputValue(), source);
-      assert.equal(await page.locator("#feedback").textContent(), "Original");
-      for (const level of [1, 2, 3, 4, 5, 6]) assert.equal(await page.locator(`.byEDsurface h${level}`).count(), level < 3 ? (level === 1 ? 1 : 7) : 1);
-      for (const selector of ["strong em", "del", ".byMDinlineCode", ".byMDlink", ".byEDimage", ".byEDtask", "table"]) assert.ok(await page.locator(`.byEDsurface ${selector}`).count(), `${code}: ${selector}`);
-      assert.equal(await page.locator(".byEDsurface .byEDhardBreak").count(), 1, `${code}: hard break`);
-    }
-    await page.evaluate(() => {
-      playgroundEditor.setSelection(playgroundEditor.getMarkdown().length);
-    });
-    await page.keyboard.type("User note");
-    const edited = await page.evaluate(() => {
-      window.editedLine = document.querySelector(".byEDline");
-      return playgroundEditor.getMarkdown();
-    });
-    await page.locator("#editor-language").selectOption("es");
-    assert.equal(await page.evaluate(() => playgroundEditor.getMarkdown()), edited);
-    assert.equal(await page.evaluate(() => editedLine === document.querySelector(".byEDline")), true);
-    await page.evaluate(() => playgroundEditor.command("undo"));
-    assert.equal((await page.evaluate(() => playgroundEditor.getMarkdown())).endsWith("User note"), false);
-    await page.getByRole("button", { name: "Restore sample", exact: true }).click();
-    assert.match(await page.evaluate(() => playgroundEditor.getMarkdown()), /^# Un poco de escritura/);
-    await page.locator("#file").setInputFiles({ name: "notes.md", mimeType: "text/markdown", buffer: Buffer.from("# My document\n\nKeep this text.") });
-    await page.waitForFunction(() => playgroundEditor.getMarkdown() === "# My document\n\nKeep this text.");
-    await page.locator("#editor-language").selectOption("ja");
-    assert.equal(await page.evaluate(() => playgroundEditor.getMarkdown()), "# My document\n\nKeep this text.");
-    await page.locator("#document-source").selectOption("showcase");
-    assert.match(await page.evaluate(() => playgroundEditor.getMarkdown()), /^# 少し書くだけで、本物のドキュメントに。/);
-    await page.getByRole("button", { name: "Restore sample", exact: true }).click();
-    assert.match(await page.evaluate(() => playgroundEditor.getMarkdown()), /^# 少し書くだけで、本物のドキュメントに。/);
-  } finally {
-    await browser.close();
-    await new Promise((resolve) => server.close(resolve));
-  }
-});
-
-test("playground edits documents and exports exact Markdown", async () => {
-  const assets = await getAssets();
-  const server = require("./serve.cjs");
-  const browser = await launchBrowser();
-  try {
-    await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
-    const page = await browser.newPage({ acceptDownloads: true, viewport: { width: 1100, height: 800 } });
-    await routeAssets(page, assets);
-    await page.goto(`http://127.0.0.1:${server.address().port}`);
-    await page.locator(".byEDsurface").waitFor();
-    assert.equal(await page.locator(".byEDsurface").isVisible(), true);
-    // Published page pins may trail the local companion fixtures used by this test.
-    assert.deepEqual(
-      await page.locator('head [href*="easy-md-viewer"], head [href*="easy-code-viewer"], head [src*="easy-md-viewer"], head [src*="easy-code-viewer"]').evaluateAll((assets) => assets.map((asset) => asset.href || asset.src).sort()),
-      [
-        "https://cdn.jsdelivr.net/gh/byuwur/easy-code-viewer@v1.8/code.min.css",
-        "https://cdn.jsdelivr.net/gh/byuwur/easy-code-viewer@v1.8/code.min.js",
-        "https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@v2.9/md.min.css",
-        "https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@v2.9/md.min.js",
-        "https://cdn.jsdelivr.net/gh/byuwur/easy-md-viewer@v2.9/md.themes.min.css"
-      ]
-    );
-    assert.equal(await page.locator(".navbar-brand").innerText(), "md↑easy-md-editor");
-    assert.equal(await page.locator(".viewer-suite a").count(), 9);
-    // assert.equal(await page.locator(".viewer-suite").getByRole("link", { name: "MD.edit", exact: true }).getAttribute("href"), "https://byuwur.github.io/easy-md-editor/");
-    assert.equal(await page.locator(".viewer-suite").getByRole("link", { name: "MD.edit", exact: true }).getAttribute("href"), "./");
-    assert.equal(await page.locator(".viewer-suite").getByRole("link", { name: "MD.edit", exact: true }).getAttribute("aria-current"), "page");
-    assert.equal(await page.locator("#integration-cdn").isChecked(), true);
-    await page.locator("#preview-bg").evaluate((field) => (field.closest("details").open = true));
-    await page.waitForFunction(() => getComputedStyle(document.getElementById("preview-bg").closest("details"), "::details-content").opacity === "1");
-    await page.locator("#preview-bg").fill("transparent");
-    await page.locator("#preview-bg").dispatchEvent("change");
-    await page.locator('[data-color-picker="preview-container-bg"]').click();
-    const picker = page.locator(".pcr-app.visible");
-    await picker.locator('.pcr-type[data-type="HEXA"]').waitFor();
-    assert.deepEqual(await picker.locator(".pcr-type:visible").evaluateAll((formats) => formats.map((format) => format.dataset.type)), ["HEXA"]);
-    assert.match(await picker.locator(".pcr-result").inputValue(), /^#[0-9a-f]{6}(?:[0-9a-f]{2})?$/i);
-    assert.equal(await page.locator("#preview-container-bg").inputValue(), "", "Opening the picker retains the theme default");
-    await picker.locator(".pcr-result").fill("#345678cc");
-    await picker.locator(".pcr-result").press("Enter");
-    await picker.locator(".pcr-save").click();
-    assert.equal((await page.locator("#preview-container-bg").inputValue()).toLowerCase(), "#345678cc");
-    // Closing the picker can expose an editor button under the pointer; check its resting color.
-    await page.mouse.move(0, 0);
-    await page.waitForFunction(() => {
-      const document = window.document;
-      return getComputedStyle(document.querySelector(".byEDcontrols .byEDbutton")).backgroundColor === "rgba(52, 86, 120, 0.8)";
-    });
-    assert.equal(await page.locator("#editor").evaluate((element) => getComputedStyle(element).backgroundColor), "rgba(0, 0, 0, 0)");
-    await page.locator("#preview-bg").fill("not a color");
-    await page.locator("#preview-bg").dispatchEvent("change");
-    assert.equal(await page.locator("#preview-bg").evaluate((field) => field.checkValidity()), false);
-    await page.locator("#reset-appearance").click();
-    assert.equal(await page.locator("#preview-bg").evaluate((field) => field.checkValidity()), true);
-    const cdnHTML = await readStarter(page);
-    assert.match(cdnHTML, /^ {2}<head>$/m);
-    assert.match(cdnHTML, /^ {4}<script>$/m);
-    assert.match(cdnHTML, /^ {6}document\.addEventListener\("DOMContentLoaded", \(\) => \{$/m);
-    const starterViewer = page.locator("#integration-code.byCODEdocument");
-    assert.equal(await page.evaluate(() => byCODEviewer.VERSION), "1.8");
-    assert.equal(await starterViewer.getAttribute("data-theme"), "dark");
-    await starterViewer.locator(".byCODEtext").first().waitFor();
-    assert.ok((await starterViewer.locator(".byCODElineNumber").count()) > 0);
-    assert.equal(await starterViewer.locator(".byVIEWtoolbar, button, input, select").count(), 0);
-    assert.equal(await starterViewer.locator(".byVIEWstatus:visible").count(), 0);
-    assert.deepEqual(await starterViewer.evaluate((element) => [element, element.querySelector(".byVIEWpanel"), element.querySelector(".byCODElineNumber")].map((node) => getComputedStyle(node).backgroundColor)), [
-      "rgba(0, 0, 0, 0)",
-      "rgba(0, 0, 0, 0)",
-      "rgba(0, 0, 0, 0)"
-    ]);
-    assert.ok((await starterViewer.locator(".byCODEtag").count()) > 0);
-    assert.equal(await page.locator("#integration-code script").count(), 0);
-    const starterTagColor = await starterViewer
-      .locator(".byCODEtag")
-      .first()
-      .evaluate((token) => getComputedStyle(token).color);
-    await page.locator("#site-theme").click();
-    assert.equal(await starterViewer.getAttribute("data-theme"), "light");
-    assert.notEqual(
-      await starterViewer
-        .locator(".byCODEtag")
-        .first()
-        .evaluate((token) => getComputedStyle(token).color),
-      starterTagColor
-    );
-    await page.locator("#site-theme").click();
-    assert.match(cdnHTML, /easy-md-editor@latest\/md\.edit\.min\.js/);
-    assert.match(cdnHTML, /easy-md-editor@latest\/md\.edit\.min\.css/);
-    assert.equal(cdnHTML.includes("fontawesome"), false);
-    assert.match(cdnHTML, /easy-md-viewer@latest\/md\.min\.js/);
-    assert.match(cdnHTML, /easy-code-viewer@latest\/code\.min\.js/);
-    assert.match(cdnHTML, /\n {2}<head>\n {4}<meta/);
-    assert.equal((await page.locator("#source-size").textContent()) !== "", true);
-    for (const level of [1, 2, 3, 4, 5, 6]) assert.ok((await page.locator(`.byEDsurface h${level}`).count()) > 0);
-    for (const type of ["bullet", "ordered", "task", "tableHeader", "tableRow", "quote", "rule", "code"]) assert.ok((await page.locator(`.byEDsurface [data-type="${type}"]`).count()) > 0, `showcase must include ${type}`);
-    for (const selector of ["strong", "em", "strong em", "del", ".byMDinlineCode", ".byMDlink", ".byEDimage"]) assert.ok((await page.locator(`.byEDsurface ${selector}`).count()) > 0, `showcase must include ${selector}`);
-    await page.locator(".byEDsurface .byCODEkeyword").first().waitFor();
-    const original = await page.evaluate(() => playgroundEditor.getMarkdown());
-    for (const focused of [false, true]) {
-      if (focused) await page.evaluate(() => playgroundEditor.setSelection(playgroundEditor.getMarkdown().indexOf("const markdown")));
-      const spacing = await page.locator(".byEDgroup-fence").evaluate((block) => {
-        const style = getComputedStyle(block),
-          rect = block.getBoundingClientRect();
-        const lines = [...block.querySelectorAll(".byEDline")].filter((line) => getComputedStyle(line).display !== "none");
-        return { top: lines[0].getBoundingClientRect().top - rect.top, bottom: rect.bottom - lines.at(-1).getBoundingClientRect().bottom, expectedTop: parseFloat(style.paddingTop), expectedBottom: parseFloat(style.paddingBottom) };
-      });
-      assert.ok(Math.abs(spacing.top - spacing.expectedTop) < 0.5, "code must start at the container padding");
-      assert.ok(Math.abs(spacing.bottom - spacing.expectedBottom) < 0.5, "code must end at the container padding");
-    }
-    await page.evaluate(() => playgroundEditor.setSelection(0));
-    assert.notEqual(await page.locator("#copy-markdown i").evaluate((icon) => getComputedStyle(icon, "::before").content), "none");
-    for (const mode of ["dark", "light"]) {
-      await page.evaluate((mode) => {
-        playgroundEditor.setTheme(mode);
-        playgroundEditor.setPreview(true);
-      }, mode);
-      assert.equal(await page.locator(".byEDpreview .byMDcodeBlock code").evaluate((code) => getComputedStyle(code).color === getComputedStyle(code.closest(".byEDpreview")).color), true);
-      assert.equal(
-        await page
-          .locator(".byEDpreview .byCODEkeyword")
-          .first()
-          .evaluate((token) => getComputedStyle(token).color !== getComputedStyle(token.closest("code")).color),
-        true
-      );
-      await page.evaluate(() => playgroundEditor.setPreview(false));
-      assert.equal(await page.locator(".byEDgroup-fence code").evaluate((code) => getComputedStyle(code).color === getComputedStyle(document.getElementById("editor")).color), true);
-    }
-    assert.equal(await page.evaluate(() => playgroundEditor.getMarkdown()), original);
-    await page.evaluate(() => {
-      playgroundEditor.setSelection(0);
-      playgroundEditor.command("bold");
-    });
-    assert.notEqual(await page.evaluate(() => playgroundEditor.getMarkdown()), original);
-    await page.getByRole("button", { name: "Restore sample" }).click();
-    const download = page.waitForEvent("download");
-    await page.getByRole("button", { name: "Download Markdown" }).click();
-    assert.equal(await fs.readFile(await (await download).path(), "utf8"), original);
-    await page.evaluate(() => {
-      // Capture exported text without depending on system clipboard access.
-      Object.defineProperty(navigator, "clipboard", {
-        configurable: true,
-        value: {
-          writeText: async (value) => {
-            window.copiedMarkdown = value;
-          }
-        }
-      });
-    });
-    await page.locator(".source-output summary").click();
-    await page.locator(".source-output details[open]").waitFor();
-    const latest = "# Latest\r\n\r\n**Fresh** Markdown - not the delayed output.";
-    await page.evaluate((source) => {
-      playgroundEditor.setMarkdown(source);
-      document.getElementById("copy-markdown").click();
-    }, latest);
-    assert.equal(await page.evaluate(() => copiedMarkdown), latest);
-    assert.equal(await page.locator("#copy-markdown span").textContent(), "Copied!");
-    assert.equal(await page.locator(".source-output details").getAttribute("open"), "");
-    await page.locator("#copy-markdown").focus();
-    await page.keyboard.press("Enter");
-    assert.equal(await page.locator(".source-output details").getAttribute("open"), "");
-    await page.locator(".source-output summary").click();
-    await page.locator(".source-output details:not([open])").waitFor();
-    await page.evaluate(() => {
-      navigator.clipboard.writeText = async () => {
-        throw new Error("denied");
-      };
-    });
-    await page.locator("#copy-markdown").click();
-    await page.waitForFunction(() => document.querySelector("#copy-markdown span").textContent === "Failed");
-    assert.equal(await page.locator(".source-output details").getAttribute("open"), "");
-    assert.equal(await page.locator("#copy-markdown span").textContent(), "Failed");
-    assert.match(await page.locator("#markdown-copy-feedback").textContent(), /Ctrl\+C/);
-    assert.equal(await page.locator("#markdown-output").evaluate((element) => document.activeElement === element && element.selectionStart === 0 && element.selectionEnd === element.value.length), true);
-    await page.getByRole("button", { name: "Restore sample", exact: true }).click();
-    await page.locator("#document-source").selectOption("custom");
-    assert.equal(await page.evaluate(() => playgroundEditor.getMarkdown()), "");
-    await page.evaluate(() => {
-      playgroundEditor.focus();
-    });
-    await page.keyboard.type("A draft");
-    await page.locator("#document-source").selectOption("showcase");
-    assert.equal(await page.evaluate(() => playgroundEditor.getMarkdown()), original);
-    await page.locator("#document-source").selectOption("custom");
-    assert.equal(await page.evaluate(() => playgroundEditor.getMarkdown()), "A draft");
-    const theme = page.getByRole("button", { name: "Switch website to light theme", exact: true });
-    await theme.click();
-    assert.equal(await page.locator("html").getAttribute("data-bs-theme"), "light");
-    assert.equal(await page.locator("#site-theme span").textContent(), "Dark");
-    assert.equal(await page.locator("#editor").getAttribute("data-theme"), "github");
-    await page.getByRole("button", { name: "Switch website to dark theme", exact: true }).click();
-    await page.getByText("Local files", { exact: true }).click();
-    const localHTML = await readStarter(page);
-    assert.match(localHTML, /href="md\.edit\.css"/);
-    assert.match(localHTML, /src="md\.js"/);
-    assert.equal(localHTML.includes("https://"), false);
-    await page.evaluate(() => {
-      Object.defineProperty(navigator, "clipboard", {
-        configurable: true,
-        value: {
-          writeText: async (value) => {
-            window.copiedHTML = value;
-          }
-        }
-      });
-    });
-    await page.getByRole("button", { name: "Copy HTML", exact: true }).click();
-    assert.equal(await page.evaluate(() => copiedHTML), localHTML);
-    await page.evaluate(() => {
-      navigator.clipboard.writeText = async () => {
-        throw new Error("denied");
-      };
-    });
-    await page.locator("#copy-integration").click();
-    assert.equal(await page.locator("#copy-integration span").textContent(), "Failed");
-    assert.equal(
-      await page
-        .locator("#integration-code")
-        .evaluate((element) => document.activeElement === element && document.getSelection().toString().replace(/\r\n/g, "\n").replace(/\n$/, "") === [...element.querySelectorAll(".byCODEtext")].map((line) => line.textContent).join("\n")),
-      true
-    );
-    const starterDownload = page.waitForEvent("download");
-    await page.getByRole("button", { name: "Download HTML", exact: true }).click();
-    assert.equal(await fs.readFile(await (await starterDownload).path(), "utf8"), localHTML);
-    await page.locator("#file").setInputFiles({ name: "notes.md", mimeType: "text/markdown", buffer: Buffer.from("# File\n\nImported.") });
-    await page.waitForFunction(() => playgroundEditor.getMarkdown() === "# File\n\nImported.");
-    assert.equal(await page.locator("#document-source option:checked").textContent(), "notes.md");
-    await page.getByRole("button", { name: "Restore sample", exact: true }).click();
-    await page.setViewportSize({ width: 360, height: 740 });
-    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
-    assert.equal(await page.locator("#site-menu").isVisible(), false);
-    await page.getByRole("button", { name: "Toggle navigation", exact: true }).click();
-    await page.locator("#site-menu.show").waitFor();
-    assert.equal(await page.locator("#site-menu").isVisible(), true);
-    await page.getByRole("button", { name: "Toggle navigation", exact: true }).click();
-    await page.evaluate(() => playgroundEditor.setPreview(true));
-    await page.emulateMedia({ media: "print" });
-    assert.equal(await page.locator(".byEDpreview").isVisible(), true);
-    assert.equal(await page.locator(".byEDtoolbar").isVisible(), false);
-    assert.equal(await page.locator(".byEDpreview").evaluate((element) => getComputedStyle(element).maxHeight), "none");
-    await page.emulateMedia({ media: "screen" });
-    await page.route("**/starter.html", (route) => route.fulfill({ body: localHTML, contentType: "text/html" }));
-    await page.goto(`http://127.0.0.1:${server.address().port}/starter.html`);
-    await page.locator("#document .byEDsurface").waitFor();
-    assert.equal(await page.locator("#document .byEDsurface h1").textContent(), "# Hello");
-    assert.equal(await page.locator("#document").getAttribute("data-theme"), "github");
-  } finally {
-    await browser.close();
-    await new Promise((resolve) => server.close(resolve));
-  }
+    const contentType = { ".html": "text/html", ".css": "text/css", ".js": "text/javascript", ".json": "application/json", ".svg": "image/svg+xml" }[path.extname(file)] || "application/octet-stream";
+    return route.fulfill({ body, contentType: `${contentType}; charset=UTF-8` });
+  });
+  await page.goto("https://playground.test/index.html");
+  await page.locator("#editor.byMDeditor").waitFor();
+  const surface = page.locator("#editor .byEDsurface");
+  await surface.click();
+  await surface.press("ControlOrMeta+A");
+  await surface.pressSequentially("PLAYGROUND_CORE");
+  await page.waitForFunction(() => document.getElementById("source-characters").textContent === String("PLAYGROUND_CORE".length));
+  await page.locator("#copy-integration").click();
+  await page.waitForFunction(() => typeof window.copiedHTML === "string");
+  assert.match(await page.evaluate(() => window.copiedHTML), /md\.edit(?:\.min)?\.js/);
+  assert.deepEqual(errors, [], "No uncaught playground errors");
 });

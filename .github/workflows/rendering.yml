@@ -8,54 +8,59 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: checks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  rendering:
-    name: ${{ matrix.suite }} (${{ matrix.browser }})
-    runs-on: ubuntu-24.04
-    container:
-      # Keep the image and npm package on the same Playwright version.
-      image: mcr.microsoft.com/playwright:v1.63.0-noble
-      options: --ipc=host
-    env:
-      BROWSER_ENGINE: ${{ matrix.browser }}
-    timeout-minutes: 10
-    strategy:
-      # Report every engine/suite result even if another combination fails.
-      fail-fast: false
-      matrix:
-        browser: [chromium, firefox, webkit]
-        suite: [library, playground]
-        # Run option contracts with the library suite and keep playground checks separate.
-        include:
-          - suite: library
-            files: __tests__/rendering.cjs __tests__/editor-options.cjs
-          - suite: playground
-            files: __tests__/playground.cjs
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          path: easy-md-editor
-      - uses: actions/checkout@v4
-        with:
-          repository: byuwur/easy-md-viewer
-          ref: v2.9
-          path: easy-md-viewer
-      - uses: actions/checkout@v4
-        with:
-          repository: byuwur/easy-code-viewer
-          ref: v1.8
-          path: easy-code-viewer
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Install browser test tools
-        run: npm install --prefix "$RUNNER_TEMP/editor-tests" --no-package-lock --no-audit --no-fund playwright@1.63.0
-      - name: Check ${{ matrix.suite }}
-        working-directory: easy-md-editor
-        env:
-          # Firefox requires HOME to belong to the root user running this container.
-          HOME: /root
-          NODE_PATH: ${{ runner.temp }}/editor-tests/node_modules
-        run: |
-          node --check md.edit.js
-          node --test ${{ matrix.files }}
+  rendering_chromium:
+    name: rendering (chromium)
+    uses: ./.github/workflows/browser-check.yml
+    with:
+      browser: chromium
+      suite: rendering
+
+  rendering_firefox:
+    name: rendering (firefox)
+    needs: rendering_chromium
+    if: ${{ !cancelled() }}
+    uses: ./.github/workflows/browser-check.yml
+    with:
+      browser: firefox
+      suite: rendering
+
+  rendering_webkit:
+    name: rendering (webkit)
+    needs: rendering_firefox
+    if: ${{ !cancelled() }}
+    uses: ./.github/workflows/browser-check.yml
+    with:
+      browser: webkit
+      suite: rendering
+
+  playground_chromium:
+    name: playground (chromium)
+    needs: rendering_webkit
+    if: ${{ !cancelled() }}
+    uses: ./.github/workflows/browser-check.yml
+    with:
+      browser: chromium
+      suite: playground
+
+  playground_firefox:
+    name: playground (firefox)
+    needs: playground_chromium
+    if: ${{ !cancelled() }}
+    uses: ./.github/workflows/browser-check.yml
+    with:
+      browser: firefox
+      suite: playground
+
+  playground_webkit:
+    name: playground (webkit)
+    needs: playground_firefox
+    if: ${{ !cancelled() }}
+    uses: ./.github/workflows/browser-check.yml
+    with:
+      browser: webkit
+      suite: playground
