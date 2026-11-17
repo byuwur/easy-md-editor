@@ -4,6 +4,13 @@
 @import url("https://cdn.jsdelivr.net/gh/byuwur/spa.js@v20.13/css/fontawesome.min.css");
 
 /* --- EDITOR --- */
+/* Keep host layout transitions out; component rules below opt in to motion. */
+.byMDeditor,
+.byMDeditor *,
+.byMDeditor *::before,
+.byMDeditor *::after {
+  transition: none !important;
+}
 .byMDeditor {
   position: relative;
   box-sizing: border-box;
@@ -125,7 +132,7 @@
   pointer-events: none;
   border-radius: 50%;
   background: currentColor;
-  transition: transform var(--by-view-motion-duration, 0s) ease-out;
+  transition: transform var(--by-view-motion-duration, 0s) ease-out !important;
 }
 .byEDtoolbar {
   padding: 0.5rem 0.75rem;
@@ -517,7 +524,7 @@ fieldset.byEDfield {
 @media (forced-colors: active) {
   .byMDeditor,
   .byMDeditor :is(.byEDbar, .byEDtoolbar, .byEDsurface, .byEDsource, .byEDpreview, .byEDstatus) {
-    transition: none;
+    transition: none !important;
   }
   .byMDeditor,
   .byMDeditor.dark:not([data-theme="light"]),
@@ -580,10 +587,10 @@ fieldset.byEDfield {
 .byMDeditor.byVIEWready {
   transition:
     background-color var(--by-view-motion-duration, 0s) ease,
-    opacity var(--by-view-motion-duration, 0s) ease;
+    opacity var(--by-view-motion-duration, 0s) ease !important;
 }
 .byMDeditor :is(.byEDbar, .byEDtoolbar, .byEDsurface, .byEDsource, .byEDpreview, .byEDstatus) {
-  transition: background-color var(--by-view-motion-duration, 0s) ease;
+  transition: background-color var(--by-view-motion-duration, 0s) ease !important;
 }
 .byMDeditor.byVIEWmotion.byVIEWappear:not(.byVIEWready) {
   opacity: 0;
@@ -595,7 +602,7 @@ fieldset.byEDfield {
     border-color var(--by-view-motion-duration) ease,
     box-shadow var(--by-view-motion-duration) ease,
     opacity var(--by-view-motion-duration) ease,
-    translate var(--by-view-motion-duration) ease-out;
+    translate var(--by-view-motion-duration) ease-out !important;
 }
 .byMDeditor.byVIEWmotion :is(button, summary):not(:disabled):active {
   translate: 0 0.0625em;
@@ -608,7 +615,7 @@ fieldset.byEDfield {
   transition:
     block-size var(--by-view-motion-duration) ease,
     opacity var(--by-view-motion-duration) ease,
-    content-visibility var(--by-view-motion-duration) allow-discrete;
+    content-visibility var(--by-view-motion-duration) allow-discrete !important;
 }
 .byMDeditor.byVIEWmotion details[open]::details-content {
   block-size: auto;
@@ -627,14 +634,14 @@ fieldset.byEDfield {
 .byMDeditor.byVIEWmotion .byVIEWreveal:not([hidden]) {
   transition:
     opacity var(--by-view-motion-duration) ease,
-    translate var(--by-view-motion-duration) ease-out;
+    translate var(--by-view-motion-duration) ease-out !important;
   @starting-style {
     opacity: 0;
     translate: 0 0.2rem;
   }
 }
 .byMDeditor .byEDsyntax {
-  transition: color var(--by-view-motion-duration) ease-out;
+  transition: color var(--by-view-motion-duration) ease-out !important;
 }
 @supports (interpolate-size: allow-keywords) {
   /* Visited fence rows resize their block as the delimiters appear and disappear. */
@@ -647,7 +654,7 @@ fieldset.byEDfield {
     overflow: clip;
     transition:
       block-size var(--by-view-motion-duration) ease,
-      opacity var(--by-view-motion-duration) ease-out;
+      opacity var(--by-view-motion-duration) ease-out !important;
   }
   .byMDeditor.byVIEWmotion[data-syntax="clean"] .byEDgroup-fence.byEDvisited .byEDline:is([data-type="fenceOpen"], [data-type="fenceClose"]) .byEDsyntax {
     display: inline;
@@ -672,7 +679,7 @@ fieldset.byEDfield {
     white-space: pre;
     transition:
       inline-size var(--by-view-motion-duration) ease,
-      opacity var(--by-view-motion-duration) ease-out;
+      opacity var(--by-view-motion-duration) ease-out !important;
   }
   .byMDeditor.byVIEWmotion[data-syntax="clean"] .byEDline.byEDvisited.is-active:not([data-type="fenceOpen"], [data-type="fenceClose"], [data-type="tableDelimiter"], [data-type="rule"]) .byEDsyntax {
     inline-size: auto;
@@ -684,7 +691,7 @@ fieldset.byEDfield {
   transition:
     opacity var(--by-view-motion-duration) ease,
     display var(--by-view-motion-duration) allow-discrete,
-    overlay var(--by-view-motion-duration) allow-discrete;
+    overlay var(--by-view-motion-duration) allow-discrete !important;
 }
 .byMDeditor.byVIEWmotion .byEDdialog[open] {
   opacity: 1;
@@ -706,7 +713,7 @@ fieldset.byEDfield {
   transition:
     block-size var(--by-view-motion-duration) ease,
     opacity var(--by-view-motion-duration) ease,
-    display var(--by-view-motion-duration) allow-discrete;
+    display var(--by-view-motion-duration) allow-discrete !important;
 }
 .byMDeditor.byVIEWmotion .byEDtoolbar.byVIEWreveal[hidden] {
   block-size: 0;
@@ -717,14 +724,14 @@ fieldset.byEDfield {
 /* High Contrast switches colors immediately so intermediate colors cannot lose contrast. */
 .byMDeditor[data-theme="high-contrast"],
 .byMDeditor[data-theme="high-contrast"] :is(.byEDbar, .byEDtoolbar, .byEDsurface, .byEDsource, .byEDpreview, .byEDstatus) {
-  transition: none;
+  transition: none !important;
 }
 .byMDeditor[data-theme="high-contrast"] :is(button, input, select, textarea, summary, a) {
-  transition-property: opacity, translate;
+  transition-property: opacity, translate !important;
 }
 @media (forced-colors: active) {
   .byMDeditor :is(button, input, select, textarea, summary, a) {
-    transition-property: opacity, translate;
+    transition-property: opacity, translate !important;
   }
 }
 
@@ -742,7 +749,7 @@ fieldset.byEDfield {
 }
 
 .byMDeditor .byVIEWinfo {
-  transition: opacity var(--by-view-motion-duration) ease-out;
+  transition: opacity var(--by-view-motion-duration) ease-out !important;
 }
 
 /* --- THEMES --- */
