@@ -5,8 +5,5 @@
   "runtime": ["md.edit.js", "md.edit.css"],
   "tests": ["rendering.cjs"],
   "companions": ["easy-code-viewer", "easy-md-viewer"],
-  "notes": [
-    "Load local library files in your own HTML. The playground is hosted separately; no Node runtime is needed to use either ZIP.",
-    "Visual editing and Preview also require easy-md-viewer; code colors use optional easy-code-viewer. Download those releases separately. The toolbar stylesheet imports Font Awesome; host its stylesheet/fonts locally or remove the import for offline text labels."
-  ]
+  "notes": ["Requires easy-md-viewer; easy-code-viewer adds syntax colors. Host Font Awesome locally for offline icons."]
 }
