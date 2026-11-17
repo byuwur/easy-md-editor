@@ -2,6 +2,8 @@
 
 ![MD.edit preview](prev.jpg)
 
+Development version: **v2** (unreleased). The [latest release](https://github.com/byuwur/md.edit/releases/latest) supplies the published files.
+
 **Markdown, made to be written.**
 
 Write a document, use familiar formatting tools, and get ordinary Markdown back. For notes, documentation, terms and conditions, and other text your application needs to store or move around.
