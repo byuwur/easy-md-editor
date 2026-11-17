@@ -55,6 +55,10 @@ test("MD editor playground loads, updates, and copies a starter", { timeout: 300
     return route.fulfill({ body, contentType: `${contentType}; charset=UTF-8` });
   });
   await page.goto("https://playground.test/index.html");
+  assert.equal(await page.locator("#latest-release").textContent(), "Latest Release");
+  assert.equal(await page.locator("#latest-release").getAttribute("href"), "https://github.com/byuwur/md.edit/releases/latest");
+  assert.equal(await page.locator("#download-release").getAttribute("href"), "https://github.com/byuwur/md.edit/releases/download/v2/md.edit.v2.zip");
+  assert.equal(await page.locator("#download-minified").getAttribute("href"), "https://github.com/byuwur/md.edit/releases/download/v2/md.edit.v2.minified.zip");
   await page.locator("#editor.byMDeditor").waitFor();
   const surface = page.locator("#editor .byEDsurface");
   await surface.click();
