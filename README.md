@@ -351,7 +351,7 @@ node --test __tests__/rendering.cjs
 
 `BROWSER_CHANNEL=chrome` uses installed Chrome; `CHROMIUM_EXECUTABLE_PATH` selects a Chromium executable. Check out `easy-md-viewer` at `v2.9` and `easy-code-viewer` at `v1.8` beside this repository, as CI does.
 
-The library suite is the main automated contract: parsing/rendering, untrusted input, and replacement/cleanup. `node --test __tests__/playground.cjs` runs one smaller smoke check for page startup, preview editing, and a copied starter. It uses the real local SPA.js and CODE companions instead of live CDN requests; check out `spa.js` at `v20.12` and `easy-code-viewer` at `v1.8` beside this repository (the editor also needs `easy-md-viewer` at `v2.9`). The [Actions workflow](.github/workflows/rendering.yml) runs separate jobs in this exact order: library Chromium, Firefox, WebKit; then playground Chromium, Firefox, WebKit. Later jobs still report their result if an earlier job fails; cancellation stops the chain. One reusable browser job keeps setup identical. Each suite has a 30-second execution limit, the test step is capped at two minutes, and each job at three minutes. Browsers are preinstalled in the matching CI image. `BROWSER_ENGINE=firefox` / `webkit` selects a local engine; `BROWSER_CHANNEL=chrome` applies only to Chromium.
+The library suite is the main automated contract: parsing/rendering, untrusted input, and replacement/cleanup. `node --test __tests__/playground.cjs` runs one smaller smoke check for page startup, preview editing, and a copied starter. It uses the real local SPA.js and CODE companions instead of live CDN requests; check out `spa.js` at `v20.13` and `easy-code-viewer` at `v1.8` beside this repository (the editor also needs `easy-md-viewer` at `v2.9`). The [Actions workflow](.github/workflows/rendering.yml) runs separate jobs in this exact order: library Chromium, Firefox, WebKit; then playground Chromium, Firefox, WebKit. Later jobs still report their result if an earlier job fails; cancellation stops the chain. One reusable browser job keeps setup identical. Each suite has a 30-second execution limit, the test step is capped at two minutes, and each job at three minutes. Browsers are preinstalled in the matching CI image. `BROWSER_ENGINE=firefox` / `webkit` selects a local engine; `BROWSER_CHANNEL=chrome` applies only to Chromium.
 
 Run `node __tests__/performance.cjs` separately for the Chromium performance fixtures; `BENCHMARK_OUTPUT` can save results outside the repository.
 
@@ -398,7 +398,7 @@ node .github/node_modules/playwright/cli.js install chromium
 npm --prefix .github run release:test
 ```
 
-The release checks also need sibling `easy-code-viewer` (`v1.8`) and `easy-md-viewer` (`v2.9`) checkouts, matching the existing renderer checks.
+The release checks also need sibling `easy-code-viewer` (`v1.9`) and `easy-md-viewer` (`v2.10`) checkouts, matching the existing renderer checks.
 
 Open `dist/RELEASE_NOTES.md` for the generated notes and `dist/assets/` for the complete tested output. Download `tested-release` from the workflow run to review CI results. Local commands and manual runs do not publish.
 

@@ -10,7 +10,7 @@
   if (global.byMDeditor?.initialized) return;
 
   // --- METADATA ---
-  byMDeditor.VERSION = "1.10"; // 2026-11-15
+  byMDeditor.VERSION = "1.11"; // 2026-11-16
 
   // --- CONSTANTS ---
   const tools = [
