@@ -228,7 +228,7 @@
               <label class="form-check-label flex-grow-1 py-2" for="controlsCompact">Compact controls</label>
             </div>
             <div class="form-switch d-flex align-items-center gap-3 ps-0 m-0">
-              <input class="form-check-input order-2 float-none flex-shrink-0 ms-0 my-0" id="statusBar" type="checkbox" role="switch" checked />
+              <input class="form-check-input order-2 float-none flex-shrink-0 ms-0 my-0" id="statusBar" type="checkbox" role="switch" />
               <label class="form-check-label flex-grow-1 py-2" for="statusBar">Status information</label>
             </div>
             <div class="form-switch d-flex align-items-center gap-3 ps-0 m-0">
@@ -481,6 +481,11 @@
       .form-select,
       .form-control {
         min-height: 2.75rem;
+      }
+      #options-json {
+        background: var(--bs-body-bg);
+        color: var(--bs-body-color);
+        border-color: var(--bs-border-color);
       }
       .form-select:focus,
       .form-control:focus {

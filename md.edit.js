@@ -907,7 +907,7 @@
       previewToggle = true,
       themeToggle = true,
       paletteSelect = true,
-      statusBar = true,
+      statusBar = false,
       shortcuts = true,
       codeHighlighting = true,
       ...otherOptions
@@ -974,9 +974,11 @@
       lineMap = new WeakMap(),
       imageMap = new WeakMap();
     let selectedImage = null,
-      imageToolbar = null,
       imageOptions = null,
-      imageObserver = null;
+      selectedCode = null,
+      codePicker = null,
+      contextToolbar = null,
+      contextObserver = null;
     const metrics = options.onMeasure ? options.onMeasure : null;
     const measure = (operation, started, extra = {}) => metrics?.({ operation, duration: performance.now() - started, ...extra });
     const listen = (target, type, handler, extra = {}) => target.addEventListener(type, handler, { signal, ...extra });
@@ -994,7 +996,7 @@
     };
     // Update only UI labels; source nodes, selection, composition, and history keep their owners.
     const translateControls = () => {
-      for (const root of [bar, toolbar, imageToolbar, dialog]) {
+      for (const root of [bar, toolbar, contextToolbar, imageOptions, codePicker?.parentElement, dialog]) {
         if (!root) continue;
         root.lang = language;
         for (const text of root.querySelectorAll("[data-message]")) {
@@ -1025,7 +1027,8 @@
       palettePicker.setAttribute("aria-label", languageText.colorPalette);
       for (const group of palettePicker.querySelectorAll("optgroup")) group.label = languageText[group.dataset.messageGroup];
       heading.setAttribute("aria-label", languageText.paragraphStyle);
-      imageToolbar?.setAttribute("aria-label", languageText.imageSize);
+      imageOptions?.setAttribute("aria-label", languageText.imageSize);
+      if (contextToolbar) contextToolbar.setAttribute("aria-label", languageText[selectedCode ? "codeLanguage" : "imageSize"]);
       themeButton.title = languageText[isDark() ? "lightTheme" : "darkTheme"];
       themeButton.setAttribute("aria-label", themeButton.title);
       for (const record of lines) {
@@ -1333,7 +1336,9 @@
       const next = record?.group?.kind === "fence" ? record.group.node : null;
       if (previous !== next) {
         previous?.classList.remove("is-active");
-        next?.classList.add("is-active");
+        next?.classList.add("is-active", "byEDvisited");
+        if (next) showCodeToolbar(record);
+        else if (selectedCode) hideContextToolbar();
       }
       active?.view?.classList.remove("is-active");
       active = record;
@@ -1376,7 +1381,7 @@
       }
     };
 
-    // --- IMAGE CONTROLS ---
+    // --- CONTEXT CONTROLS ---
     const markImageSize = (row, value) => {
       row.dataset.size = value;
       for (const button of row.querySelectorAll("button")) {
@@ -1425,55 +1430,104 @@
       markImageSize(row, "default");
       return row;
     };
-    const hideImageToolbar = () => {
+    /** Hide the contextual controls and stop observing their previous target. */
+    const hideContextToolbar = () => {
       selectedImage?.classList.remove("is-selected");
       selectedImage = null;
-      imageObserver?.disconnect();
-      if (imageToolbar) imageToolbar.hidden = true;
+      selectedCode = null;
+      contextObserver?.disconnect();
+      if (contextToolbar) contextToolbar.hidden = true;
     };
-    // Coordinates share the editor's containing block, including its own scroll and borders.
-    const positionImageToolbar = () => {
-      if (!selectedImage?.isConnected) return hideImageToolbar();
-      const image = selectedImage.getBoundingClientRect(),
+    /** Position the floating controls within the editor and viewport, including scroll and borders. */
+    const positionContextToolbar = () => {
+      const target = selectedImage || selectedCode?.group?.node;
+      if (!target?.isConnected) return hideContextToolbar();
+      const bounds = target.getBoundingClientRect(),
         owner = element.getBoundingClientRect();
       const left = Math.max(0, owner.left),
         right = Math.min(global.innerWidth, owner.right),
         top = Math.max(0, owner.top),
         bottom = Math.min(global.innerHeight, owner.bottom);
-      imageToolbar.hidden = image.bottom <= top || image.top >= bottom || image.right <= left || image.left >= right;
-      if (imageToolbar.hidden) return;
-      imageToolbar.style.maxWidth = `${Math.max(0, right - left)}px`;
-      const x = Math.max(left, Math.min(image.left, right - imageToolbar.offsetWidth));
-      let y = Math.min(image.bottom, bottom) + 6;
-      if (y + imageToolbar.offsetHeight > bottom) y = Math.max(top, image.top - imageToolbar.offsetHeight - 6);
-      imageToolbar.style.left = `${x - owner.left + element.scrollLeft - element.clientLeft}px`;
-      imageToolbar.style.top = `${y - owner.top + element.scrollTop - element.clientTop}px`;
+      contextToolbar.hidden = bounds.bottom <= top || bounds.top >= bottom || bounds.right <= left || bounds.left >= right;
+      if (contextToolbar.hidden) return;
+      contextToolbar.style.maxWidth = `${Math.max(0, right - left)}px`;
+      const x = Math.max(left, Math.min(bounds.left, right - contextToolbar.offsetWidth));
+      let y = Math.min(bounds.bottom, bottom) + 6;
+      if (y + contextToolbar.offsetHeight > bottom) y = Math.max(top, bounds.top - contextToolbar.offsetHeight - 6);
+      contextToolbar.style.left = `${x - owner.left + element.scrollLeft - element.clientLeft}px`;
+      contextToolbar.style.top = `${y - owner.top + element.scrollTop - element.clientTop}px`;
     };
+    /** Create the shared floating toolbar only when an image or code block needs it. */
+    const ensureContextToolbar = () => {
+      if (contextToolbar) return;
+      contextToolbar = node("div", "byEDcontextToolbar");
+      contextToolbar.setAttribute("role", "toolbar");
+      element.append(contextToolbar);
+      listen(contextToolbar, "keydown", (event) => {
+        if (event.key !== "Escape") return;
+        event.preventDefault();
+        hideContextToolbar();
+        restore(position);
+      });
+      listen(contextToolbar, "pointerleave", () => {
+        if (selectedCode && active?.group !== selectedCode.group && !contextToolbar.contains(document.activeElement)) hideContextToolbar();
+      });
+      contextObserver = new ResizeObserver(positionContextToolbar);
+    };
+    /** Show size controls for an editable image without changing its source selection. @param {HTMLImageElement} image */
     const showImageToolbar = (image) => {
       if (previewing || syntax === "source" || !imageMap.has(image)) return;
-      hideImageToolbar();
-      if (!imageToolbar) {
-        imageToolbar = node("div", "byEDimageToolbar");
-        imageToolbar.setAttribute("role", "toolbar");
-        imageToolbar.setAttribute("aria-label", languageText.imageSize);
-        imageToolbar.lang = language;
-        imageOptions = imageSizeOptions((size) => command("imageSize", size));
-        imageToolbar.append(imageOptions);
-        element.append(imageToolbar);
-        listen(imageToolbar, "keydown", (event) => {
-          if (event.key !== "Escape") return;
-          event.preventDefault();
-          hideImageToolbar();
-          restore(position);
-        });
-        imageObserver = new ResizeObserver(positionImageToolbar);
-      }
+      hideContextToolbar();
+      ensureContextToolbar();
+      imageOptions ||= imageSizeOptions((size) => command("imageSize", size));
+      contextToolbar.replaceChildren(imageOptions);
+      contextToolbar.setAttribute("aria-label", languageText.imageSize);
+      contextToolbar.lang = language;
       selectedImage = image;
       image.classList.add("is-selected");
       markImageSize(imageOptions, imageMap.get(image).token.size || "default");
-      positionImageToolbar();
-      imageObserver.observe(image);
-      imageObserver.observe(element);
+      positionContextToolbar();
+      contextObserver.observe(image);
+      contextObserver.observe(element);
+    };
+    /** Fill a code-language selector, retaining existing aliases and custom info strings. @param {HTMLSelectElement} picker @param {string} [current="plain"] */
+    const fillCodeLanguages = (picker, current = "plain") => {
+      picker.replaceChildren();
+      const languages = ["plain", ...(global.byCODEviewer?.languages || []).filter((value) => value !== "plain")];
+      if (!languages.includes(current)) languages.push(current);
+      for (const value of languages) {
+        const option = node("option", "", value === "plain" ? languageText.plainText : value);
+        option.value = value;
+        if (value === "plain") option.dataset.message = "plainText";
+        picker.append(option);
+      }
+      picker.value = current;
+    };
+    /** Show a language selector for the hovered or active code block. @param {Object} record A line in a fenced group. */
+    const showCodeToolbar = (record) => {
+      if (previewing || composing || syntax === "source" || record?.group?.kind !== "fence") return;
+      const opening = lineMap.get(record.group.content.firstElementChild);
+      if (opening?.meta.type !== "fenceOpen" || (selectedCode === opening && !contextToolbar.hidden)) return;
+      hideContextToolbar();
+      ensureContextToolbar();
+      if (!codePicker) {
+        const field = node("label", "byEDcodeLanguage"),
+          caption = node("span", "", languageText.codeLanguage);
+        caption.dataset.message = "codeLanguage";
+        codePicker = node("select");
+        codePicker.dataset.messageLabel = "codeLanguage";
+        codePicker.setAttribute("aria-label", languageText.codeLanguage);
+        field.append(caption, codePicker);
+        listen(codePicker, "change", () => command("codeLanguage", codePicker.value));
+      }
+      fillCodeLanguages(codePicker, opening.meta.language || "plain");
+      contextToolbar.replaceChildren(codePicker.parentElement);
+      contextToolbar.setAttribute("aria-label", languageText.codeLanguage);
+      contextToolbar.lang = language;
+      selectedCode = opening;
+      positionContextToolbar();
+      contextObserver.observe(record.group.node);
+      contextObserver.observe(element);
     };
 
     // --- INCREMENTAL RENDERING ---
@@ -1720,6 +1774,7 @@
       for (const group of nextGroups) {
         delete group.cursor;
         group.node.classList.toggle("is-active", group.kind === "fence" && active?.group === group);
+        if (group.kind === "fence" && active?.group === group) group.node.classList.add("byEDvisited");
       }
       groups = nextGroups;
     };
@@ -1907,7 +1962,7 @@
     // Commit one source edit, update derived views and undo state, then notify the application synchronously.
     const change = (from, to, inserted, next, type = "command", remember = true, native = null) => {
       if (!alive || previewing) return false;
-      hideImageToolbar();
+      hideContextToolbar();
       if (remember && syntax !== "source" && from === to && inserted && !/^[#\s]/.test(inserted)) {
         const record = lines[lineAt(from)];
         // Add the heading separator in the source transaction so typing, paste, and IME agree.
@@ -2121,6 +2176,27 @@
         undo(name === "redo");
         return true;
       }
+      if (name === "codeLanguage") {
+        if (syntax === "source" || typeof value !== "string" || !/^[\w+#.-]*$/.test(value)) return false;
+        const record = selectedCode || lines[lineAt(from)];
+        const opening = record?.group?.kind === "fence" ? lineMap.get(record.group.content.firstElementChild) : null;
+        if (opening?.meta.type !== "fenceOpen") return false;
+        // Change only the info string's language token, preserving the fence, spacing, and code body.
+        const prefix = opening.text.match(/^ {0,3}(?:`{3,}|~{3,})[ \t]*/)[0];
+        const start = opening.from + prefix.length,
+          end = start + opening.text.slice(prefix.length).match(/^\S*/)[0].length,
+          nextLanguage = value || "plain",
+          delta = nextLanguage.length - (end - start),
+          keepToolbar = Boolean(selectedCode);
+        /** Map a source offset past the replaced language token without changing selection direction. @param {number} offset @returns {number} */
+        const adjust = (offset) => (offset <= start ? offset : offset >= end ? offset + delta : start + nextLanguage.length);
+        const changed = change(start, end, nextLanguage, { anchor: adjust(position.anchor), focus: adjust(position.focus) }, name);
+        if (changed && keepToolbar) {
+          showCodeToolbar(lines[lineAt(opening.from)]);
+          codePicker.focus({ preventScroll: true });
+        }
+        return changed;
+      }
       if (name === "imageSize") {
         if (!imageSizes.includes(value)) return false;
         const selected = selectedImage && imageMap.get(selectedImage);
@@ -2243,7 +2319,7 @@
     // Own one insertion dialog at a time and retain the source selection while focus is inside it.
     const openDialog = (name) => {
       if (dialog) return;
-      hideImageToolbar();
+      hideContextToolbar();
       savedPosition = selection();
       dialogAbort = new AbortController();
       const dialogListen = (target, type, handler) => listen(target, type, handler, { signal: dialogAbort.signal });
@@ -2284,14 +2360,7 @@
         field("columns", "columns", "number", "2", 20);
       } else if (name === "codeBlock") {
         field("language", "codeLanguage", "select", "plain");
-        const languages = global.byCODEviewer?.languages || [];
-        for (const value of ["plain", ...languages.filter((value) => value !== "plain")]) {
-          const option = node("option", "", value === "plain" ? languageText.plainText : value);
-          option.value = value;
-          if (value === "plain") option.dataset.message = "plainText";
-          fields.language.append(option);
-        }
-        fields.language.value = "plain";
+        fillCodeLanguages(fields.language);
       } else {
         field("url", name === "image" ? "imageUrl" : "url", "text", "https://");
         field("label", name === "image" ? "imageDescription" : "linkText", "text", source.slice(Math.min(savedPosition.anchor, savedPosition.focus), Math.max(savedPosition.anchor, savedPosition.focus)));
@@ -2669,7 +2738,7 @@
       document,
       "pointerdown",
       (event) => {
-        if (!imageToolbar?.contains(event.target) && event.target !== selectedImage) hideImageToolbar();
+        if (!contextToolbar?.contains(event.target) && event.target !== selectedImage && !selectedCode?.group.node.contains(event.target)) hideContextToolbar();
         if (element.contains(event.target) || !element.contains(document.activeElement)) return;
         position = selection();
         // Empty host space can hit-test to the nearest editable line outside its bounds.
@@ -2694,7 +2763,7 @@
     listen(element, "focusout", (event) => {
       if (!element.contains(event.relatedTarget)) {
         activate(null);
-        hideImageToolbar();
+        hideContextToolbar();
       }
     });
     listen(surface, "pointerdown", (event) => {
@@ -2710,6 +2779,14 @@
     listen(surface, "focusin", (event) => {
       if (event.target.matches(".byEDimage")) showImageToolbar(event.target);
     });
+    listen(surface, "pointerover", (event) => {
+      const fence = event.target.closest(".byEDgroup-fence");
+      if (fence && !fence.contains(event.relatedTarget)) showCodeToolbar(lineMap.get(fence.querySelector(".byEDline")));
+    });
+    listen(surface, "pointerout", (event) => {
+      if (!selectedCode || active?.group === selectedCode.group || contextToolbar.contains(document.activeElement)) return;
+      if (!selectedCode.group.node.contains(event.relatedTarget) && !contextToolbar.contains(event.relatedTarget)) hideContextToolbar();
+    });
     listen(
       surface,
       "keydown",
@@ -2718,7 +2795,7 @@
         event.preventDefault();
         event.stopImmediatePropagation();
         if (event.key === "Escape") {
-          hideImageToolbar();
+          hideContextToolbar();
           restore(position);
         } else {
           showImageToolbar(event.target);
@@ -2728,13 +2805,13 @@
       { capture: true }
     );
     listen(global, "resize", () => {
-      if (selectedImage) positionImageToolbar();
+      if (selectedImage || selectedCode) positionContextToolbar();
     });
     listen(
       document,
       "scroll",
       () => {
-        if (selectedImage) positionImageToolbar();
+        if (selectedImage || selectedCode) positionContextToolbar();
       },
       { capture: true }
     );
@@ -2771,7 +2848,7 @@
         if (typeof value !== "string") throw new TypeError("byMDeditor.setMarkdown: value must be a string.");
         if (value.length > 2000000) throw new RangeError("Document exceeds 2,000,000 characters.");
         finishComposition();
-        hideImageToolbar();
+        hideContextToolbar();
         source = value;
         eol = source.match(/\r\n|\r|\n/)?.[0] || "\n";
         syncRawBreaks();
@@ -2796,7 +2873,7 @@
           return;
         }
         finishComposition();
-        hideImageToolbar();
+        hideContextToolbar();
         if (!previewing) position = selection();
         // Source mode can retain a hidden visual document built in a different mode.
         const rebuild = renderedNoCode !== (mode === "no-code");
@@ -2843,7 +2920,7 @@
       setPreview(visible) {
         if (!alive) return;
         finishComposition();
-        hideImageToolbar();
+        hideContextToolbar();
         if (!previewing) savedPosition = selection();
         if (visible && typeof global.byMDviewer !== "function") {
           announce("previewNeedsViewer");
@@ -2933,7 +3010,7 @@
         if (!alive) return;
         // Commit browser-owned IME text before releasing listeners; this may call onChange during teardown.
         finishComposition();
-        hideImageToolbar();
+        hideContextToolbar();
         alive = false;
         abort.abort();
         dialogAbort?.abort();

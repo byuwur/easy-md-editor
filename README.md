@@ -77,7 +77,7 @@ No database, network requests, autosave, or browser storage are built in.
 | `syntaxSelect`     | `true`                                  | Show the editing-mode selector.                                                                                             |
 | `previewToggle`    | `true`                                  | Show the Preview button.                                                                                                    |
 | `themeToggle`      | `true`                                  | Show the light/dark theme switch.                                                                                           |
-| `statusBar`        | `true`                                  | Show editing status and guidance.                                                                                           |
+| `statusBar`        | `false`                                 | Show editing status and guidance.                                                                                           |
 | `shortcuts`        | `true`                                  | Enable Ctrl/Cmd+B, I, Z, Shift+Z, and Y.                                                                                    |
 | `codeHighlighting` | `true`                                  | Use CODE.view for fenced-code colors while editing and in Preview.                                                          |
 | `theme`            | Container theme, otherwise light        | `"light"` or `"dark"`; named palettes use container attributes below.                                                       |
@@ -97,7 +97,9 @@ Use `editor.setAnimations(false)` to change motion without recreating the editor
 
 ### Syntax and Preview
 
-**No-code** keeps Markdown delimiters hidden, including in the active line or code block. Format text with the toolbar. An inline formatting command at an empty caret inserts selected placeholder text for you to replace. **Clean** hides completed delimiters and reveals them in the active line. **Assisted** keeps them visible in a muted color, with stronger contrast on the active line. **Source** is a normal Markdown textarea. Clean remains the default.
+**No-code** keeps Markdown delimiters hidden, including in the active line or code block. Format text with the toolbar. An inline formatting command at an empty caret inserts selected placeholder text for you to replace. **Clean** hides completed delimiters and reveals them in the active line. Code fences reveal together and resize their block with the syntax transition when animations are enabled and the browser supports intrinsic-size transitions. **Assisted** keeps them visible in a muted color, with stronger contrast on the active line. **Source** is a normal Markdown textarea. Clean remains the default.
+
+Hover or edit a fenced code block to show its floating language selector. The selector is also reachable with Tab; Escape returns to editing. Changing the language preserves the code, fence markers, source line endings, and directed selection, and creates one undo step. Existing aliases and custom languages remain selectable. Plain Text disables code colors. Source and Preview do not show these controls.
 
 For a fixed No-code interface, use `syntax: "no-code", syntaxSelect: false, previewToggle: false`. Visibility options hide controls; `setSyntaxMode()`, `setPreview()`, `setTheme()`, and `setPalette()` remain available to the host application.
 
@@ -173,6 +175,7 @@ editor.destroy();
 | `imageSize`                                                                           | `"default"`, `"original"`, `"xs"`, `"small"`, `"regular"`, `"large"`, or `"xl"`; resize the selected image or the image containing the caret |
 | `table`                                                                               | `{ rows, columns }`; omit for the size dialog; rows exclude the header                                                                       |
 | `codeBlock`                                                                           | Language string, or `""` for plain code; omit for the language dialog                                                                        |
+| `codeLanguage`                                                                        | Language string, or `"plain"` for plain code; change the hovered or current fenced block in a visual editing mode                            |
 | `undo`, `redo`                                                                        | None                                                                                                                                         |
 
 `destroy()` removes owned DOM and listeners and releases history. Keep the source before destroying if your application needs it. Read the library version with `byMDeditor.VERSION`.

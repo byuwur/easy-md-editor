@@ -289,7 +289,7 @@
   outline: 0.125rem solid var(--by-ed-accent);
   outline-offset: 0.125rem;
 }
-.byEDimageToolbar {
+.byEDcontextToolbar {
   position: absolute;
   z-index: 2;
   width: max-content;
@@ -301,6 +301,16 @@
   color: var(--by-ed-text);
   box-shadow: 0 0.2rem 0.6rem #0003;
   font-size: 0.8125rem;
+}
+.byEDcodeLanguage {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  min-width: 0;
+}
+.byEDcodeLanguage select {
+  min-width: 0;
+  max-width: 16em;
 }
 .byEDimageSizes {
   display: flex;
@@ -627,7 +637,31 @@ fieldset.byEDfield {
   transition: color var(--by-view-motion-duration) ease-out;
 }
 @supports (interpolate-size: allow-keywords) {
-  /* Only visited inline markers move; code fences keep their native text layout. */
+  /* Visited fence rows resize their block as the delimiters appear and disappear. */
+  .byMDeditor.byVIEWmotion[data-syntax="clean"] .byEDgroup-fence.byEDvisited .byEDline:is([data-type="fenceOpen"], [data-type="fenceClose"]) {
+    display: block;
+    interpolate-size: allow-keywords;
+    min-block-size: 0;
+    block-size: 0;
+    opacity: 0;
+    overflow: clip;
+    transition:
+      block-size var(--by-view-motion-duration) ease,
+      opacity var(--by-view-motion-duration) ease-out;
+  }
+  .byMDeditor.byVIEWmotion[data-syntax="clean"] .byEDgroup-fence.byEDvisited .byEDline:is([data-type="fenceOpen"], [data-type="fenceClose"]) .byEDsyntax {
+    display: inline;
+    color: var(--by-ed-muted);
+  }
+  .byMDeditor.byVIEWmotion[data-syntax="clean"] .byEDgroup-fence.byEDvisited.is-active .byEDline:is([data-type="fenceOpen"], [data-type="fenceClose"]) {
+    block-size: auto;
+    opacity: 1;
+    @starting-style {
+      block-size: 0;
+      opacity: 0;
+    }
+  }
+  /* Inline marker motion remains limited to visited lines. */
   .byMDeditor.byVIEWmotion[data-syntax="clean"] .byEDline.byEDvisited:not([data-type="fenceOpen"], [data-type="fenceClose"], [data-type="tableDelimiter"], [data-type="rule"]) .byEDsyntax {
     display: inline-block;
     interpolate-size: allow-keywords;

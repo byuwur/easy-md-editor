@@ -60,6 +60,32 @@ test("MD editor playground loads, updates, and copies a starter", { timeout: 300
   assert.equal(await page.locator("#download-release").getAttribute("href"), "https://github.com/byuwur/md.edit/releases/download/v2/md.edit.v2.zip");
   assert.equal(await page.locator("#download-minified").getAttribute("href"), "https://github.com/byuwur/md.edit/releases/download/v2/md.edit.v2.minified.zip");
   await page.locator("#editor.byMDeditor").waitFor();
+  assert.equal(await page.locator("#statusBar").isChecked(), false);
+  assert.equal(await page.locator("#editor .byEDstatus").isVisible(), false);
+  await page.getByText("Editor controls", { exact: true }).click();
+  await page.getByText("Configuration JSON", { exact: true }).click();
+  for (const theme of ["light", "dark"]) {
+    if ((await page.locator("html").getAttribute("data-bs-theme")) !== theme) await page.locator("#site-theme").click();
+    const contrast = await page.waitForFunction(() => {
+      const style = getComputedStyle(document.getElementById("options-json")),
+        body = getComputedStyle(document.body);
+      if (style.color !== body.color || style.backgroundColor !== body.backgroundColor) return false;
+      /** Convert a computed RGB color to relative luminance. @param {string} color @returns {number} */
+      const luminance = (color) =>
+        color
+          .match(/[\d.]+/g)
+          .slice(0, 3)
+          .reduce((sum, value, index) => {
+            const channel = Number(value) / 255;
+            return sum + (channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4) * [0.2126, 0.7152, 0.0722][index];
+          }, 0);
+      const values = [luminance(style.color), luminance(style.backgroundColor)];
+      const ratio = (Math.max(...values) + 0.05) / (Math.min(...values) + 0.05);
+      return ratio >= 4.5 ? ratio : false;
+    });
+    assert.ok((await contrast.jsonValue()) >= 4.5, `Configuration JSON stays readable in ${theme}`);
+    await contrast.dispose();
+  }
   const surface = page.locator("#editor .byEDsurface");
   await surface.click();
   await surface.press("ControlOrMeta+A");
