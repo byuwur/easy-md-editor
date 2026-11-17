@@ -24,10 +24,10 @@ test("MD editor library", { timeout: 30000 }, async (t) => {
   await page.route("**/*", (route) => (route.request().url().endsWith("fontawesome.min.css") ? route.fulfill({ body: "", contentType: "text/css" }) : route.abort()));
   await page.setContent('<!doctype html><meta charset="UTF-8"><div id="viewer"></div>');
   // Exercise the real published companion APIs, checked out beside the editor in CI.
-  await page.addStyleTag({ path: path.join(__dirname, "../../easy-md-viewer/md.css") });
-  await page.addScriptTag({ path: path.join(__dirname, "../../easy-md-viewer/md.js") });
-  await page.addStyleTag({ path: path.join(__dirname, "../../easy-code-viewer/code.css") });
-  await page.addScriptTag({ path: path.join(__dirname, "../../easy-code-viewer/code.js") });
+  await page.addStyleTag({ path: path.join(__dirname, "../../md.view/md.css") });
+  await page.addScriptTag({ path: path.join(__dirname, "../../md.view/md.js") });
+  await page.addStyleTag({ path: path.join(__dirname, "../../code.view/code.css") });
+  await page.addScriptTag({ path: path.join(__dirname, "../../code.view/code.js") });
   await page.addStyleTag({ path: path.join(__dirname, "../md.edit.css") });
   await page.addScriptTag({ path: path.join(__dirname, "../md.edit.js") });
   await page.evaluate(() => {

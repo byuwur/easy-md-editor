@@ -27,26 +27,26 @@ jobs:
     timeout-minutes: 10
     defaults:
       run:
-        working-directory: easy-md-editor
+        working-directory: md.edit
     env:
       RELEASE_TAG: ${{ github.event_name == 'push' && github.ref_type == 'tag' && github.ref_name || 'v0.0.0-ci' }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          path: easy-md-editor
+          path: md.edit
           persist-credentials: false
       - uses: actions/checkout@v4
         with:
-          repository: byuwur/easy-code-viewer
+          repository: byuwur/code.view
           ref: v1.9
-          path: easy-code-viewer
+          path: code.view
           persist-credentials: false
       - uses: actions/checkout@v4
         with:
-          repository: byuwur/easy-md-viewer
+          repository: byuwur/md.view
           ref: v2.10
-          path: easy-md-viewer
+          path: md.view
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
@@ -65,7 +65,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: tested-release
-          path: easy-md-editor/dist/assets/
+          path: md.edit/dist/assets/
           if-no-files-found: error
           retention-days: 7
 

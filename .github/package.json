@@ -1,5 +1,5 @@
 {
-  "name": "easy-md-editor-release",
+  "name": "md.edit",
   "private": true,
   "engines": {
     "node": ">=22"

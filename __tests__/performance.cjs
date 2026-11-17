@@ -19,8 +19,8 @@ const summary = (values) => ({ median: percentile(values, 0.5), p95: percentile(
       return route.abort();
     });
     await page.setContent('<style>body{margin:1rem}#editor{max-width:60rem}</style><div id="editor"></div>');
-    for (const file of ["../../easy-md-viewer/md.css", "../../easy-code-viewer/code.css", "../md.edit.css"]) await page.addStyleTag({ path: path.join(__dirname, file) });
-    for (const file of ["../../easy-code-viewer/code.js", "../../easy-md-viewer/md.js", "../md.edit.js"]) await page.addScriptTag({ path: path.join(__dirname, file) });
+    for (const file of ["../../md.view/md.css", "../../code.view/code.css", "../md.edit.css"]) await page.addStyleTag({ path: path.join(__dirname, file) });
+    for (const file of ["../../code.view/code.js", "../../md.view/md.js", "../md.edit.js"]) await page.addScriptTag({ path: path.join(__dirname, file) });
     // CPU throttling and heap collection use Chromium DevTools, so this benchmark is Chromium-only.
     const cdp = await page.context().newCDPSession(page);
     await cdp.send("Performance.enable");

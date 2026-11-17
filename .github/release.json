@@ -1,9 +1,9 @@
 {
-  "repository": "byuwur/easy-md-editor",
+  "repository": "byuwur/md.edit",
   "branch": "main",
   "kind": "easy",
   "runtime": ["md.edit.js", "md.edit.css"],
   "tests": ["rendering.cjs"],
-  "companions": ["easy-code-viewer", "easy-md-viewer"],
-  "notes": ["Requires easy-md-viewer; easy-code-viewer adds syntax colors. Host Font Awesome locally for offline icons."]
+  "companions": ["code.view", "md.view"],
+  "notes": ["Requires MD.view; CODE.view adds syntax colors. Host Font Awesome locally for offline icons."]
 }

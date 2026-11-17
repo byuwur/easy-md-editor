@@ -1,7 +1,7 @@
 "use strict";
 /*
  * File: md.edit.js
- * Desc: Source-driven Markdown editing with easy-md-viewer parsing and easy-code-viewer colors.
+ * Desc: Source-driven Markdown editing with MD.view parsing and CODE.view colors.
  * Copyright (c) 2026 Andres Trujillo [Mateus] byUwUr
  * MIT License (see LICENSE).
  */
@@ -144,8 +144,8 @@
     const document = element.ownerDocument;
     if (document.defaultView.getComputedStyle(document.documentElement).getPropertyValue("--by-md-themes-loaded").trim() === "1") return;
     warnedPalettes.add(palette);
-    // console.warn(`easy-md-editor: Palette "${palette}" requires md.themes.css. Import it after md.css. https://byuwur.github.io/easy-md-viewer/`);
-    console.warn(`easy-md-editor: Palette "${palette}" requires md.themes.css. Import it after md.css. https://md.byuwur.co/`);
+    // console.warn(`MD.edit: Palette "${palette}" requires md.themes.css. Import it after md.css. https://byuwur.github.io/md.view/`);
+    console.warn(`MD.edit: Palette "${palette}" requires md.themes.css. Import it after md.css. https://md.byuwur.co/`);
   };
 
   // Explicit appearance options override markup; omitted values preserve the container's state.
@@ -251,11 +251,11 @@
       oneTableLine: "Markdown table cells use one line. Press Enter for the next row, or Tab for the next cell.",
       pasteTableLine: "Paste one line into a table cell, or use Source for multiple rows.",
       pasteText: "Paste text here, or use Image to insert an image URL.",
-      visualNeedsParser: "Visual editing requires the updated easy-md-viewer parser. Source editing remains available.",
-      previewNeedsViewer: "Load easy-md-viewer to enable Preview.",
+      visualNeedsParser: "Visual editing requires the updated MD.view parser. Source editing remains available.",
+      previewNeedsViewer: "Load MD.view to enable Preview.",
       readOnlyPreview: "Read-only preview.",
       editingDocument: "Editing document.",
-      sourceOnlyWarning: "Visual editing needs easy-md-viewer with parseInline() and scanLine(). You can edit Markdown in Source mode."
+      sourceOnlyWarning: "Visual editing needs MD.view with parseInline() and scanLine(). You can edit Markdown in Source mode."
     },
     es: {
       document: "Documento",
@@ -336,11 +336,11 @@
       oneTableLine: "Las celdas Markdown usan una sola línea. Pulsa Enter para pasar a la siguiente fila o Tab para la siguiente celda.",
       pasteTableLine: "Pega una sola línea en una celda o usa Fuente para varias filas.",
       pasteText: "Pega texto aquí o usa Imagen para insertar la URL de una imagen.",
-      visualNeedsParser: "La edición visual requiere el analizador actualizado de easy-md-viewer. Puedes seguir editando en Fuente.",
-      previewNeedsViewer: "Carga easy-md-viewer para habilitar la vista previa.",
+      visualNeedsParser: "La edición visual requiere el analizador actualizado de MD.view. Puedes seguir editando en Fuente.",
+      previewNeedsViewer: "Carga MD.view para habilitar la vista previa.",
       readOnlyPreview: "Vista previa de solo lectura.",
       editingDocument: "Editando el documento.",
-      sourceOnlyWarning: "La edición visual necesita easy-md-viewer con parseInline() y scanLine(). Puedes editar Markdown en el modo Fuente."
+      sourceOnlyWarning: "La edición visual necesita MD.view con parseInline() y scanLine(). Puedes editar Markdown en el modo Fuente."
     },
     pt: {
       document: "Documento",
@@ -421,11 +421,11 @@
       oneTableLine: "As células Markdown usam uma só linha. Pressione Enter para ir à próxima linha ou Tab para a próxima célula.",
       pasteTableLine: "Cole uma só linha em uma célula ou use Fonte para várias linhas da tabela.",
       pasteText: "Cole texto aqui ou use Imagem para inserir a URL de uma imagem.",
-      visualNeedsParser: "A edição visual requer o analisador atualizado do easy-md-viewer. A edição em Fonte continua disponível.",
-      previewNeedsViewer: "Carregue easy-md-viewer para habilitar a prévia.",
+      visualNeedsParser: "A edição visual requer o analisador atualizado do MD.view. A edição em Fonte continua disponível.",
+      previewNeedsViewer: "Carregue MD.view para habilitar a prévia.",
       readOnlyPreview: "Prévia somente para leitura.",
       editingDocument: "Editando o documento.",
-      sourceOnlyWarning: "A edição visual precisa do easy-md-viewer com parseInline() e scanLine(). Você pode editar Markdown no modo Fonte."
+      sourceOnlyWarning: "A edição visual precisa do MD.view com parseInline() e scanLine(). Você pode editar Markdown no modo Fonte."
     },
     fr: {
       document: "Document",
@@ -506,11 +506,11 @@
       oneTableLine: "Une cellule Markdown tient sur une ligne. Appuyez sur Entrée pour passer à la ligne suivante ou sur Tab pour la cellule suivante.",
       pasteTableLine: "Collez une seule ligne dans une cellule ou utilisez Source pour plusieurs lignes du tableau.",
       pasteText: "Collez du texte ici ou utilisez Image pour insérer l'URL d'une image.",
-      visualNeedsParser: "L'édition visuelle nécessite l'analyseur à jour d'easy-md-viewer. L'édition en mode Source reste disponible.",
-      previewNeedsViewer: "Chargez easy-md-viewer pour activer l'aperçu.",
+      visualNeedsParser: "L'édition visuelle nécessite l'analyseur à jour d'MD.view. L'édition en mode Source reste disponible.",
+      previewNeedsViewer: "Chargez MD.view pour activer l'aperçu.",
       readOnlyPreview: "Aperçu en lecture seule.",
       editingDocument: "Modification du document.",
-      sourceOnlyWarning: "L'édition visuelle nécessite easy-md-viewer avec parseInline() et scanLine(). Vous pouvez modifier le Markdown en mode Source."
+      sourceOnlyWarning: "L'édition visuelle nécessite MD.view avec parseInline() et scanLine(). Vous pouvez modifier le Markdown en mode Source."
     },
     de: {
       document: "Dokument",
@@ -591,11 +591,11 @@
       oneTableLine: "Markdown-Tabellenzellen bestehen aus einer Zeile. Mit Eingabe wechselst du zur nächsten Zeile, mit Tab zur nächsten Zelle.",
       pasteTableLine: "Füge eine Zeile in eine Tabellenzelle ein oder verwende den Quelltextmodus für mehrere Tabellenzeilen.",
       pasteText: "Füge hier Text ein oder verwende Bild, um eine Bild-URL einzufügen.",
-      visualNeedsParser: "Die visuelle Bearbeitung benötigt den aktuellen Parser von easy-md-viewer. Die Quelltextbearbeitung bleibt verfügbar.",
-      previewNeedsViewer: "Lade easy-md-viewer, um die Vorschau zu aktivieren.",
+      visualNeedsParser: "Die visuelle Bearbeitung benötigt den aktuellen Parser von MD.view. Die Quelltextbearbeitung bleibt verfügbar.",
+      previewNeedsViewer: "Lade MD.view, um die Vorschau zu aktivieren.",
       readOnlyPreview: "Schreibgeschützte Vorschau.",
       editingDocument: "Dokument wird bearbeitet.",
-      sourceOnlyWarning: "Die visuelle Bearbeitung benötigt easy-md-viewer mit parseInline() und scanLine(). Du kannst Markdown im Quelltextmodus bearbeiten."
+      sourceOnlyWarning: "Die visuelle Bearbeitung benötigt MD.view mit parseInline() und scanLine(). Du kannst Markdown im Quelltextmodus bearbeiten."
     },
     it: {
       document: "Documento",
@@ -676,11 +676,11 @@
       oneTableLine: "Le celle Markdown occupano una sola riga. Premi Invio per la riga successiva o Tab per la cella successiva.",
       pasteTableLine: "Incolla una sola riga in una cella o usa Sorgente per più righe della tabella.",
       pasteText: "Incolla il testo qui o usa Immagine per inserire l'URL di un'immagine.",
-      visualNeedsParser: "La modifica visuale richiede il parser aggiornato di easy-md-viewer. La modifica in Sorgente resta disponibile.",
-      previewNeedsViewer: "Carica easy-md-viewer per abilitare l'anteprima.",
+      visualNeedsParser: "La modifica visuale richiede il parser aggiornato di MD.view. La modifica in Sorgente resta disponibile.",
+      previewNeedsViewer: "Carica MD.view per abilitare l'anteprima.",
       readOnlyPreview: "Anteprima di sola lettura.",
       editingDocument: "Modifica del documento.",
-      sourceOnlyWarning: "La modifica visuale richiede easy-md-viewer con parseInline() e scanLine(). Puoi modificare Markdown in modalità Sorgente."
+      sourceOnlyWarning: "La modifica visuale richiede MD.view con parseInline() e scanLine(). Puoi modificare Markdown in modalità Sorgente."
     },
     ja: {
       document: "ドキュメント",
@@ -761,11 +761,11 @@
       oneTableLine: "Markdownの表のセルは1行です。Enterで次の行、Tabで次のセルに移動します。",
       pasteTableLine: "セルには1行だけ貼り付けてください。複数行にはソースモードを使用してください。",
       pasteText: "ここにテキストを貼り付けるか、「画像」で画像のURLを挿入してください。",
-      visualNeedsParser: "ビジュアル編集には最新版のeasy-md-viewerパーサーが必要です。ソース編集は引き続き使用できます。",
-      previewNeedsViewer: "プレビューにはeasy-md-viewerを読み込んでください。",
+      visualNeedsParser: "ビジュアル編集には最新版のMD.viewパーサーが必要です。ソース編集は引き続き使用できます。",
+      previewNeedsViewer: "プレビューにはMD.viewを読み込んでください。",
       readOnlyPreview: "読み取り専用のプレビューです。",
       editingDocument: "ドキュメントを編集中です。",
-      sourceOnlyWarning: "ビジュアル編集にはparseInline()とscanLine()を備えたeasy-md-viewerが必要です。ソースモードでMarkdownを編集できます。"
+      sourceOnlyWarning: "ビジュアル編集にはparseInline()とscanLine()を備えたMD.viewが必要です。ソースモードでMarkdownを編集できます。"
     },
     zh: {
       document: "文档",
@@ -845,12 +845,12 @@
       insert: "插入",
       oneTableLine: "Markdown表格的单元格只能有一行。按Enter移至下一行，按Tab移至下一个单元格。",
       pasteTableLine: "请在单元格中粘贴单行文本，或使用源码模式粘贴多行表格。",
-      pasteText: "在此处粘贴文本，或使用\"图片\"插入图片URL。",
-      visualNeedsParser: "可视化编辑需要最新版easy-md-viewer解析器。源码编辑仍然可用。",
-      previewNeedsViewer: "请加载easy-md-viewer以启用预览。",
+      pasteText: '在此处粘贴文本，或使用"图片"插入图片URL。',
+      visualNeedsParser: "可视化编辑需要最新版MD.view解析器。源码编辑仍然可用。",
+      previewNeedsViewer: "请加载MD.view以启用预览。",
       readOnlyPreview: "只读预览。",
       editingDocument: "正在编辑文档。",
-      sourceOnlyWarning: "可视化编辑需要支持parseInline()和scanLine()的easy-md-viewer。您可以在源码模式下编辑Markdown。"
+      sourceOnlyWarning: "可视化编辑需要支持parseInline()和scanLine()的MD.view。您可以在源码模式下编辑Markdown。"
     }
   };
 
@@ -877,7 +877,7 @@
     }
     if (!automatic && !warnedLanguages.has(canonical)) {
       warnedLanguages.add(canonical);
-      console.warn(`easy-md-editor: Translations for "${canonical}" are unavailable. Add a dictionary to byMDeditor.locales. Using English.`);
+      console.warn(`MD.edit: Translations for "${canonical}" are unavailable. Add a dictionary to byMDeditor.locales. Using English.`);
     }
     return "en";
   };
@@ -937,8 +937,8 @@
     // Companion capabilities are captured at mount; loading a newer MD viewer requires reinitialization.
     const rich = typeof global.byMDviewer?.parseInline === "function" && typeof global.byMDviewer?.scanLine === "function";
     if (!rich) {
-      // console.warn("easy-md-editor: Visual editing requires easy-md-viewer with parseInline() and scanLine(). Source editing remains available. https://byuwur.github.io/easy-md-viewer/");
-      console.warn("easy-md-editor: Visual editing requires easy-md-viewer with parseInline() and scanLine(). Source editing remains available. https://md.byuwur.co/");
+      // console.warn("MD.edit: Visual editing requires MD.view with parseInline() and scanLine(). Source editing remains available. https://byuwur.github.io/md.view/");
+      console.warn("MD.edit: Visual editing requires MD.view with parseInline() and scanLine(). Source editing remains available. https://md.byuwur.co/");
       syntax = "source";
     }
     const abort = new AbortController(),
