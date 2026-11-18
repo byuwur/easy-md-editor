@@ -86,11 +86,21 @@ test("MD editor playground loads, updates, and copies a starter", { timeout: 300
     assert.ok((await contrast.jsonValue()) >= 4.5, `Configuration JSON stays readable in ${theme}`);
     await contrast.dispose();
   }
+  await page.selectOption("#document-source", "custom");
+  await page.evaluate(() => {
+    File.prototype.text = () =>
+      new Promise((resolve) => {
+        window.finishFileRead = () => resolve("older file");
+      });
+  });
+  await page.locator("#file").setInputFiles({ name: "old.md", mimeType: "text/markdown", buffer: Buffer.from("older file") });
   const surface = page.locator("#editor .byEDsurface");
   await surface.click();
   await surface.press("ControlOrMeta+A");
   await surface.pressSequentially("PLAYGROUND_CORE");
   await page.waitForFunction(() => document.getElementById("source-characters").textContent === String("PLAYGROUND_CORE".length));
+  await page.evaluate(() => window.finishFileRead());
+  assert.equal(await page.evaluate(() => playgroundEditor.getMarkdown()), "PLAYGROUND_CORE");
   await page.locator("#copy-integration").click();
   await page.waitForFunction(() => typeof window.copiedHTML === "string");
   assert.match(await page.evaluate(() => window.copiedHTML), /md\.edit(?:\.min)?\.js/);

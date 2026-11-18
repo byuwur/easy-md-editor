@@ -645,6 +645,7 @@
         }
         const editor = byMDeditor(document.getElementById("editor"), sample, {
           onChange(markdown) {
+            ++fileRequest;
             documents[activeSource].source = markdown;
             clearTimeout(outputTimer);
             outputTimer = setTimeout(() => updateOutput(markdown), 150);
