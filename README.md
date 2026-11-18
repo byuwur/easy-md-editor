@@ -1,18 +1,21 @@
 # MD.edit
 
+Edit Markdown in place and read the original Markdown back when your application saves. MD.view supplies parsing and preview. CODE.view adds optional syntax highlighting.
+
 ![MD.edit preview](prev.jpg)
 
-**Markdown, made to be written.**
+## Index
 
-Write a document, use familiar formatting tools, and get ordinary Markdown back. For notes, documentation, terms and conditions, and other text your application needs to store or move around.
+1. [Quick start](#quick-start)
+2. [Try it](#try-it)
+3. [Downloads](#downloads)
+4. [API and options](#api-and-options)
+5. [Themes](#themes)
+6. [Checks and releases](#checks-and-releases)
+7. [Related projects](#related-projects)
+8. [License](#license)
 
-The document is editable where it is rendered. No permanent split screen. No HTML-to-Markdown conversion. No storage decisions made for you.
-
-Plain JavaScript. One editor script and one scoped stylesheet. No build step or editor engine. [MD.view](https://github.com/byuwur/md.view) supplies the Markdown rules and exact Preview; [CODE.view](https://github.com/byuwur/code.view) highlights fenced code while editing and in Preview.
-
-## Installation
-
-Load the editor and its companions from the CDN:
+## Quick start
 
 ```html
 <link href="https://cdn.jsdelivr.net/gh/byuwur/md.view@latest/md.min.css" rel="stylesheet" />
@@ -21,25 +24,7 @@ Load the editor and its companions from the CDN:
 <script src="https://cdn.jsdelivr.net/gh/byuwur/code.view@latest/code.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/gh/byuwur/md.view@latest/md.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/gh/byuwur/md.edit@latest/md.edit.min.js" defer></script>
-```
 
-Visual editing requires the MD viewer's `parseInline()` and `scanLine()` APIs; live code colors use CODE's `tokenize()` API. The playground pins its companions to numbered releases; documentation and exported examples use `@latest`. Use explicit release tags in deployed pages. In your own page, load the companions before creating an editor. An older or missing MD viewer logs a console warning and leaves Source editing available until reinitialization; missing CODE leaves fenced code editable as plain text.
-
-`md.edit.css` imports Font Awesome for the toolbar icons. Buttons keep readable labels when icons are unavailable; no extra HTML import is needed.
-
-The editor script fetches no assets. For offline use, keep the companion files locally too. To keep the icons offline, download Font Awesome and its fonts and point the import in `md.edit.css` to your local stylesheet. `@latest` follows published releases; pin a tag or commit when you need a fixed version.
-
-## Offline use and Content Security Policy
-
-For an offline host, serve `md.edit.js`, `md.edit.css`, `md.js`, and `md.css` locally, plus `code.js` and `code.css` when highlighting is wanted. MD is required for visual modes and Preview; CODE is optional. Extra palettes require local `md.themes.css`. Remove the Font Awesome `@import` from your local editor stylesheet to use text labels, or host that stylesheet and its referenced fonts locally. Keep `controlsCompact: false` when omitting icons. Content images also need local URLs for offline display.
-
-For CSP, allow the script and stylesheet origins. Move example inline initialization into an allowed external script, or authorize it with a nonce/hash; no `unsafe-eval` is needed. Font Awesome needs `style-src` permission for its import and `font-src` permission for its fonts unless removed or self-hosted. Allow Markdown image origins in `img-src`. Appearance controls write individual style properties; host-authored inline style attributes and custom theme `<style>` blocks need their own policy authorization. A script nonce does not authorize those styles. Control templates use `innerHTML` for static markup and do not currently support enforced Trusted Types (`require-trusted-types-for 'script'`).
-
-The online playground and exported CDN starter require network access. The playground additionally loads Bootstrap, Pickr, companions, inline scripts/styles, and generated previews; its requirements exceed those of a standalone host. Local starters still need the CSS import and content image requirements above handled by the host.
-
-## Usage
-
-```html
 <div id="document" class="light" data-theme="github"></div>
 <script>
   document.addEventListener("DOMContentLoaded", () => {
@@ -56,11 +41,36 @@ The online playground and exported CDN starter require network access. The playg
 </script>
 ```
 
+Pin a published tag in place of `@latest` for a fixed version. Visual modes require MD.view; source editing works on its own. Without CODE.view, fenced code stays editable as plain text. Your application owns saving.
+
+### Offline use and Content Security Policy
+
+For an offline host, serve `md.edit.js`, `md.edit.css`, `md.js`, and `md.css` locally, plus `code.js` and `code.css` when highlighting is wanted. MD is required for visual modes and Preview; CODE is optional. Extra palettes require local `md.themes.css`. Remove the Font Awesome `@import` from your local editor stylesheet to use text labels, or host that stylesheet and its referenced fonts locally. Keep `controlsCompact: false` when omitting icons. Content images also need local URLs for offline display.
+
+Allow the script and style origins in your CSP. Authorize inline initialization and custom theme CSS separately, or move them into local files. The controls use static HTML templates and do not support enforced Trusted Types. Font Awesome needs `font-src`, and Markdown images need their origins in `img-src`.
+
+## Try it
+
+[Playground](https://mdedit.byuwur.co/)
+
+Run `node __tests__/serve.cjs` and open [the local playground](http://127.0.0.1:4173) to try editing, file import, starter export and Print / PDF.
+
+## Downloads
+
+[ZIP](https://github.com/byuwur/md.edit/releases/latest/download/md.edit.zip) · [Minified ZIP](https://github.com/byuwur/md.edit/releases/latest/download/md.edit.minified.zip)
+
+## API and options
+
+1. [Options](#options)
+2. [API](#api)
+3. [Languages](#languages)
+4. [Supported Markdown and limits](#supported-markdown-and-limits)
+
 The second argument accepts a string or an `HTMLElement` containing Markdown. Omit it to use the target's text. Each container owns its own state, history, and selection; initializing it again destroys its previous editor.
 
 No database, network requests, autosave, or browser storage are built in.
 
-## Options
+### Options
 
 | Option             | Default                                 | Meaning                                                                                                                     |
 | ------------------ | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
@@ -93,7 +103,7 @@ For a smaller toolbar: `tools: ["heading", "bold", "italic", "link", "undo", "re
 
 Use `editor.setAnimations(false)` to change motion without recreating the editor or resetting selection/history.
 
-### Syntax and Preview
+#### Syntax and Preview
 
 **No-code** keeps Markdown delimiters hidden, including in the active line or code block. Format text with the toolbar. An inline formatting command at an empty caret inserts selected placeholder text for you to replace. **Clean** hides completed delimiters and reveals them in the active line. Code fences reveal together and resize their block with the syntax transition when animations are enabled and the browser supports intrinsic-size transitions. **Assisted** keeps them visible in a muted color, with stronger contrast on the active line. **Source** is a normal Markdown textarea. Clean remains the default.
 
@@ -107,7 +117,7 @@ In Clean mode, placing the caret inside a code block reveals both fences, includ
 
 Code colors follow the fence language and selected palette. The editor reuses CODE's scanner for multiline strings and comments, debounces highlighting, and applies colors in short animation-frame slices. Typing and IME composition keep ownership of the caret; coloring never changes the Markdown or undo history. Source mode stays plain text.
 
-### Formatting
+#### Formatting
 
 Use the toolbar for headings, paragraphs, bold, italic, strike, inline code, lists, checklists, links, images, tables, fences, quotes, and dividers. Commands act on the current selection. Inline formatting stays within one paragraph or table cell; paragraph styles apply outside tables.
 
@@ -117,13 +127,13 @@ Enter inserts one line break, continues a list, or exits an empty list item. Pre
 
 Backspace at a closing formatting boundary removes a delimiter before deleting the word. Undo/redo share one history across modes; consecutive text input is grouped. Pasting accepts plain text/Markdown rather than HTML. Copy and Cut return the selected Markdown, including delimiters.
 
-### Table rows and columns
+#### Table rows and columns
 
 Click or move the caret into a table cell in No-code, Clean, or Assisted mode to show its floating controls beside the caret. The left column contains Row above, Row below, and Remove Row; the right contains Column left, Column right, and Remove Column. Every action uses the caret's current cell, including empty cells. Header actions insert data rows below the header; the header and final column cannot be removed. Tables can have up to 100 data rows and 20 columns through these controls.
 
 Press Alt+F10 inside a cell to focus the controls. Arrow keys move through the two-column grid; Home/End move to the first/last enabled action. Enter or Space applies one, and Escape returns to editing. The controls stay within the viewport and follow `controlsCompact`. Each action creates one undo step, preserves unaffected cell source and line endings, and moves the caret into a nearby or inserted cell. Source and Preview hide these controls.
 
-### Image sizes
+#### Image sizes
 
 Click an image in No-code, Clean, or Assisted mode to open its floating row of size buttons. The row scrolls horizontally when space is tight. Keyboard users can focus the image and press Enter or Space to focus the current size, use arrow keys or Home/End to move between choices, and press Enter or Space to apply one; Escape closes the toolbar. Clicking elsewhere dismisses it. The image insertion dialog offers the same choices:
 
@@ -134,14 +144,14 @@ Click an image in No-code, Clean, or Assisted mode to open its floating row of s
 Explicit sizes preserve proportions and shrink to fit the document. Resizing changes only an optional comment immediately after the image, preserving its alt text, URL, and title:
 
 ```markdown
-![A logo](logo.png "Original title")<!-- bymd:size=small -->
+![A logo](logo.png "Original title")
 ```
 
 Each resize is one undo step in the shared history. Source mode edits this same Markdown, and Preview uses the viewer's matching image sizes while remaining read-only. Default removes the size comment. Images without metadata keep the editor's existing display behavior, including its height limit.
 
 Image sizing requires MD viewer 2.8 or newer in both JavaScript and CSS. The playground and CI pin that companion release. Other Markdown engines supporting HTML comments show the image normally and ignore the sizing; engines that escape raw HTML may expose the comment.
 
-## API
+### API
 
 ```javascript
 editor.getMarkdown();
@@ -192,7 +202,7 @@ Initialization and `setMarkdown()` throw `TypeError` for unsupported source type
 
 Destroying an editor commits any active composition before cleanup, so `onChange` may run during teardown. Dispose the editor before removing its host, and keep application callbacks valid through that step. Duplicate script imports preserve the installed API.
 
-## Languages
+### Languages
 
 All eight control languages and required messages are built into `md.edit.js`; no language pack is needed.
 
@@ -223,107 +233,7 @@ Register a custom dictionary on `byMDeditor.locales` before mounting an editor, 
 
 The translated sample documents and language names live only in `index.html`. The playground's **Language** setting switches controls and untouched examples; edited or imported documents stay intact. **Restore sample** loads the example in the selected language. The rest of the landing page stays in English.
 
-## Themes
-
-Configure appearance in the options object or on the container:
-
-```javascript
-byMDeditor(target, markdown, {
-  theme: "dark",
-  palette: "github",
-  fontSize: 1.125
-});
-```
-
-`theme` sets the mode class; `palette` sets `data-theme`. `fontSize` numbers use rem (`1` = the root text size); CSS sizes such as `"1.25em"`, `"1.25rem"`, and `"20px"` are also accepted. All sizes stay between `0.5rem` and `3rem`. Explicit options override markup; omitted or `null` values retain the container's settings. A named palette preserves its existing mode, including the `data-theme="light"` / `"dark"` aliases. Invalid appearance values throw `RangeError` before replacing the current document.
-
-Initial content appears immediately. Animations affect controls and deliberate show/hide actions; rows, tokens, and typing are not animated. Disclosure size/exit transitions progressively enhance browsers that support them.
-
-The outer document and inner surfaces have independent CSS backgrounds. Both follow the selected theme unless overridden. Set `--by-view-document-bg: #0000` to reveal the host page while keeping content panels and individual controls readable. `--by-view-container-bg` sets the shared background of those panels and controls; it also accepts alpha colors or `transparent`. The toolbar and credits have no background. These overrides survive theme changes.
-
-```css
-.byMDeditor {
-  --by-view-document-bg: #0000;
-}
-```
-
-The playground uses SPA.js's Pickr assets for color and opacity, with text inputs when Pickr is unavailable. **Copy CSS** exports the appearance overrides; clear a field to restore its theme default. The renderer needs no color-picker dependency.
-
-The editor uses the viewer's scoped variables and palettes. No global theme rules or separate light/dark files.
-
-```html
-<div id="document" class="dark" data-theme="github"></div>
-<div id="accessible-document" class="light" data-theme="high-contrast"></div>
-```
-
-**48 palettes, each with Light and Dark modes.** The four core palettes come from `md.css`; the other 44 require `md.themes.css`, loaded after it:
-
-```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/byuwur/md.view@latest/md.themes.min.css" />
-```
-
-Local installations can save `md.themes.css` beside `md.css`. The playground loads the optional pack; default HTML starters use only the core stylesheets. A missing pack produces a one-time warning for known extra presets, while custom CSS palettes remain supported. The picker groups skins into Essentials, Editor classics, App inspired, Colorful, and Reading & nature.
-
-| Palette              | `data-theme`           | What it looks like                             |
-| -------------------- | ---------------------- | ---------------------------------------------- |
-| Monokai              | `monokai`              | Warm light and dark colors.                    |
-| GitHub (default)     | `github`               | Neutral GitHub surfaces and syntax.            |
-| Solarized            | `solarized`            | Warm paper and deep blue-green surfaces.       |
-| High Contrast        | `high-contrast`        | Strong text, borders, and focus indicators.    |
-| Dracula              | `dracula`              | Purple with vivid pink, green, and cyan.       |
-| Darcula              | `darcula`              | Charcoal surfaces and warm IDE accents.        |
-| Nord                 | `nord`                 | Arctic blues and snowy neutral surfaces.       |
-| Catppuccin           | `catppuccin`           | Latte and Mocha with soft mauve accents.       |
-| Catppuccin Frappé    | `catppuccin-frappe`    | Cooler Catppuccin with a blue accent.          |
-| Catppuccin Macchiato | `catppuccin-macchiato` | Catppuccin with a warm pink accent.            |
-| Rosé Pine            | `rose-pine`            | Dawn and Pine with dusty rose accents.         |
-| Rosé Pine Moon       | `rose-pine-moon`       | A duskier violet take on Rosé Pine.            |
-| Gruvbox              | `gruvbox`              | Warm retro browns, olive, and orange.          |
-| Gruvbox Material     | `gruvbox-material`     | Softer earthy surfaces and muted greens.       |
-| Tokyo Night          | `tokyo-night`          | Tokyo Day and Night with electric blues.       |
-| Tokyo Storm          | `tokyo-storm`          | A brighter blue-gray Tokyo evening.            |
-| Tokyo Moon           | `tokyo-moon`           | Indigo nights and luminous lavender.           |
-| One                  | `one`                  | Clean One Light and One Dark colors.           |
-| Material             | `material`             | Blue-gray material surfaces and cyan.          |
-| Material Ocean       | `material-ocean`       | Deep navy with soft fluorescent accents.       |
-| Night Owl            | `night-owl`            | Little Light and deep-blue night colors.       |
-| Synthwave            | `synthwave`            | Neon magenta and cyan with no glow effects.    |
-| Ayu                  | `ayu`                  | Warm amber over light paper or dark navy.      |
-| Everforest           | `everforest`           | Soft forest greens and cream.                  |
-| Kanagawa             | `kanagawa`             | Ink, old paper, and Japanese wave colors.      |
-| Selenized            | `selenized`            | Balanced teal surfaces and restrained color.   |
-| VS Code              | `vscode`               | Familiar neutral editor surfaces and blue.     |
-| Monokai Dimmed       | `monokai-dimmed`       | Quieter charcoal and desaturated Monokai.      |
-| Discord              | `discord`              | Blurple accents and familiar chat surfaces.    |
-| Slack                | `slack`                | Aubergine, warm pink, and friendly teal.       |
-| BONYUR               | `bonyur`               | Signature teal and pink over warm neutral ink. |
-| Sakura               | `sakura`               | Cherry-blossom pink from surface to syntax.    |
-| Bubblegum            | `bubblegum`            | Saturated hot-pink surfaces and cyan accents.  |
-| Candy                | `candy`                | Pink and mint with playful lavender syntax.    |
-| Rose Gold            | `rose-gold`            | Dusty pink and warm copper.                    |
-| Lavender             | `lavender`             | Lilac surfaces with deep violet accents.       |
-| Cyberpunk            | `cyberpunk`            | Acid yellow, electric cyan, and magenta.       |
-| Sunset               | `sunset`               | Burnt orange, coral, and evening purple.       |
-| Volcano              | `volcano`              | Lava reds over warm ash.                       |
-| Amber                | `amber`                | Golden amber inspired by old displays.         |
-| Terminal             | `terminal`             | Phosphor greens on near-black.                 |
-| Paper                | `paper`                | Warm cream, brown ink, and quiet margins.      |
-| Ink                  | `ink`                  | Grayscale surfaces and restrained syntax.      |
-| Ocean                | `ocean`                | Deep ocean blue and clear turquoise.           |
-| Forest               | `forest`               | Rich green surfaces and mossy accents.         |
-| Mint                 | `mint`                 | Fresh mint surfaces and cool teal.             |
-| Ice                  | `ice`                  | Glacial blue, crisp whites, and silver.        |
-| Sepia                | `sepia`                | Aged parchment and warm brown ink.             |
-
-Editor and app skins are inspired adaptations, including light counterparts where needed; colors are adjusted for readable text and controls rather than exact replicas. All palettes use the same layout and need no assets beyond the core stylesheet and optional theme pack.
-
-The editor inherits palette colors from `md.css` and the optional `md.themes.css`; `md.edit.css` keeps its surface variables at the end, without duplicating the palettes. Extra skins live in the matching optional `md.themes.css` pack. Font size and syntax colors update immediately; only shared backgrounds fade. First appearance stays immediate unless explicitly enabled. High Contrast and forced-color backgrounds switch immediately.
-
-Use `setTheme("light")` / `setTheme("dark")` to change mode while retaining the palette, or `setPalette("github")` to change palette while retaining the mode. These changes apply to No-code, Clean, Assisted, Source, and Preview without changing the Markdown or undo history.
-
-Custom palettes use the viewer's `--by-md-*` variables on `.byMDdocument[data-theme="your-name"]`, with `.dark` for the dark variant. The same rules reach the editor and its Preview. Select a custom name with `palette: "your-name"` or `setPalette("your-name")`; it appears in that editor's selector. Editor-only colors can override `--by-ed-bg`, `--by-ed-text`, `--by-ed-muted`, `--by-ed-border`, `--by-ed-alt`, and `--by-ed-accent` on `.byMDeditor`.
-
-## Supported Markdown and limits
+### Supported Markdown and limits
 
 Visual editing supports ATX headings, emphasis/strike, ordinary code spans, flat lists and checklists, single-level quotes, links, image descriptions, GFM tables, fences, and dividers. Tables can be inserted with 1-100 data rows and 1-20 columns. Source editing preserves other constructs.
 
@@ -339,87 +249,50 @@ Unchanged source preserves delimiters, whitespace, BOM, and mixed line endings. 
 
 Keyboard access, labeled controls, native dialogs, focus indicators, reduced motion, and forced-color styling are included. Tab enters/leaves the formatting toolbar; Left/Right and Home/End move between its tools. Source mode is the reliable raw-text alternative for assistive technology. Synthetic IME checks are automated; real mobile keyboards and screen readers still need device testing. This is not a claim of a completed WCAG audit.
 
-## Playground and checks
+## Themes
 
-To serve the playground locally:
+The editor shares MD.view’s themes. Use `theme` for light or dark mode and `palette` for the color scheme. Monokai, GitHub, Solarized and High Contrast are built in. Load [md.themes.css](https://github.com/byuwur/md.view/blob/main/md.themes.css) after the base stylesheet for the other palettes.
 
-```sh
-node __tests__/serve.cjs
+Options override container settings. Omit an option or pass `null` to keep its current value. Numeric `fontSize` uses rem. CSS sizes such as `20px` also work within the `0.5rem` to `3rem` range. Invalid appearance values throw `RangeError` before replacing the document.
+
+```html
+<div id="viewer" class="dark" data-theme="github"></div>
 ```
 
-Open [the local playground](http://127.0.0.1:4173), or use WAMP at `http://localhost/MD.edit/`. The playground loads its pinned companions from jsDelivr and requires those releases to be published. Open/download Markdown and Print / PDF belong to the demo, not the editor API. Printing uses the read-only viewer preview and the browser's print dialog.
+Use **Copy CSS** in the playground to export appearance settings. Set `--by-view-document-bg` for the outer background and `--by-view-container-bg` for panels and controls. Define custom palette variables on the component’s mode class and `[data-theme]` selector. For example:
 
-The Get started section exports a complete HTML starter with CDN selected by default, or local files for offline use. Copy and Download use the displayed starter and default editor settings, independently of playground edits. CDN starters need published editor and viewer releases; local starters need `md.edit.js`, `md.edit.css`, `md.js`, `md.css`, `code.js`, and `code.css` beside the HTML.
-
-Routine CI runs the small library suite in each supported browser: parsing/rendering, safe input, and replacement/cleanup. The editor also checks source preservation, editing, undo/redo, and preview with real MD/CODE companions. New options and styling do not need individual CI tests unless they protect a core contract or a real regression.
-
-Install Playwright outside the repository and set `NODE_PATH` to its `node_modules` directory:
-
-```sh
-node --check md.edit.js
-node --test __tests__/rendering.cjs
+```css
+.byMDeditor.dark[data-theme="my-ocean"] {
+  --by-view-bg: #102a43;
+  --by-view-text: #f0f6fc;
+}
 ```
 
-`BROWSER_CHANNEL=chrome` uses installed Chrome; `CHROMIUM_EXECUTABLE_PATH` selects a Chromium executable. Check out `md.view` at `v3.1` and `code.view` at `v2.1` beside this repository, as CI does.
+### Palette names
 
-The library suite is the main automated contract: parsing/rendering, untrusted input, and replacement/cleanup. `node --test __tests__/playground.cjs` runs one smaller smoke check for page startup, preview editing, and a copied starter. It uses the real local SPA.js and CODE companions instead of live CDN requests; check out `spa.js` at `v20.14` and `code.view` at `v2.1` beside this repository (the editor also needs `md.view` at `v3.1`). The [Actions workflow](.github/workflows/rendering.yml) runs separate jobs in this exact order: library Chromium, Firefox, WebKit; then playground Chromium, Firefox, WebKit. Later jobs still report their result if an earlier job fails; cancellation stops the chain. One reusable browser job keeps setup identical. Each suite has a 30-second execution limit, the test step is capped at two minutes, and each job at three minutes. Browsers are preinstalled in the matching CI image. `BROWSER_ENGINE=firefox` / `webkit` selects a local engine; `BROWSER_CHANNEL=chrome` applies only to Chromium.
+`monokai`, `github`, `solarized`, `high-contrast`, `dracula`, `darcula`, `nord`, `catppuccin`, `catppuccin-frappe`, `catppuccin-macchiato`, `rose-pine`, `rose-pine-moon`, `gruvbox`, `gruvbox-material`, `tokyo-night`, `tokyo-storm`, `tokyo-moon`, `one`, `material`, `material-ocean`, `night-owl`, `synthwave`, `ayu`, `everforest`, `kanagawa`, `selenized`, `vscode`, `monokai-dimmed`, `discord`, `slack`, `bonyur`, `sakura`, `bubblegum`, `candy`, `rose-gold`, `lavender`, `cyberpunk`, `sunset`, `volcano`, `amber`, `terminal`, `paper`, `ink`, `ocean`, `forest`, `mint`, `ice`, `sepia`.
 
-Run `node __tests__/performance.cjs` separately for the Chromium performance fixtures; `BENCHMARK_OUTPUT` can save results outside the repository.
+## Checks and releases
 
-Ordinary input patches the affected line or row. Native word input preserves text nodes; Markdown punctuation and structure go through the shared parser. Offscreen groups use `content-visibility: auto` while retaining their DOM; code fences keep their natural height to avoid clipped content in WebKit. Source mode builds no hidden visual document until needed. A full editor-line scan is reserved for initialization, source replacement, returning from changed Source mode, and changing the No-code representation. Full document rendering belongs to Preview. Code highlighting runs separately, caches unchanged fences, and cancels obsolete work on edits or teardown.
-
-Measured locally in Chrome with CODE loaded on 2026-11-07 using the fixtures above: edit-handler p95 ranged from 0.2-1.1 ms normally and 1.2-2.5 ms at 6× CPU slowdown. Selection p95 stayed at or below 0.4 ms. The normal run recorded no long tasks; the throttled run still recorded layout long tasks on large tables, nested lists, and fenced code. Source mode remains the practical option for heavy documents on slower devices. These observations are machine-specific, not guarantees.
-
-CI runs library and playground suites independently in Chromium, Firefox, and WebKit. Touch/mobile-width checks cover Chromium and WebKit emulation, with a narrow touch viewport in Firefox. WebKit is not certification of shipping Safari or iOS devices. Synthetic editor composition checks do not reproduce an OS IME. Real mobile keyboards, VoiceOver/NVDA, clipboard permissions, and device-specific rendering still require manual testing; automated checks are not a complete WCAG audit.
-
-## Viewer/Editor family
-
-Need another format, maybe an editor? Explore the family:
-
-<!-- <a href="https://byuwur.github.io/md.view/"><img src="https://raw.githubusercontent.com/byuwur/md.view/main/assets/favicon.png" height="24" align="top" alt="" /> MD.view</a> · <a href="https://byuwur.github.io/md.edit/"><img src="https://raw.githubusercontent.com/byuwur/md.edit/main/assets/favicon.png" height="24" align="top" alt="" /> MD.edit</a> · <a href="https://byuwur.github.io/code.view/"><img src="https://raw.githubusercontent.com/byuwur/code.view/main/assets/favicon.png" height="24" align="top" alt="" /> CODE.view</a> · <a href="https://byuwur.github.io/json.view/"><img src="https://raw.githubusercontent.com/byuwur/json.view/main/assets/favicon.png" height="24" align="top" alt="" /> JSON.view</a> · <a href="https://byuwur.github.io/csv.view/"><img src="https://raw.githubusercontent.com/byuwur/csv.view/main/assets/favicon.png" height="24" align="top" alt="" /> CSV.view</a> · <a href="https://byuwur.github.io/diff.view/"><img src="https://raw.githubusercontent.com/byuwur/diff.view/main/assets/favicon.png" height="24" align="top" alt="" /> DIFF.view</a> · <a href="https://byuwur.github.io/log.view/"><img src="https://raw.githubusercontent.com/byuwur/log.view/main/assets/favicon.png" height="24" align="top" alt="" /> LOG.view</a> · <a href="https://byuwur.github.io/xml.view/"><img src="https://raw.githubusercontent.com/byuwur/xml.view/main/assets/favicon.png" height="24" align="top" alt="" /> XML.view</a> · <a href="https://byuwur.github.io/yaml.view/"><img src="https://raw.githubusercontent.com/byuwur/yaml.view/main/assets/favicon.png" height="24" align="top" alt="" /> YAML.view</a> -->
-
-<a href="https://md.byuwur.co/"><img src="https://raw.githubusercontent.com/byuwur/md.view/main/assets/favicon.png" height="24" align="top" alt="" /> MD.view</a> · <a href="https://mdedit.byuwur.co/"><img src="https://raw.githubusercontent.com/byuwur/md.edit/main/assets/favicon.png" height="24" align="top" alt="" /> MD.edit</a> · <a href="https://code.byuwur.co/"><img src="https://raw.githubusercontent.com/byuwur/code.view/main/assets/favicon.png" height="24" align="top" alt="" /> CODE.view</a> · <a href="https://json.byuwur.co/"><img src="https://raw.githubusercontent.com/byuwur/json.view/main/assets/favicon.png" height="24" align="top" alt="" /> JSON.view</a> · <a href="https://csv.byuwur.co/"><img src="https://raw.githubusercontent.com/byuwur/csv.view/main/assets/favicon.png" height="24" align="top" alt="" /> CSV.view</a> · <a href="https://diff.byuwur.co/"><img src="https://raw.githubusercontent.com/byuwur/diff.view/main/assets/favicon.png" height="24" align="top" alt="" /> DIFF.view</a> · <a href="https://log.byuwur.co/"><img src="https://raw.githubusercontent.com/byuwur/log.view/main/assets/favicon.png" height="24" align="top" alt="" /> LOG.view</a> · <a href="https://xml.byuwur.co/"><img src="https://raw.githubusercontent.com/byuwur/xml.view/main/assets/favicon.png" height="24" align="top" alt="" /> XML.view</a> · <a href="https://yaml.byuwur.co/"><img src="https://raw.githubusercontent.com/byuwur/yaml.view/main/assets/favicon.png" height="24" align="top" alt="" /> YAML.view</a>
-
-## License
-
-MIT (c) Andres Trujillo [Mateus] byUwUr
-
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/byuwur/md.edit)
-
-## Releases
-
-[ZIP](https://github.com/byuwur/md.edit/releases/latest/download/md.edit.zip) · [Minified ZIP](https://github.com/byuwur/md.edit/releases/latest/download/md.edit.minified.zip). Filenames stay the same across releases; `manifest.json` records the version and source commit.
-
-[Release workflow](.github/workflows/release.yml) builds a reviewable preview on pushes to `main`, pull requests, and manual runs. Only a pushed version tag publishes a GitHub release. Source/browser checks and the complete distribution build must succeed on both main and tag runs before publication. Failed builds remove their own temporary stage and retain the last completed output. Release tags use whole major versions such as `v2`. Existing two-part tags such as `v1.8` and three-part tags such as `v1.8.1` remain supported. Keep release tags consistent with the project's source version.
-
-**Regular ZIP:** original library JavaScript/CSS and optional theme CSS. **Minified ZIP:** the same runtime as `.min.js`/`.min.css`. Both include README and license.
-
-Load local library files in your own HTML. The playground is hosted separately; no Node runtime is needed to use either ZIP.
-
-Visual editing and Preview also require MD.view; code colors use optional CODE.view. Download those releases separately. The toolbar stylesheet imports Font Awesome; host its stylesheet/fonts locally or remove the import for offline text labels.
-
-Minification prefers jsDelivr-generated files pinned to the exact source commit when the working file matches that commit. Unavailable CDN files and local edits use pinned esbuild instead. `--offline` selects local minification explicitly. `manifest.json` records the provider and hashes. Vendored assets are copied unchanged.
-
-### Local preview
-
-Requires Node.js 22 or newer; packaging/test dependencies are private to `.github`. Run from the repository root. In PowerShell, use `npm.cmd` if execution policy blocks `npm`.
+Use Node.js 22+ and run these commands from the repository root. For playground checks, place sibling checkouts of `spa.js` at `v20.13`, `code.view` at `v2` and `md.view` at `v3` next to this repository.
 
 ```sh
 npm --prefix .github ci --ignore-scripts --no-audit --no-fund
-node .github/scripts/build.mjs --tag v0.0.0-local
 node .github/node_modules/playwright/cli.js install chromium
+export NODE_PATH="$PWD/.github/node_modules"
+node --test --test-concurrency=1 __tests__/rendering.cjs __tests__/playground.cjs
+node .github/scripts/build.mjs --tag v0.0.0-local
 npm --prefix .github run release:test
 ```
 
-The release checks also need sibling `code.view` (`v2.1`) and `md.view` (`v3.1`) checkouts, matching the existing renderer checks.
+In PowerShell, replace the `export` line with `$env:NODE_PATH = "$PWD/.github/node_modules"`. [CI](.github/workflows/rendering.yml) runs Chromium automatically; choose Firefox or WebKit on a manual run.
 
-Open `dist/RELEASE_NOTES.md` for the generated notes and `dist/assets/` for the complete tested output. Download `tested-release` from the workflow run to review CI results. Local commands and manual runs do not publish.
+The [release workflow](.github/workflows/release.yml) tests the regular and minified ZIPs. Both contain the runtime files, README and license. The build manifest records the version and source commit. The local build writes `dist/assets/` and `dist/RELEASE_NOTES.md`. Use `--offline` for local minification. Publish by pushing a version tag matching the library’s `VERSION` (for example, `v2` for version 2).
 
-### Script responsibilities
+## Related projects
 
-- [release.json](.github/release.json) owns the repository identity, package inventory, and download explanations.
-- [build.mjs](.github/scripts/build.mjs) builds runtime ZIPs in a temporary output directory, then writes notes, provenance, and checksums.
-- [release.mjs](.github/scripts/release.mjs) reads the real Git history. `--check` validates the exact pushed tag on `main`; `--publish` verifies the tested output and creates or resumes its matching draft before publishing.
-- [release tests](.github/tests/release.mjs) verify checksums, ZIP inventories, and the distributed runtime by running the existing checks against both extracted ZIPs. [Publication tests](.github/tests/publish-release.mjs) use a mock GitHub API to verify interrupted uploads, draft ownership, corruption rejection, and reruns.
+[CODE.view](https://github.com/byuwur/code.view) · [CSV.view](https://github.com/byuwur/csv.view) · [DIFF.view](https://github.com/byuwur/diff.view) · [JSON.view](https://github.com/byuwur/json.view) · [LOG.view](https://github.com/byuwur/log.view) · [MD.view](https://github.com/byuwur/md.view) · [XML.view](https://github.com/byuwur/xml.view) · [YAML.view](https://github.com/byuwur/yaml.view)
 
-The workflow uses read-only access while building/testing, passes the exact tested output to a separate publication job, and grants write access only there. Published releases are never overwritten. A failed upload leaves a draft that the same tested build can resume. Tag pushes and live release publication are separate from local validation.
+## License
+
+[MIT](LICENSE.md) (c) Andres Trujillo [Mateus] byUwUr
