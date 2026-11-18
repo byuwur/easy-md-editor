@@ -57,8 +57,8 @@ test("MD editor playground loads, updates, and copies a starter", { timeout: 300
   await page.goto("https://playground.test/index.html");
   assert.equal(await page.locator("#latest-release").textContent(), "Latest Release");
   assert.equal(await page.locator("#latest-release").getAttribute("href"), "https://github.com/byuwur/md.edit/releases/latest");
-  assert.equal(await page.locator("#download-release").getAttribute("href"), "https://github.com/byuwur/md.edit/releases/download/v2/md.edit.v2.zip");
-  assert.equal(await page.locator("#download-minified").getAttribute("href"), "https://github.com/byuwur/md.edit/releases/download/v2/md.edit.v2.minified.zip");
+  assert.equal(await page.locator("#download-release").getAttribute("href"), "https://github.com/byuwur/md.edit/releases/latest/download/md.edit.zip");
+  assert.equal(await page.locator("#download-minified").getAttribute("href"), "https://github.com/byuwur/md.edit/releases/latest/download/md.edit.minified.zip");
   await page.locator("#editor.byMDeditor").waitFor();
   assert.equal(await page.locator("#statusBar").isChecked(), false);
   assert.equal(await page.locator("#editor .byEDstatus").isVisible(), false);
