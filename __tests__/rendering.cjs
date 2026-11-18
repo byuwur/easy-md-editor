@@ -135,6 +135,184 @@ test("MD editor library", { timeout: 30000 }, async (t) => {
     assert.equal(await page.locator(".byEDstatus").isVisible(), true);
   });
 
+  await t.test("table actions preserve cell source, mixed line endings, selection, and atomic history", async () => {
+    const source = "\uFEFFBefore\r\n\r\n| Name  | Role |\r\n| :--- | ---: |\n| A\\|B | `x|y` |\r| Sam | Designer |\n\nAfter\r\n";
+    const anchor = source.indexOf("x|y") + 3,
+      focus = anchor - 3;
+    const expected = {
+      tableRowAbove: source.replace("| A\\|B", "|   |   |\r| A\\|B"),
+      tableRowBelow: source.replace("\r| Sam", "\r|   |   |\r| Sam"),
+      tableRowRemove: source.replace("| A\\|B | `x|y` |\r", ""),
+      tableColumnLeft: source.replace("| Role |", "| Column 2 | Role |").replace("| ---: |", "| --- | ---: |").replace("| `x|y` |", "|  | `x|y` |").replace("| Designer |", "|  | Designer |"),
+      tableColumnRight: source.replace("| Role |", "| Role | Column 3 |").replace("| ---: |", "| ---: | --- |").replace("| `x|y` |", "| `x|y` |  |").replace("| Designer |", "| Designer |  |"),
+      tableColumnRemove: source.replace(" Role |", "").replace(" ---: |", "").replace(" `x|y` |", "").replace(" Designer |", "")
+    };
+    for (const syntax of ["no-code", "clean", "assisted"]) {
+      for (const [action, markdown] of Object.entries(expected)) {
+        await page.evaluate(
+          ({ source, syntax, anchor, focus }) => {
+            window.changes = [];
+            window.editor = byMDeditor(root, source, { syntax, language: "en", animations: false, onChange: (value) => changes.push(value) });
+            editor.setSelection(anchor, focus);
+          },
+          { source, syntax, anchor, focus }
+        );
+        assert.equal(await page.evaluate((action) => editor.command(action), action), true, `${syntax}: ${action}`);
+        assert.equal(await page.evaluate(() => editor.getMarkdown()), markdown, `${syntax}: ${action}`);
+        assert.equal(await page.evaluate(() => changes.length), 1, "One callback per action");
+        await page.evaluate(() => editor.command("undo"));
+        assert.equal(await page.evaluate(() => editor.getMarkdown()), source);
+        assert.deepEqual(await page.evaluate(() => editor.getSelection()), { anchor, focus });
+        await page.evaluate(() => editor.command("redo"));
+        assert.equal(await page.evaluate(() => editor.getMarkdown()), markdown);
+      }
+    }
+  });
+
+  await t.test("table controls follow the current cell, support keyboards, and guard the header and final column", async () => {
+    await page.setViewportSize({ width: 360, height: 740 });
+    const source = "Before\n\n| A | B |\n| --- | --- |\n| one | two |\n\nAfter";
+    await page.evaluate((source) => {
+      window.editor = byMDeditor(root, source, { syntax: "no-code", animations: false });
+      editor.setSelection(source.indexOf("two"));
+    }, source);
+    const popup = page.locator(".byEDcontextToolbar"),
+      surface = page.locator(".byEDsurface");
+    await popup.getByRole("button", { name: "Column left", exact: true }).click();
+    assert.equal(await page.locator('[data-type="tableHeader"] th').count(), 3);
+    assert.equal(await page.locator('[data-type="tableRow"] td').count(), 3);
+    await popup.getByRole("button", { name: "Remove Column", exact: true }).click();
+    assert.equal(await page.evaluate(() => editor.getMarkdown()), source, "Adding/removing a column retains existing padding exactly");
+    await surface.press("Alt+F10");
+    assert.equal(await page.evaluate(() => document.activeElement.getAttribute("aria-label")), "Row above");
+    await page.keyboard.press("ArrowDown");
+    assert.equal(await page.evaluate(() => document.activeElement.getAttribute("aria-label")), "Row below");
+    await page.keyboard.press("ArrowRight");
+    assert.equal(await page.evaluate(() => document.activeElement.getAttribute("aria-label")), "Column right");
+    await page.keyboard.press("End");
+    assert.equal(await page.evaluate(() => document.activeElement.getAttribute("aria-label")), "Remove Column");
+    await page.keyboard.press("Enter");
+    assert.equal(await page.locator('[data-type="tableHeader"] th').count(), 1);
+    assert.equal(await popup.getByRole("button", { name: "Remove Column", exact: true }).isDisabled(), true);
+    await page.keyboard.press("Escape");
+    await popup.waitFor({ state: "hidden" });
+    assert.equal(await surface.evaluate((element) => element === document.activeElement), true);
+    await page.evaluate(() => editor.command("tableRowRemove"));
+    assert.equal(await page.locator('[data-type="tableRow"]').count(), 0);
+    assert.equal(await popup.getByRole("button", { name: "Remove Row", exact: true }).isDisabled(), true);
+    assert.equal(await page.evaluate(() => editor.command("tableRowRemove")), false);
+    assert.equal(await page.evaluate(() => editor.command("tableColumnRemove")), false);
+    await page.evaluate(() => editor.setLanguage("es"));
+    await popup.getByRole("button", { name: "Fila abajo", exact: true }).click();
+    assert.equal(await page.locator('[data-type="tableRow"]').count(), 1);
+    const bounds = await popup.boundingBox();
+    assert.ok(bounds.x >= 0 && bounds.x + bounds.width <= 361, "Controls fit the narrow viewport");
+    await page.evaluate(() => editor.setPreview(true));
+    assert.equal(await popup.isVisible(), false);
+    assert.equal(await page.evaluate(() => editor.command("tableColumnRight")), false);
+    await page.evaluate(() => {
+      editor.setPreview(false);
+      editor.setSyntaxMode("source");
+    });
+    assert.equal(await popup.isVisible(), false);
+    assert.equal(await page.evaluate(() => editor.command("tableRowBelow")), false);
+    await page.setViewportSize({ width: 1280, height: 720 });
+  });
+
+  await t.test("table popup follows the caret and edits the actual cell after pointer and keyboard moves", async () => {
+    const source = "| A | B | C |\n| --- | --- | --- |\n|   |   | last |\n| one | two | three |\n| four | five | six |\n\nAfter";
+    const inserted = source
+      .replace("| A | B | C |", "| A | Column 2 | B | C |")
+      .replace("| --- | --- | --- |", "| --- | --- | --- | --- |")
+      .replace("|   |   | last |", "|   |  |   | last |")
+      .replace("| one | two | three |", "| one |  | two | three |")
+      .replace("| four | five | six |", "| four |  | five | six |");
+    const popup = page.locator(".byEDcontextToolbar");
+    for (const syntax of ["no-code", "clean", "assisted"]) {
+      await page.evaluate(
+        ({ source, syntax }) => {
+          window.editor = byMDeditor(root, source, { syntax, language: "en", animations: false, toolbar: false });
+        },
+        { source, syntax }
+      );
+      const cells = page.locator('[data-type="tableRow"]').first().locator("td");
+      await cells.nth(0).click();
+      assert.equal(await page.evaluate(() => editor.getSelection().focus), source.indexOf("|   |   | last |") + 4);
+      const left = await popup.boundingBox();
+      await cells.nth(1).click();
+      assert.equal(await page.evaluate(() => editor.getSelection().focus), source.indexOf("|   |   | last |") + 8);
+      const middle = await popup.boundingBox();
+      assert.ok(middle.x > left.x + 100, `${syntax}: popup follows columns within one row`);
+      const grid = await popup.locator("button").evaluateAll((buttons) => buttons.map((button) => ({ label: button.getAttribute("aria-label"), x: button.offsetLeft, y: button.offsetTop })));
+      assert.deepEqual(
+        grid.map((button) => button.label),
+        ["Row above", "Column left", "Row below", "Column right", "Remove Row", "Remove Column"]
+      );
+      assert.equal(grid[0].y, grid[1].y);
+      assert.equal(grid[2].y, grid[3].y);
+      assert.equal(grid[4].y, grid[5].y);
+      assert.ok(grid[0].y < grid[2].y && grid[2].y < grid[4].y && grid[0].x < grid[1].x);
+      await page.keyboard.type("X");
+      assert.deepEqual(await cells.locator(".byEDcell").allTextContents(), ["", "X", "last"], `${syntax}: the empty cell owns typing`);
+      await page.evaluate(() => editor.command("undo"));
+      await popup.getByRole("button", { name: "Column left", exact: true }).click();
+      assert.equal(await page.evaluate(() => editor.getMarkdown()), inserted, `${syntax}: insert beside the clicked empty cell`);
+      await page.keyboard.press("Tab");
+      await popup.getByRole("button", { name: "Column right", exact: true }).click();
+      assert.deepEqual(await page.locator('[data-type="tableHeader"] .byEDcell').allTextContents(), ["A", "Column 2", "B", "Column 4", "C"], `${syntax}: use the cell reached by Tab`);
+      await page.evaluate(() => {
+        editor.command("undo");
+        editor.command("undo");
+      });
+      for (let i = 0; i < 3; i++) await page.keyboard.press("Tab");
+      const nextRow = await popup.boundingBox();
+      assert.ok(nextRow.y > middle.y, `${syntax}: popup follows the caret to another row`);
+      await popup.getByRole("button", { name: "Remove Row", exact: true }).click();
+      assert.equal(await page.evaluate(() => editor.getMarkdown()), source.replace("| one | two | three |\n", ""), `${syntax}: remove the caret's row`);
+      await page.evaluate(() => editor.setSelection(editor.getMarkdown().indexOf("last") + 1));
+      const beforeArrow = await popup.boundingBox();
+      await page.keyboard.press("ArrowRight");
+      await page.waitForFunction((x) => document.querySelector(".byEDcontextToolbar").getBoundingClientRect().x > x, beforeArrow.x);
+      assert.ok((await popup.boundingBox()).x > beforeArrow.x, `${syntax}: popup follows the caret inside one cell`);
+      await page.evaluate(() => editor.setSelection(editor.getMarkdown().indexOf("After")));
+      assert.equal(await popup.isVisible(), false, "Leaving the table dismisses its controls");
+    }
+  });
+
+  await t.test("column edits handle borderless tables, short rows, and adjacent tables", async () => {
+    const source = "A | B | C\r\n:--- | ---: | :---:\n`x|y` | v\\|w\r\n| only |\n\n| Keep |\n| --- |\n| exact |";
+    await page.evaluate((source) => {
+      window.editor = byMDeditor(root, source, { animations: false });
+      editor.setSelection(source.indexOf("C"));
+      editor.command("tableColumnRight");
+    }, source);
+    assert.deepEqual(
+      await page
+        .locator(".byEDgroup-table")
+        .first()
+        .locator("tr:not([data-type=tableDelimiter])")
+        .evaluateAll((rows) => rows.map((row) => row.cells.length)),
+      [4, 4, 4]
+    );
+    assert.ok((await page.evaluate(() => editor.getMarkdown())).endsWith("\n\n| Keep |\n| --- |\n| exact |"));
+    await page.evaluate(() => {
+      editor.command("undo");
+      editor.setSelection(editor.getMarkdown().indexOf("B"));
+      editor.command("tableColumnRemove");
+      editor.command("tableColumnRemove");
+    });
+    assert.equal(await page.locator(".byEDgroup-table").count(), 2);
+    assert.equal(await page.locator(".byEDgroup-table").first().locator("th .byEDcell").textContent(), "A");
+    assert.ok((await page.evaluate(() => editor.getMarkdown())).includes("`x|y`"), "Code-span pipes remain inside their cell");
+    const limits = await page.evaluate(() => {
+      editor.setMarkdown("");
+      editor.command("table", { rows: 100, columns: 20 });
+      editor.setSelection(editor.getMarkdown().indexOf("Column 1"));
+      return ["tableRowAbove", "tableRowBelow", "tableColumnLeft", "tableColumnRight"].map((action) => editor.command(action));
+    });
+    assert.deepEqual(limits, [false, false, false, false], "Structural controls respect the existing insertion limits");
+  });
+
   await t.test("code fences resize with syntax reveal and collapse without changing source", async () => {
     const result = await page.evaluate(async () => {
       const source = "Before\n\n~~~js\nconst flag = true;\n~~~\n\nAfter";

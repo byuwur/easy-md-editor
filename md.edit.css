@@ -327,6 +327,12 @@
   padding: 0.25em;
   scrollbar-width: thin;
 }
+.byEDtableTools {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.25em;
+  padding: 0.25em;
+}
 .byMDeditor .byEDimageSizes button {
   flex: 0 0 auto;
   min-height: 2em;

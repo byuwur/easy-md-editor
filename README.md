@@ -2,8 +2,6 @@
 
 ![MD.edit preview](prev.jpg)
 
-Development version: **v2** (unreleased). The [latest release](https://github.com/byuwur/md.edit/releases/latest) supplies the published files.
-
 **Markdown, made to be written.**
 
 Write a document, use familiar formatting tools, and get ordinary Markdown back. For notes, documentation, terms and conditions, and other text your application needs to store or move around.
@@ -119,6 +117,12 @@ Enter inserts one line break, continues a list, or exits an empty list item. Pre
 
 Backspace at a closing formatting boundary removes a delimiter before deleting the word. Undo/redo share one history across modes; consecutive text input is grouped. Pasting accepts plain text/Markdown rather than HTML. Copy and Cut return the selected Markdown, including delimiters.
 
+### Table rows and columns
+
+Click or move the caret into a table cell in No-code, Clean, or Assisted mode to show its floating controls beside the caret. The left column contains Row above, Row below, and Remove Row; the right contains Column left, Column right, and Remove Column. Every action uses the caret's current cell, including empty cells. Header actions insert data rows below the header; the header and final column cannot be removed. Tables can have up to 100 data rows and 20 columns through these controls.
+
+Press Alt+F10 inside a cell to focus the controls. Arrow keys move through the two-column grid; Home/End move to the first/last enabled action. Enter or Space applies one, and Escape returns to editing. The controls stay within the viewport and follow `controlsCompact`. Each action creates one undo step, preserves unaffected cell source and line endings, and moves the caret into a nearby or inserted cell. Source and Preview hide these controls.
+
 ### Image sizes
 
 Click an image in No-code, Clean, or Assisted mode to open its floating row of size buttons. The row scrolls horizontally when space is tight. Keyboard users can focus the image and press Enter or Space to focus the current size, use arrow keys or Home/End to move between choices, and press Enter or Space to apply one; Escape closes the toolbar. Clicking elsewhere dismisses it. The image insertion dialog offers the same choices:
@@ -174,6 +178,8 @@ editor.destroy();
 | `link`, `image`                                                                       | `{ url, label }`; images also accept optional `size`; omit to open the insertion dialog                                                      |
 | `imageSize`                                                                           | `"default"`, `"original"`, `"xs"`, `"small"`, `"regular"`, `"large"`, or `"xl"`; resize the selected image or the image containing the caret |
 | `table`                                                                               | `{ rows, columns }`; omit for the size dialog; rows exclude the header                                                                       |
+| `tableRowAbove`, `tableRowBelow`, `tableRowRemove`                                    | None; insert/remove a data row at the current cell in a visual editing mode                                                                  |
+| `tableColumnLeft`, `tableColumnRight`, `tableColumnRemove`                            | None; insert/remove a column at the current cell in a visual editing mode                                                                    |
 | `codeBlock`                                                                           | Language string, or `""` for plain code; omit for the language dialog                                                                        |
 | `codeLanguage`                                                                        | Language string, or `"plain"` for plain code; change the hovered or current fenced block in a visual editing mode                            |
 | `undo`, `redo`                                                                        | None                                                                                                                                         |
@@ -323,11 +329,11 @@ Visual editing supports ATX headings, emphasis/strike, ordinary code spans, flat
 
 The toolbar covers these formatting commands, rather than every viewer setting or Markdown structure. The default playground document demonstrates all six heading levels and each editable formatting feature, including mixed emphasis, autolinks, an image, both list types, tasks, tables, quotes, a hard break, a divider, and highlighted code.
 
-Complex nesting, indented code, comments, document markers, escapes/entities, and code spans with normalized whitespace remain literal where visual editing would lose source mapping. Lines longer than 8,192 characters stay literal. Soft-wrapped source lines are separate editing lines; Preview applies the viewer's paragraph rules. Source remains the fallback for structural table surgery and unsupported extensions.
+Complex nesting, indented code, comments, document markers, escapes/entities, and code spans with normalized whitespace remain literal where visual editing would lose source mapping. Lines longer than 8,192 characters stay literal. Soft-wrapped source lines are separate editing lines; Preview applies the viewer's paragraph rules. Source remains the fallback for unsupported extensions.
 
 In No-code mode, unsupported block structures render as read-only fragments through the actual Markdown viewer; edit those blocks in Source. Escape backslashes and hard-break backslashes stay hidden, while entity spellings retain their literal source representation. Code contents remain visible; only their Markdown fences are hidden.
 
-Ordinary No-code edits preserve hidden table separators and code fences; use Source to change those structures. Empty fenced blocks accept typing and paste without changing their source until the first edit.
+Ordinary No-code edits preserve hidden table separators and code fences; table controls update separators with their columns, while Source can edit either structure directly. Empty fenced blocks accept typing and paste without changing their source until the first edit.
 
 Unchanged source preserves delimiters, whitespace, BOM, and mixed line endings. The source limit is 2,000,000 UTF-16 characters. Formatting deliberately changes only the selected source region.
 

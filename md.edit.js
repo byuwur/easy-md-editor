@@ -34,6 +34,14 @@
   const wraps = { bold: "**", italic: "*", strikethrough: "~~", inlineCode: "`" };
   const modes = ["no-code", "clean", "assisted", "source"];
   const imageSizes = ["default", "original", "xs", "small", "regular", "large", "xl"];
+  const tableTools = [
+    ["tableRowAbove", "arrow-up"],
+    ["tableColumnLeft", "arrow-left"],
+    ["tableRowBelow", "arrow-down"],
+    ["tableColumnRight", "arrow-right"],
+    ["tableRowRemove", "minus"],
+    ["tableColumnRemove", "minus"]
+  ];
   const modeDescriptions = {
     "no-code": "descriptionNoCode",
     clean: "descriptionClean",
@@ -237,6 +245,12 @@
       linkText: "Link text",
       column: "Column {number}",
       insertTable: "Insert table",
+      tableRowAbove: "Row above",
+      tableRowBelow: "Row below",
+      tableRowRemove: "Remove Row",
+      tableColumnLeft: "Column left",
+      tableColumnRight: "Column right",
+      tableColumnRemove: "Remove Column",
       insertLink: "Insert link",
       insertImage: "Insert image",
       insertCodeBlock: "Insert code block",
@@ -322,6 +336,12 @@
       linkText: "Texto del enlace",
       column: "Columna {number}",
       insertTable: "Insertar tabla",
+      tableRowAbove: "Fila arriba",
+      tableRowBelow: "Fila abajo",
+      tableRowRemove: "Eliminar fila",
+      tableColumnLeft: "Columna izquierda",
+      tableColumnRight: "Columna derecha",
+      tableColumnRemove: "Eliminar columna",
       insertLink: "Insertar enlace",
       insertImage: "Insertar imagen",
       insertCodeBlock: "Insertar bloque de código",
@@ -407,6 +427,12 @@
       linkText: "Texto do link",
       column: "Coluna {number}",
       insertTable: "Inserir tabela",
+      tableRowAbove: "Linha acima",
+      tableRowBelow: "Linha abaixo",
+      tableRowRemove: "Remover linha",
+      tableColumnLeft: "Coluna à esquerda",
+      tableColumnRight: "Coluna à direita",
+      tableColumnRemove: "Remover coluna",
       insertLink: "Inserir link",
       insertImage: "Inserir imagem",
       insertCodeBlock: "Inserir bloco de código",
@@ -492,6 +518,12 @@
       linkText: "Texte du lien",
       column: "Colonne {number}",
       insertTable: "Insérer un tableau",
+      tableRowAbove: "Ligne au-dessus",
+      tableRowBelow: "Ligne au-dessous",
+      tableRowRemove: "Supprimer la ligne",
+      tableColumnLeft: "Colonne à gauche",
+      tableColumnRight: "Colonne à droite",
+      tableColumnRemove: "Supprimer la colonne",
       insertLink: "Insérer un lien",
       insertImage: "Insérer une image",
       insertCodeBlock: "Insérer un bloc de code",
@@ -577,6 +609,12 @@
       linkText: "Linktext",
       column: "Spalte {number}",
       insertTable: "Tabelle einfügen",
+      tableRowAbove: "Zeile darüber",
+      tableRowBelow: "Zeile darunter",
+      tableRowRemove: "Zeile entfernen",
+      tableColumnLeft: "Spalte links",
+      tableColumnRight: "Spalte rechts",
+      tableColumnRemove: "Spalte entfernen",
       insertLink: "Link einfügen",
       insertImage: "Bild einfügen",
       insertCodeBlock: "Codeblock einfügen",
@@ -662,6 +700,12 @@
       linkText: "Testo del collegamento",
       column: "Colonna {number}",
       insertTable: "Inserisci tabella",
+      tableRowAbove: "Riga sopra",
+      tableRowBelow: "Riga sotto",
+      tableRowRemove: "Rimuovi riga",
+      tableColumnLeft: "Colonna a sinistra",
+      tableColumnRight: "Colonna a destra",
+      tableColumnRemove: "Rimuovi colonna",
       insertLink: "Inserisci collegamento",
       insertImage: "Inserisci immagine",
       insertCodeBlock: "Inserisci blocco di codice",
@@ -747,6 +791,12 @@
       linkText: "リンクのテキスト",
       column: "列{number}",
       insertTable: "表を挿入",
+      tableRowAbove: "上に行を追加",
+      tableRowBelow: "下に行を追加",
+      tableRowRemove: "行を削除",
+      tableColumnLeft: "左に列を追加",
+      tableColumnRight: "右に列を追加",
+      tableColumnRemove: "列を削除",
       insertLink: "リンクを挿入",
       insertImage: "画像を挿入",
       insertCodeBlock: "コードブロックを挿入",
@@ -832,6 +882,12 @@
       linkText: "链接文本",
       column: "第{number}列",
       insertTable: "插入表格",
+      tableRowAbove: "在上方插入行",
+      tableRowBelow: "在下方插入行",
+      tableRowRemove: "删除行",
+      tableColumnLeft: "在左侧插入列",
+      tableColumnRight: "在右侧插入列",
+      tableColumnRemove: "删除列",
       insertLink: "插入链接",
       insertImage: "插入图片",
       insertCodeBlock: "插入代码块",
@@ -977,6 +1033,9 @@
       imageOptions = null,
       selectedCode = null,
       codePicker = null,
+      dismissedCode = null,
+      selectedTable = null,
+      tableOptions = null,
       contextToolbar = null,
       contextObserver = null;
     const metrics = options.onMeasure ? options.onMeasure : null;
@@ -996,7 +1055,7 @@
     };
     // Update only UI labels; source nodes, selection, composition, and history keep their owners.
     const translateControls = () => {
-      for (const root of [bar, toolbar, contextToolbar, imageOptions, codePicker?.parentElement, dialog]) {
+      for (const root of [bar, toolbar, contextToolbar, imageOptions, codePicker?.parentElement, tableOptions, dialog]) {
         if (!root) continue;
         root.lang = language;
         for (const text of root.querySelectorAll("[data-message]")) {
@@ -1028,7 +1087,7 @@
       for (const group of palettePicker.querySelectorAll("optgroup")) group.label = languageText[group.dataset.messageGroup];
       heading.setAttribute("aria-label", languageText.paragraphStyle);
       imageOptions?.setAttribute("aria-label", languageText.imageSize);
-      if (contextToolbar) contextToolbar.setAttribute("aria-label", languageText[selectedCode ? "codeLanguage" : "imageSize"]);
+      if (contextToolbar) contextToolbar.setAttribute("aria-label", languageText[selectedTable ? "table" : selectedCode ? "codeLanguage" : "imageSize"]);
       themeButton.title = languageText[isDark() ? "lightTheme" : "darkTheme"];
       themeButton.setAttribute("aria-label", themeButton.title);
       for (const record of lines) {
@@ -1330,7 +1389,19 @@
       }
       return position;
     };
+    /** Resolve the caret's table cell, retaining its DOM owner at ambiguous source separators. @returns {{record: Object, column: number, cell: HTMLTableCellElement}|null} */
+    const tableCellAt = () => {
+      const record = lines[lineAt(position.focus)];
+      if (!record?.meta.cells) return null;
+      const focus = document.getSelection()?.focusNode,
+        owner = (focus?.nodeType === Node.ELEMENT_NODE ? focus : focus?.parentElement)?.closest("td,th");
+      let column = record.meta.cells.findIndex((cell) => position.focus - record.from <= cell.to);
+      if (column < 0) column = record.meta.cells.length - 1;
+      if (owner?.parentElement === record.view) column = owner.cellIndex;
+      return { record, column, cell: record.view.cells[column] };
+    };
     const activate = (record) => {
+      if (!record?.meta.cells && selectedTable) hideContextToolbar();
       if (active === record) return;
       const previous = active?.group?.kind === "fence" ? active.group.node : null;
       const next = record?.group?.kind === "fence" ? record.group.node : null;
@@ -1366,7 +1437,9 @@
         }
         const relative = Math.max(0, Math.min(record.text.length, offset - record.from));
         const points = syntax === "no-code" ? record.points.filter((item) => !item.node.parentElement.closest(".byEDsyntax,.byEDescape,.byEDhardBreak,.byEDunsupportedSource")) : record.points;
-        const found = points.find((item) => item.from <= relative && item.to >= relative) || (relative <= (points[0]?.from ?? 0) ? points[0] : points.at(-1));
+        // Empty cells share a boundary with syntax text; their visible body must own the caret.
+        const emptyCell = record.meta.cells && points.find((item) => item.from === relative && item.to === relative && item.node.parentElement.closest(".byEDcell"));
+        const found = emptyCell || points.find((item) => item.from <= relative && item.to >= relative) || (relative <= (points[0]?.from ?? 0) ? points[0] : points.at(-1));
         return found ? [found.node, Math.max(0, Math.min(found.node.length, relative - found.from))] : [record.view, relative ? record.view.childNodes.length : 0];
       };
       if (focus && document.activeElement !== surface) surface.focus({ preventScroll: true });
@@ -1375,6 +1448,7 @@
       const anchor = point(position.anchor),
         end = point(position.focus);
       document.getSelection()?.setBaseAndExtent(...anchor, ...end);
+      if (lines[lineAt(position.focus)].meta.cells && !selectedImage) showTableToolbar();
       if (syntax === "no-code" && position.anchor !== position.focus && Math.min(position.anchor, position.focus) === 0 && Math.max(position.anchor, position.focus) === source.length) {
         const current = document.getSelection();
         fullSelection = { anchorNode: current.anchorNode, anchorOffset: current.anchorOffset, focusNode: current.focusNode, focusOffset: current.focusOffset };
@@ -1435,15 +1509,26 @@
       selectedImage?.classList.remove("is-selected");
       selectedImage = null;
       selectedCode = null;
+      selectedTable = null;
       contextObserver?.disconnect();
       if (contextToolbar) contextToolbar.hidden = true;
     };
     /** Position the floating controls within the editor and viewport, including scroll and borders. */
     const positionContextToolbar = () => {
-      const target = selectedImage || selectedCode?.group?.node;
+      const target = selectedImage || selectedCode?.group?.node || selectedTable;
       if (!target?.isConnected) return hideContextToolbar();
-      const bounds = target.getBoundingClientRect(),
-        owner = element.getBoundingClientRect();
+      let bounds = target.getBoundingClientRect();
+      if (selectedTable) {
+        const current = document.getSelection();
+        if (current?.focusNode && selectedTable.contains(current.focusNode)) {
+          const caret = document.createRange();
+          caret.setStart(current.focusNode, current.focusOffset);
+          caret.collapse(true);
+          const rect = caret.getBoundingClientRect();
+          if (rect.height) bounds = rect;
+        }
+      }
+      const owner = element.getBoundingClientRect();
       const left = Math.max(0, owner.left),
         right = Math.min(global.innerWidth, owner.right),
         top = Math.max(0, owner.top),
@@ -1457,7 +1542,7 @@
       contextToolbar.style.left = `${x - owner.left + element.scrollLeft - element.clientLeft}px`;
       contextToolbar.style.top = `${y - owner.top + element.scrollTop - element.clientTop}px`;
     };
-    /** Create the shared floating toolbar only when an image or code block needs it. */
+    /** Create the shared floating toolbar when an image, code block, or table needs it. */
     const ensureContextToolbar = () => {
       if (contextToolbar) return;
       contextToolbar = node("div", "byEDcontextToolbar");
@@ -1466,13 +1551,71 @@
       listen(contextToolbar, "keydown", (event) => {
         if (event.key !== "Escape") return;
         event.preventDefault();
-        hideContextToolbar();
+        const code = selectedCode;
         restore(position);
+        hideContextToolbar();
+        // Hiding a selector can expose the hovered fence and immediately fire pointerover again.
+        dismissedCode = code;
       });
       listen(contextToolbar, "pointerleave", () => {
         if (selectedCode && active?.group !== selectedCode.group && !contextToolbar.contains(document.activeElement)) hideContextToolbar();
       });
       contextObserver = new ResizeObserver(positionContextToolbar);
+    };
+    /** Show row and column actions beside the caret's current table cell. */
+    const showTableToolbar = () => {
+      if (previewing || composing || syntax === "source") return;
+      const current = tableCellAt();
+      if (!current) return;
+      const { record, cell } = current;
+      const header = lineMap.get(record.group.content.firstElementChild);
+      if (selectedTable !== cell) {
+        hideContextToolbar();
+        ensureContextToolbar();
+        if (!tableOptions) {
+          tableOptions = node("div", "byEDtableTools");
+          for (const [name, icon] of tableTools) {
+            const control = button(name, icon, () => command(name), tableOptions);
+            control.dataset.command = name;
+            control.tabIndex = name === tableTools[0][0] ? 0 : -1;
+          }
+          listen(tableOptions, "pointerdown", (event) => {
+            if (event.target.closest("button")) event.preventDefault();
+          });
+          listen(tableOptions, "focusin", (event) => {
+            if (!event.target.matches("button")) return;
+            for (const control of tableOptions.querySelectorAll("button")) control.tabIndex = control === event.target ? 0 : -1;
+          });
+          listen(tableOptions, "keydown", (event) => {
+            if (!event.target.matches("button") || !["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) return;
+            event.preventDefault();
+            const buttons = [...tableOptions.querySelectorAll("button")],
+              current = buttons.indexOf(event.target);
+            const step = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -2, ArrowDown: 2 }[event.key] || (event.key === "Home" ? 1 : -1);
+            let index = event.key === "Home" ? -1 : event.key === "End" ? buttons.length : current;
+            do index = (index + step + buttons.length) % buttons.length;
+            while (buttons[index].disabled);
+            buttons[index].focus({ preventScroll: true });
+            buttons[index].scrollIntoView({ block: "nearest", inline: "nearest" });
+          });
+        }
+        contextToolbar.replaceChildren(tableOptions);
+        contextToolbar.setAttribute("aria-label", languageText.table);
+        contextToolbar.lang = language;
+        selectedTable = cell;
+        contextObserver.observe(cell);
+        contextObserver.observe(element);
+      }
+      for (const control of tableOptions.querySelectorAll("button")) {
+        const name = control.dataset.command;
+        if (name === "tableRowRemove") control.disabled = record === header;
+        else if (name === "tableColumnRemove") control.disabled = header.meta.cells.length <= 1;
+        else if (name.startsWith("tableColumn")) control.disabled = header.meta.cells.length >= 20;
+        else control.disabled = record.group.count - 2 >= 100;
+        if (control.disabled) control.tabIndex = -1;
+      }
+      if (!tableOptions.querySelector('button:enabled[tabindex="0"]')) tableOptions.querySelector("button:enabled").tabIndex = 0;
+      positionContextToolbar();
     };
     /** Show size controls for an editable image without changing its source selection. @param {HTMLImageElement} image */
     const showImageToolbar = (image) => {
@@ -1507,7 +1650,7 @@
     const showCodeToolbar = (record) => {
       if (previewing || composing || syntax === "source" || record?.group?.kind !== "fence") return;
       const opening = lineMap.get(record.group.content.firstElementChild);
-      if (opening?.meta.type !== "fenceOpen" || (selectedCode === opening && !contextToolbar.hidden)) return;
+      if (opening?.meta.type !== "fenceOpen" || opening === dismissedCode || (selectedCode === opening && !contextToolbar.hidden)) return;
       hideContextToolbar();
       ensureContextToolbar();
       if (!codePicker) {
@@ -1781,6 +1924,7 @@
 
     // Rebuild the derived line/group index from canonical source after initialization or source replacement.
     const build = () => {
+      dismissedCode = null;
       renderedNoCode = syntax === "no-code";
       textMap = new WeakMap();
       lineMap = new WeakMap();
@@ -1963,6 +2107,7 @@
     const change = (from, to, inserted, next, type = "command", remember = true, native = null) => {
       if (!alive || previewing) return false;
       hideContextToolbar();
+      dismissedCode = null;
       if (remember && syntax !== "source" && from === to && inserted && !/^[#\s]/.test(inserted)) {
         const record = lines[lineAt(from)];
         // Add the heading separator in the source transaction so typing, paste, and IME agree.
@@ -2166,6 +2311,90 @@
       };
       return starRun(from) % 2 === 1 && starRun(to) % 2 === 1;
     };
+    /** Include cell padding while finding only parser-recognized separators. @param {string} text Source row. @param {Object[]} cells Parsed cells. @returns {Object[]} Raw cell ranges excluding pipes. */
+    const tableCellBounds = (text, cells) =>
+      cells.map((cell, index) => {
+        const previous = cells[index - 1],
+          next = cells[index + 1];
+        const from = previous ? previous.to + text.slice(previous.to, cell.from).indexOf("|") + 1 : text.slice(0, cell.from).indexOf("|") + 1;
+        const pipe = text.slice(cell.to, next?.from).indexOf("|");
+        return { from, to: pipe < 0 ? text.length : cell.to + pipe };
+      });
+    /** Edit the current cell's table as one source/history transaction. @param {string} name Row or column action. @returns {boolean} Whether the edit was accepted. */
+    const editTable = (name) => {
+      if (syntax === "source") return false;
+      const current = tableCellAt();
+      if (!current) return false;
+      const { record } = current;
+      const rows = [...record.group.content.children].map((view) => {
+        const line = lineMap.get(view);
+        return { text: line.text, eol: line.eol, cells: line.meta.cells || global.byMDviewer.scanLine(line.text, {}, "| --- |").cells };
+      });
+      if (rows.some((row) => !row.cells)) return false;
+      const header = lineMap.get(record.group.content.firstElementChild),
+        last = lineMap.get(record.group.content.lastElementChild),
+        columns = header.meta.cells.length,
+        rowIndex = [...record.group.content.children].indexOf(record.view);
+      const column = Math.min(columns - 1, current.column);
+      const focusedCommand = tableOptions?.contains(document.activeElement) ? document.activeElement.dataset.command : null;
+      let targetRow = rowIndex,
+        targetColumn = column;
+      if (name.startsWith("tableRow")) {
+        if (name === "tableRowRemove") {
+          if (rowIndex === 0) return false;
+          rows.splice(rowIndex, 1);
+          targetRow = rowIndex < rows.length ? rowIndex : rowIndex - 1;
+          if (targetRow === 1) targetRow = 0;
+        } else {
+          if (rows.length - 2 >= 100) return false;
+          targetRow = rowIndex === 0 ? 2 : rowIndex + (name === "tableRowBelow" ? 1 : 0);
+          const text = `| ${Array(columns).fill(" ").join(" | ")} |`;
+          rows.splice(targetRow, 0, { text, eol: record.eol || rows[Math.max(0, targetRow - 1)].eol || eol });
+        }
+      } else {
+        const removing = name === "tableColumnRemove";
+        if (removing ? columns <= 1 : columns >= 20) return false;
+        const index = column + (name === "tableColumnRight" ? 1 : 0);
+        targetColumn = removing ? Math.min(column, columns - 2) : index;
+        for (const [rowNumber, row] of rows.entries()) {
+          const cells = row.cells,
+            bounds = tableCellBounds(row.text, cells);
+          if (removing) {
+            if (index >= cells.length) continue;
+            if (cells.length === 1) {
+              row.text = "| |";
+              continue;
+            }
+            const start = index < cells.length - 1 ? bounds[index].from : bounds[index - 1].to,
+              end = index < cells.length - 1 ? bounds[index + 1].from : bounds[index].to;
+            const outerPipes = row.text.slice(0, cells[0].from).includes("|") || row.text.slice(cells.at(-1).to).includes("|");
+            row.text = row.text.slice(0, start) + row.text.slice(end);
+            // A one-column table still needs a pipe when its original rows omitted outer borders.
+            if (cells.length === 2 && !outerPipes) row.text = `|${row.text}|`;
+          } else {
+            const content = rowNumber === 0 ? languageText.column.replaceAll("{number}", String(index + 1)) : rowNumber === 1 ? "---" : "";
+            const offset = index < cells.length ? bounds[index].from : bounds.at(-1).to;
+            // Pad short imported rows up to the insertion column without rewriting their existing cells.
+            const inserted = index < cells.length ? ` ${content} |` : `${"|  ".repeat(index - cells.length)}| ${content} `;
+            row.text = row.text.slice(0, offset) + inserted + row.text.slice(offset);
+            // An empty final cell needs an outer pipe so the parser does not treat its separator as the border.
+            if (index >= cells.length && !content && !row.text.slice(offset + inserted.length).includes("|")) row.text += "|";
+          }
+        }
+      }
+      // Keep structural edits within the visual parser's existing per-line source-mapping limit.
+      if (rows.some((row) => row.text.length > 8192)) return false;
+      const output = rows.map((row, index) => row.text + (index < rows.length - 1 ? row.eol || eol : "")).join("");
+      const target = rows[targetRow],
+        cells = global.byMDviewer.scanLine(target.text, { table: columns }).cells;
+      const offset = header.from + rows.slice(0, targetRow).reduce((length, row) => length + row.text.length + (row.eol || eol).length, 0) + cells[Math.min(targetColumn, cells.length - 1)].from;
+      const changed = change(header.from, last.from + last.text.length, output, { anchor: offset, focus: offset }, name);
+      if (changed) {
+        showTableToolbar();
+        if (focusedCommand) (tableOptions.querySelector(`[data-command="${focusedCommand}"]:enabled`) || tableOptions.querySelector("button:enabled")).focus({ preventScroll: true });
+      }
+      return changed;
+    };
     const command = (name, value) => {
       if (!alive || previewing) return false;
       finishComposition();
@@ -2176,6 +2405,7 @@
         undo(name === "redo");
         return true;
       }
+      if (tableTools.some(([action]) => action === name)) return editTable(name);
       if (name === "codeLanguage") {
         if (syntax === "source" || typeof value !== "string" || !/^[\w+#.-]*$/.test(value)) return false;
         const record = selectedCode || lines[lineAt(from)];
@@ -2690,6 +2920,16 @@
       });
       listen(target, "keydown", (event) => {
         if (event.isComposing || composing) return;
+        if (target === surface && event.altKey && event.key === "F10") {
+          position = selection();
+          const record = lines[lineAt(position.focus)];
+          if (record?.meta.cells) {
+            event.preventDefault();
+            showTableToolbar();
+            tableOptions.querySelector("button:enabled").focus({ preventScroll: true });
+          }
+          return;
+        }
         shiftEnter = event.key === "Enter" && event.shiftKey;
         // Handle hidden-syntax deletion here when WebKit would omit beforeinput.
         if (!event.ctrlKey && !event.metaKey && !event.altKey && ["Backspace", "Delete"].includes(event.key) && deleteBoundary(event.key === "Backspace" ? "deleteContentBackward" : "deleteContentForward", selection())) {
@@ -2738,7 +2978,7 @@
       document,
       "pointerdown",
       (event) => {
-        if (!contextToolbar?.contains(event.target) && event.target !== selectedImage && !selectedCode?.group.node.contains(event.target)) hideContextToolbar();
+        if (!contextToolbar?.contains(event.target) && event.target !== selectedImage && !selectedCode?.group.node.contains(event.target) && !selectedTable?.contains(event.target)) hideContextToolbar();
         if (element.contains(event.target) || !element.contains(document.activeElement)) return;
         position = selection();
         // Empty host space can hit-test to the nearest editable line outside its bounds.
@@ -2752,8 +2992,13 @@
     listen(document, "selectionchange", () => {
       if (!alive || previewing || composing || !element.contains(document.activeElement)) return;
       const started = metrics ? performance.now() : 0;
+      const previous = position;
       position = selection();
-      if (syntax !== "source" && surface.contains(document.getSelection()?.focusNode)) activate(lines[lineAt(position.focus)]);
+      if (syntax !== "source" && surface.contains(document.getSelection()?.focusNode)) {
+        const record = lines[lineAt(position.focus)];
+        activate(record);
+        if (record.meta.cells && !selectedImage && (selectedTable || previous.anchor !== position.anchor || previous.focus !== position.focus)) showTableToolbar();
+      }
       scheduleToolbar();
       measure("selection", started);
     });
@@ -2767,6 +3012,21 @@
       }
     });
     listen(surface, "pointerdown", (event) => {
+      const cell = event.target.closest("td,th");
+      if (cell && !event.target.matches(".byEDimage")) {
+        const row = cell.closest(".byEDline"),
+          column = cell.cellIndex;
+        if (composing) finishComposition();
+        const record = lineMap.get(row),
+          sourceCell = record?.meta.cells?.[column];
+        // Browsers can hit-test an empty cell to another row when its only visible node is empty text.
+        if (sourceCell && sourceCell.from === sourceCell.to) {
+          event.preventDefault();
+          const offset = record.from + sourceCell.from;
+          restore({ anchor: offset, focus: offset });
+        }
+        return;
+      }
       if (!event.target.matches(".byEDimage")) return;
       event.preventDefault();
       finishComposition();
@@ -2776,6 +3036,11 @@
       restore({ anchor: mapping.record.from + mapping.token.from, focus: mapping.record.from + mapping.token.to });
       showImageToolbar(image);
     });
+    listen(surface, "click", (event) => {
+      if (!event.target.closest("td,th") || event.target.matches(".byEDimage")) return;
+      position = selection();
+      showTableToolbar();
+    });
     listen(surface, "focusin", (event) => {
       if (event.target.matches(".byEDimage")) showImageToolbar(event.target);
     });
@@ -2784,6 +3049,7 @@
       if (fence && !fence.contains(event.relatedTarget)) showCodeToolbar(lineMap.get(fence.querySelector(".byEDline")));
     });
     listen(surface, "pointerout", (event) => {
+      if (dismissedCode && !dismissedCode.group.node.contains(event.relatedTarget)) dismissedCode = null;
       if (!selectedCode || active?.group === selectedCode.group || contextToolbar.contains(document.activeElement)) return;
       if (!selectedCode.group.node.contains(event.relatedTarget) && !contextToolbar.contains(event.relatedTarget)) hideContextToolbar();
     });
@@ -2805,13 +3071,13 @@
       { capture: true }
     );
     listen(global, "resize", () => {
-      if (selectedImage || selectedCode) positionContextToolbar();
+      if (selectedImage || selectedCode || selectedTable) positionContextToolbar();
     });
     listen(
       document,
       "scroll",
       () => {
-        if (selectedImage || selectedCode) positionContextToolbar();
+        if (selectedImage || selectedCode || selectedTable) positionContextToolbar();
       },
       { capture: true }
     );
@@ -3012,6 +3278,7 @@
         finishComposition();
         hideContextToolbar();
         alive = false;
+        dismissedCode = null;
         abort.abort();
         dialogAbort?.abort();
         cancelAnimationFrame(toolbarFrame);
