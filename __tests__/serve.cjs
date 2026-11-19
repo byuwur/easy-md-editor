@@ -16,6 +16,9 @@ const files = {
   "/code.js": "../code.view/code.js",
   "/code.css": "../code.view/code.css"
 };
+// ==============
+// PROJECT ASSETS
+// ==============
 for (const [name, repo] of [
   ["md", "md.view"],
   ["code", "code.view"]
@@ -24,6 +27,9 @@ for (const [name, repo] of [
     files[`/${repo}/${name}.${extension}`] = `../${repo}/${name}.${extension}`;
   }
 }
+// ===========
+// TEST SERVER
+// ===========
 const server = http.createServer(async (request, response) => {
   const file = files[new URL(request.url, "http://localhost").pathname];
   if (!file) {

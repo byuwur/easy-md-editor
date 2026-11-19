@@ -59,17 +59,23 @@
         { path: "/js/bootstrap.min.js", optional: false }
       ];
       const spaReady = (async () => {
-        await byLoad(SPA_STYLES, { host: HOST, before: document.getElementById("spa-loader"), defer: false });
+        await byLoad(SPA_STYLES, {
+          host: HOST,
+          before: document.getElementById("spa-loader"),
+          defer: false
+        });
         await byLoad(SPA_SCRIPTS, { host: HOST, before: document.getElementById("spa-loader") });
       })().catch(console.error);
     </script>
   </head>
   <body>
     <template id="site-analytics-frame">
-      <meta name="referrer" content="no-referrer">
+      <meta name="referrer" content="no-referrer" />
       <script>
         window.dataLayer = [];
-        function gtag() { window.dataLayer.push(arguments); }
+        function gtag() {
+          window.dataLayer.push(arguments);
+        }
       </script>
     </template>
     <a class="visually-hidden-focusable position-absolute top-0 start-0 p-3 z-3 bg-body-tertiary link-body-emphasis" href="#playground">Skip to playground</a>
@@ -391,7 +397,9 @@
       ><p class="site-width container-fluid">Enable JavaScript to use the playground. The <a href="https://github.com/byuwur/md.edit#readme">README</a> includes integration examples.</p></noscript
     >
     <style>
-      /* --- FAMILY THEME --- */
+      /* ============
+       * FAMILY THEME
+       * ============ */
       :root {
         --accent: #c4b5fd;
         --accent-text: var(--accent);
@@ -420,6 +428,9 @@
         outline: 0.125rem solid var(--accent-text);
         outline-offset: 0.1875rem;
       }
+      /* ==========================
+       * PAGE LAYOUT AND NAVIGATION
+       * ========================== */
       .site-width {
         max-width: 92.5rem;
         padding-inline: clamp(1rem, 3vw, 3rem);
@@ -454,7 +465,9 @@
         color: var(--accent-text);
       }
 
-      /* --- PAGE CONTROLS --- */
+      /* =============
+       * PAGE CONTROLS
+       * ============= */
       .btn {
         display: inline-flex;
         align-items: center;
@@ -505,7 +518,9 @@
         width: min(100%, 18rem);
       }
 
-      /* --- PLAYGROUND --- */
+      /* ==========
+       * PLAYGROUND
+       * ========== */
       .playground > #editor {
         border: 0;
         border-radius: 0;
@@ -581,7 +596,9 @@
         }
       }
 
-      /* --- COLOR PICKERS --- */
+      /* =============
+       * COLOR PICKERS
+       * ============= */
       .pcr-app {
         background: var(--bs-body-bg);
         border: 0.0625rem solid var(--bs-border-color);
@@ -591,7 +608,9 @@
         color: var(--bs-body-color);
       }
 
-      /* --- MOTION --- */
+      /* ==========
+       * MOTION
+       * ========== */
       :root:not(.no-motion) details::details-content {
         interpolate-size: allow-keywords;
         block-size: 0;
@@ -638,12 +657,17 @@
         const output = document.getElementById("markdown-output");
         const feedback = document.getElementById("feedback");
         const sourceSelect = document.getElementById("document-source");
-        const documents = { showcase: { source: sample, original: sample }, custom: { source: "", original: "" } };
+        const documents = {
+          showcase: { source: sample, original: sample },
+          custom: { source: "", original: "" }
+        };
         let activeSource = "showcase";
         let fileRequest = 0,
           outputTimer;
 
-        // --- DOCUMENT ---
+        // ==========
+        // DOCUMENT
+        // ==========
         function updateOutput(markdown) {
           output.value = markdown;
           const bytes = new TextEncoder().encode(markdown).length;
@@ -655,8 +679,11 @@
         let replacingDocument = false;
         function replaceDocument(markdown) {
           replacingDocument = true;
-          try { editor.setMarkdown(markdown); }
-          finally { replacingDocument = false; }
+          try {
+            editor.setMarkdown(markdown);
+          } finally {
+            replacingDocument = false;
+          }
         }
         const editor = byMDeditor(document.getElementById("editor"), sample, {
           onChange(markdown) {
@@ -672,7 +699,9 @@
         });
         updateOutput(sample);
         window.playgroundEditor = editor;
-        // --- EDITOR CONFIGURATION ---
+        // ====================
+        // EDITOR CONFIGURATION
+        // ====================
         const visibilityOptions = ["toolbarToggle", "syntaxSelect", "previewToggle", "themeToggle", "paletteSelect", "controlsCompact", "statusBar"];
         const modeSelect = document.getElementById("syntax-mode");
         const paletteSelect = document.getElementById("playground-palette");
@@ -793,57 +822,24 @@
           window.bySiteAnalytics?.begin("resource_selected")?.();
         });
 
-        // --- FILE ACTIONS ---
-        function downloadText(text, filename, type) {
-          const url = URL.createObjectURL(new Blob([text], { type }));
-          const link = document.createElement("a");
-          link.href = url;
-          link.download = filename;
-          document.body.append(link);
-          link.click();
-          window.bySiteAnalytics?.begin("resource_exported")?.();
-          link.remove();
-          setTimeout(() => URL.revokeObjectURL(url), 1000);
-        }
-        const file = document.getElementById("file");
-        document.getElementById("open-file").addEventListener("click", () => file.click());
-        file.addEventListener("change", async () => {
-          const current = ++fileRequest,
-            selected = file.files[0];
-          file.value = "";
-          if (!selected) return;
-          if (selected.size > 2000000) {
-            feedback.textContent = "Choose a file smaller than 2 MB.";
-            return;
-          }
-          try {
-            const loaded = window.bySiteAnalytics?.begin("resource_loaded");
-            const text = await selected.text();
-            if (current !== fileRequest) return;
-            documents.custom = { source: text, original: text };
-            sourceSelect.querySelector('[value="custom"]').textContent = selected.name;
-            sourceSelect.value = activeSource = "custom";
-            replaceDocument(text);
-            loaded?.();
-          } catch {
-            if (current === fileRequest) feedback.textContent = "Could not open this file.";
-          }
-        });
-        document.getElementById("reset").addEventListener("click", () => {
-          fileRequest++;
-          sourceSelect.value = activeSource = "showcase";
-          documents.showcase = { source: sample, original: sample };
-          replaceDocument(sample);
-        });
-        document.getElementById("download").addEventListener("click", () => downloadText(editor.getMarkdown(), "document.md", "text/markdown;charset=UTF-8"));
-        document.getElementById("print").addEventListener("click", () => {
-          const wasPreview = !document.querySelector("#editor > .byEDpreview").hidden;
-          editor.setPreview(true);
-          window.print();
-          if (!wasPreview) editor.setPreview(false);
+        // ==========
+        // SITE THEME
+        // ==========
+        document.getElementById("site-theme").addEventListener("click", (event) => {
+          const button = event.currentTarget;
+          const theme = document.documentElement.dataset.bsTheme === "dark" ? "light" : "dark";
+          const next = theme === "dark" ? "light" : "dark";
+          document.documentElement.dataset.bsTheme = theme;
+          button.querySelector("span").textContent = next === "light" ? "Light" : "Dark";
+          button.querySelector("i").className = `fa-solid fa-${next === "light" ? "sun" : "moon"} me-1`;
+          button.setAttribute("aria-label", `Switch website to ${next} theme`);
+          document.querySelector('meta[name="theme-color"]').content = getComputedStyle(document.documentElement).getPropertyValue("--bs-body-bg").trim();
+          document.getElementById("integration-code").dataset.theme = document.documentElement.dataset.bsTheme;
         });
 
-        // --- HTML STARTER ---
+        // ===========
+        // INTEGRATION
+        // ===========
         let integrationHTML = "";
         function renderIntegration(html) {
           if (html === integrationHTML) return;
@@ -941,18 +937,58 @@
           document.getElementById("integration-feedback").textContent = "Downloaded. The starter uses default editor settings.";
         });
 
-        // --- WEBSITE THEME ---
-        document.getElementById("site-theme").addEventListener("click", (event) => {
-          const button = event.currentTarget;
-          const theme = document.documentElement.dataset.bsTheme === "dark" ? "light" : "dark";
-          const next = theme === "dark" ? "light" : "dark";
-          document.documentElement.dataset.bsTheme = theme;
-          button.querySelector("span").textContent = next === "light" ? "Light" : "Dark";
-          button.querySelector("i").className = `fa-solid fa-${next === "light" ? "sun" : "moon"} me-1`;
-          button.setAttribute("aria-label", `Switch website to ${next} theme`);
-          document.querySelector('meta[name="theme-color"]').content = getComputedStyle(document.documentElement).getPropertyValue("--bs-body-bg").trim();
-          document.getElementById("integration-code").dataset.theme = document.documentElement.dataset.bsTheme;
+        // ============
+        // FILE ACTIONS
+        // ============
+        function downloadText(text, filename, type) {
+          const url = URL.createObjectURL(new Blob([text], { type }));
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = filename;
+          document.body.append(link);
+          link.click();
+          window.bySiteAnalytics?.begin("resource_exported")?.();
+          link.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+        const file = document.getElementById("file");
+        document.getElementById("open-file").addEventListener("click", () => file.click());
+        file.addEventListener("change", async () => {
+          const current = ++fileRequest,
+            selected = file.files[0];
+          file.value = "";
+          if (!selected) return;
+          if (selected.size > 2000000) {
+            feedback.textContent = "Choose a file smaller than 2 MB.";
+            return;
+          }
+          try {
+            const loaded = window.bySiteAnalytics?.begin("resource_loaded");
+            const text = await selected.text();
+            if (current !== fileRequest) return;
+            documents.custom = { source: text, original: text };
+            sourceSelect.querySelector('[value="custom"]').textContent = selected.name;
+            sourceSelect.value = activeSource = "custom";
+            replaceDocument(text);
+            loaded?.();
+          } catch {
+            if (current === fileRequest) feedback.textContent = "Could not open this file.";
+          }
         });
+        document.getElementById("reset").addEventListener("click", () => {
+          fileRequest++;
+          sourceSelect.value = activeSource = "showcase";
+          documents.showcase = { source: sample, original: sample };
+          replaceDocument(sample);
+        });
+        document.getElementById("download").addEventListener("click", () => downloadText(editor.getMarkdown(), "document.md", "text/markdown;charset=UTF-8"));
+        document.getElementById("print").addEventListener("click", () => {
+          const wasPreview = !document.querySelector("#editor > .byEDpreview").hidden;
+          editor.setPreview(true);
+          window.print();
+          if (!wasPreview) editor.setPreview(false);
+        });
+
         document.getElementById("year-txt").textContent = new Date().getFullYear();
         generateIntegration();
       });
@@ -981,7 +1017,9 @@
               components: { preview: true, opacity: true, hue: true, interaction: { hex: true, rgba: false, hsla: false, hsva: false, cmyk: false, input: true, save: true, clear: true } },
               i18n: { "btn:clear": "Theme default", "aria:btn:clear": "Use the theme background" }
             });
-            let syncing = false, openingColor, colorChanged;
+            let syncing = false,
+              openingColor,
+              colorChanged;
             const change = (value) => {
               field.value = value;
               validate();
