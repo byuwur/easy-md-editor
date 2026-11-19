@@ -6,13 +6,19 @@
  * MIT License (see LICENSE).
  */
 (function (global) {
-  // --- INITIALIZATION ---
+  // ==============
+  // INITIALIZATION
+  // ==============
   if (global.byMDeditor?.initialized) return;
 
-  // --- METADATA ---
+  // ==========
+  // METADATA
+  // ==========
   byMDeditor.VERSION = "2.2"; // 2026-11-18
 
-  // --- CONSTANTS ---
+  // ==========
+  // CONSTANTS
+  // ==========
   const tools = [
     ["undo", "rotate-left"],
     ["redo", "rotate-right"],
@@ -109,13 +115,17 @@
     }
   };
 
-  // --- STATE ---
+  // ==========
+  // STATE
+  // ==========
   const instances = new WeakMap();
   const warnedLanguages = new Set();
   const warnedPalettes = new Set();
   let segmenter;
 
-  // --- HELPERS ---
+  // ==========
+  // HELPERS
+  // ==========
   const node = (tag, className = "", text) => {
     const element = document.createElement(tag);
     element.className = className;
@@ -146,7 +156,9 @@
     return Math.max(0, Math.min(text.length, next));
   };
 
-  // --- APPEARANCE ---
+  // ==========
+  // APPEARANCE
+  // ==========
   const warnMissingThemes = (element, palette = element.dataset.theme) => {
     if (!Object.values(palettes).some((choices) => Object.hasOwn(choices, palette)) || ["monokai", "github", "solarized", "high-contrast"].includes(palette) || warnedPalettes.has(palette)) return;
     const document = element.ownerDocument;
@@ -178,7 +190,9 @@
     }
   };
 
-  // --- LOCALIZATION ---
+  // ============
+  // LOCALIZATION
+  // ============
   byMDeditor.locales = {
     en: {
       document: "Document",
@@ -938,10 +952,14 @@
     return "en";
   };
 
-  // --- PUBLIC API ---
+  // ==========
+  // PUBLIC API
+  // ==========
   // Mount an editor with caller-owned persistence; all selections use UTF-16 source offsets.
   function byMDeditor(element, markdown, options = {}) {
-    // --- OPTIONS AND INSTANCE STATE ---
+    // ==========================
+    // OPTIONS AND INSTANCE STATE
+    // ==========================
     if (!(element instanceof HTMLElement)) throw new TypeError("byMDeditor: element must be an HTMLElement.");
     // Markdown owns the document. Editable DOM, line records, and Preview are derived views.
     let source = markdown instanceof HTMLElement ? markdown.textContent : (markdown ?? element.textContent);
@@ -1042,7 +1060,9 @@
     const measure = (operation, started, extra = {}) => metrics?.({ operation, duration: performance.now() - started, ...extra });
     const listen = (target, type, handler, extra = {}) => target.addEventListener(type, handler, { signal, ...extra });
 
-    // --- LOCALIZATION ---
+    // ============
+    // LOCALIZATION
+    // ============
     const languageText = {};
     for (const [key, englishText] of Object.entries(byMDeditor.locales.en)) {
       languageText[key] = String(translations[key] ?? byMDeditor.locales[language]?.[key] ?? englishText);
@@ -1103,7 +1123,9 @@
       }
     };
 
-    // --- CONTROLS ---
+    // ==========
+    // CONTROLS
+    // ==========
     element.replaceChildren();
     element.classList.add("byMDeditor", "byMDdocument");
     element.classList.toggle("byVIEWmotion", options.animations);
@@ -1164,7 +1186,12 @@
     picker.dataset.control = "syntax";
     picker.setAttribute("aria-label", languageText.syntaxVisibility);
     for (const mode of modes) {
-      const key = { "no-code": "modeNoCode", clean: "modeClean", assisted: "modeAssisted", source: "modeSource" }[mode];
+      const key = {
+        "no-code": "modeNoCode",
+        clean: "modeClean",
+        assisted: "modeAssisted",
+        source: "modeSource"
+      }[mode];
       const option = node("option", "", languageText[key]);
       option.dataset.message = key;
       option.value = mode;
@@ -1229,7 +1256,14 @@
       if (wraps[name]) control.setAttribute("aria-pressed", "false");
     }
     element.append(bar, toolbar, surface, raw, preview, status);
-    const controlVisibility = { toolbarToggle: toggle, syntaxSelect: picker, previewToggle: previewButton, themeToggle: themeButton, paletteSelect: palettePicker, statusBar: status };
+    const controlVisibility = {
+      toolbarToggle: toggle,
+      syntaxSelect: picker,
+      previewToggle: previewButton,
+      themeToggle: themeButton,
+      paletteSelect: palettePicker,
+      statusBar: status
+    };
     const isDark = () => element.dataset.theme === "dark" || (element.dataset.theme !== "light" && element.classList.contains("dark"));
 
     const updateToolbar = () => {
@@ -1261,7 +1295,9 @@
       if (!toolbarFrame) toolbarFrame = requestAnimationFrame(updateToolbar);
     };
 
-    // --- SOURCE MAPPING ---
+    // ==============
+    // SOURCE MAPPING
+    // ==============
     const split = (text, from = 0) => {
       const result = [];
       // Retain each physical separator so edits can preserve mixed source line endings.
@@ -1366,11 +1402,16 @@
       }
       return null;
     };
-    // --- SELECTION ---
+    // ==========
+    // SELECTION
+    // ==========
     // Read the active mode's selection as directed UTF-16 source offsets; toolbar focus retains the last range.
     const selection = () => {
       if (syntax === "source")
-        return { anchor: rawOffset(raw.selectionDirection === "backward" ? raw.selectionEnd : raw.selectionStart, true), focus: rawOffset(raw.selectionDirection === "backward" ? raw.selectionStart : raw.selectionEnd, true) };
+        return {
+          anchor: rawOffset(raw.selectionDirection === "backward" ? raw.selectionEnd : raw.selectionStart, true),
+          focus: rawOffset(raw.selectionDirection === "backward" ? raw.selectionStart : raw.selectionEnd, true)
+        };
       const current = document.getSelection();
       if (current && surface.contains(current.anchorNode) && surface.contains(current.focusNode)) {
         // Select All includes source that has no visible caret boundary, such as headings and closing fences.
@@ -1419,7 +1460,10 @@
     // Restore a directed source selection in either editing surface without replacing document content.
     const restore = (next = position, focus = true) => {
       fullSelection = null;
-      position = { anchor: Math.max(0, Math.min(source.length, next.anchor)), focus: Math.max(0, Math.min(source.length, next.focus)) };
+      position = {
+        anchor: Math.max(0, Math.min(source.length, next.anchor)),
+        focus: Math.max(0, Math.min(source.length, next.focus))
+      };
       if (previewing) return;
       if (syntax === "source") {
         if (focus && document.activeElement !== raw) raw.focus({ preventScroll: true });
@@ -1451,11 +1495,18 @@
       if (lines[lineAt(position.focus)].meta.cells && !selectedImage) showTableToolbar();
       if (syntax === "no-code" && position.anchor !== position.focus && Math.min(position.anchor, position.focus) === 0 && Math.max(position.anchor, position.focus) === source.length) {
         const current = document.getSelection();
-        fullSelection = { anchorNode: current.anchorNode, anchorOffset: current.anchorOffset, focusNode: current.focusNode, focusOffset: current.focusOffset };
+        fullSelection = {
+          anchorNode: current.anchorNode,
+          anchorOffset: current.anchorOffset,
+          focusNode: current.focusNode,
+          focusOffset: current.focusOffset
+        };
       }
     };
 
-    // --- CONTEXT CONTROLS ---
+    // ================
+    // CONTEXT CONTROLS
+    // ================
     const markImageSize = (row, value) => {
       row.dataset.size = value;
       for (const button of row.querySelectorAll("button")) {
@@ -1673,7 +1724,9 @@
       contextObserver.observe(element);
     };
 
-    // --- INCREMENTAL RENDERING ---
+    // =====================
+    // INCREMENTAL RENDERING
+    // =====================
     const renderInline = (target, record, from, to) => {
       const value = record.text.slice(from, to);
       if (value.length > 8192 || record.meta.type === "source") {
@@ -1692,7 +1745,13 @@
             const literal = node("span", "byEDliteral");
             mappedText(literal, record, start, from + token.bodyFrom, "byEDescape");
             mappedText(literal, record, from + token.bodyFrom, end);
-            record.formats.push({ type: "escape", from: start, to: end, bodyFrom: from + token.bodyFrom, bodyTo: end });
+            record.formats.push({
+              type: "escape",
+              from: start,
+              to: end,
+              bodyFrom: from + token.bodyFrom,
+              bodyTo: end
+            });
             parent.append(literal);
             continue;
           }
@@ -1704,7 +1763,14 @@
           const tag = { strongEm: "strong", link: "span", image: "span" }[token.type] || token.type;
           const wrapper = node(tag, token.type === "code" ? "byMDinlineCode" : token.type === "link" ? "byMDlink" : "");
           if (["strong", "strongEm", "em", "del", "code", "image"].includes(token.type) || (syntax === "no-code" && !token.auto && token.type === "link"))
-            record.formats.push({ ...token, from: start, to: end, bodyFrom: from + token.bodyFrom, bodyTo: from + token.bodyTo, ...(token.size ? { sizeFrom: from + token.sizeFrom } : {}) });
+            record.formats.push({
+              ...token,
+              from: start,
+              to: end,
+              bodyFrom: from + token.bodyFrom,
+              bodyTo: from + token.bodyTo,
+              ...(token.size ? { sizeFrom: from + token.sizeFrom } : {})
+            });
           mappedText(wrapper, record, start, from + token.bodyFrom, "byEDsyntax");
           if (token.children && !token.auto) render(wrapper, token.children);
           else mappedText(wrapper, record, from + token.bodyFrom, from + token.bodyTo);
@@ -1832,7 +1898,12 @@
         readOnly.contentEditable = "false";
         readOnly.title = languageText.readOnlyBlock;
         view.append(readOnly);
-        global.byMDviewer(readOnly, record.text, { toolbar: false, statusBar: false, animations: false, codeHighlighting: false });
+        global.byMDviewer(readOnly, record.text, {
+          toolbar: false,
+          statusBar: false,
+          animations: false,
+          codeHighlighting: false
+        });
         // The editor owns the palette; this fragment inherits it instead of starting a nested theme.
         readOnly.classList.remove("byMDdocument");
       } else if (["code", "source", "fenceOpen", "fenceClose"].includes(type)) {
@@ -1981,7 +2052,9 @@
       measure("patch", started, { lines: replacement.length });
     };
 
-    // --- CODE HIGHLIGHTING ---
+    // =================
+    // CODE HIGHLIGHTING
+    // =================
     const paintCodeLine = (record, parts) => {
       if (!record?.text.length) return false;
       const children = [...record.view.childNodes];
@@ -2015,7 +2088,18 @@
             const language = lineMap.get(group.content.firstElementChild)?.meta.language || "plain";
             const text = records.map((record) => record.text).join("\n");
             if (!records.length || (group.codeCache?.text === text && group.codeCache.language === language)) continue;
-            codeJob = { group, records, text, language, iterator: global.byCODEviewer.tokenize(text, language), row: 0, column: 0, parts: [], token: null, offset: 0 };
+            codeJob = {
+              group,
+              records,
+              text,
+              language,
+              iterator: global.byCODEviewer.tokenize(text, language),
+              row: 0,
+              column: 0,
+              parts: [],
+              token: null,
+              offset: 0
+            };
           }
           const job = codeJob;
           if (!job.token) {
@@ -2077,7 +2161,9 @@
       }, 80);
     };
 
-    // --- TRANSACTIONS AND HISTORY ---
+    // ========================
+    // TRANSACTIONS AND HISTORY
+    // ========================
     // Accept an unchanged native text node after input while updating its source offsets and history data.
     const acceptNativeText = (edit) => {
       const { record, point, from, to, inserted } = edit,
@@ -2204,7 +2290,9 @@
       else restore(after);
       queueCode();
       scheduleToolbar();
-      measure("edit", (native?.started ?? started) - (native?.inputCost || 0), { characters: inserted.length });
+      measure("edit", (native?.started ?? started) - (native?.inputCost || 0), {
+        characters: inserted.length
+      });
       options.onChange?.(source);
       return true;
     };
@@ -2280,7 +2368,9 @@
       }
     };
 
-    // --- FORMATTING ---
+    // ==========
+    // FORMATTING
+    // ==========
     const formattingAt = (offset) => {
       if (syntax !== "source" && !dirty) return lines[lineAt(offset)];
       if (!rich) return null;
@@ -2328,7 +2418,11 @@
       const { record } = current;
       const rows = [...record.group.content.children].map((view) => {
         const line = lineMap.get(view);
-        return { text: line.text, eol: line.eol, cells: line.meta.cells || global.byMDviewer.scanLine(line.text, {}, "| --- |").cells };
+        return {
+          text: line.text,
+          eol: line.eol,
+          cells: line.meta.cells || global.byMDviewer.scanLine(line.text, {}, "| --- |").cells
+        };
       });
       if (rows.some((row) => !row.cells)) return false;
       const header = lineMap.get(record.group.content.firstElementChild),
@@ -2349,7 +2443,10 @@
           if (rows.length - 2 >= 100) return false;
           targetRow = rowIndex === 0 ? 2 : rowIndex + (name === "tableRowBelow" ? 1 : 0);
           const text = `| ${Array(columns).fill(" ").join(" | ")} |`;
-          rows.splice(targetRow, 0, { text, eol: record.eol || rows[Math.max(0, targetRow - 1)].eol || eol });
+          rows.splice(targetRow, 0, {
+            text,
+            eol: record.eol || rows[Math.max(0, targetRow - 1)].eol || eol
+          });
         }
       } else {
         const removing = name === "tableColumnRemove";
@@ -2556,7 +2653,12 @@
       dialog = node("dialog", "byEDdialog");
       const form = node("form");
       form.method = "dialog";
-      const titleKey = { table: "insertTable", link: "insertLink", image: "insertImage", codeBlock: "insertCodeBlock" }[name];
+      const titleKey = {
+        table: "insertTable",
+        link: "insertLink",
+        image: "insertImage",
+        codeBlock: "insertCodeBlock"
+      }[name];
       const title = node("h2");
       const titleIcon = node("i", `fa-solid fa-${tools.find(([key]) => key === name)[1]}`);
       titleIcon.setAttribute("aria-hidden", "true");
@@ -2703,7 +2805,9 @@
       return true;
     };
 
-    // --- INPUT ---
+    // ==========
+    // INPUT
+    // ==========
     const beforeInput = (event) => {
       if (composing || event.isComposing || !event.cancelable) return;
       const started = metrics ? performance.now() : 0;
@@ -2773,7 +2877,16 @@
           !/[&@]|:\/\/|\bwww\b/.test(mapped.record.text)
         ) {
           const point = mapped.record.points.find((item) => item.node === target);
-          nativeEdit = { record: mapped.record, point, from, to, type, inserted: wordDelete ? "" : event.data, before: { ...position }, inputCost: metrics ? performance.now() - started : 0 };
+          nativeEdit = {
+            record: mapped.record,
+            point,
+            from,
+            to,
+            type,
+            inserted: wordDelete ? "" : event.data,
+            before: { ...position },
+            inputCost: metrics ? performance.now() - started : 0
+          };
           return;
         }
       }
@@ -2973,7 +3086,9 @@
     listen(element, "keyup", (event) => {
       if (event.key === "Enter") shiftEnter = false;
     });
-    // --- SELECTION AND TOOLBAR EVENTS ---
+    // ============================
+    // SELECTION AND TOOLBAR EVENTS
+    // ============================
     listen(
       document,
       "pointerdown",
@@ -3033,7 +3148,10 @@
       const image = event.target,
         mapping = imageMap.get(image);
       if (!image.isConnected || !mapping) return;
-      restore({ anchor: mapping.record.from + mapping.token.from, focus: mapping.record.from + mapping.token.to });
+      restore({
+        anchor: mapping.record.from + mapping.token.from,
+        focus: mapping.record.from + mapping.token.to
+      });
       showImageToolbar(image);
     });
     listen(surface, "click", (event) => {
@@ -3102,7 +3220,9 @@
       buttons[index]?.focus();
     });
 
-    // --- MODES AND LIFECYCLE ---
+    // ===================
+    // MODES AND LIFECYCLE
+    // ===================
     const api = {
       // Return the last committed Markdown; active IME text commits on compositionend.
       getMarkdown() {
@@ -3207,7 +3327,11 @@
           const started = metrics ? performance.now() : 0;
           preview.dataset.theme = element.dataset.theme || "github";
           preview.classList.toggle("dark", isDark());
-          global.byMDviewer(preview, source, { toolbar: false, animations: options.animations, codeHighlighting: options.codeHighlighting && typeof global.byCODEviewer?.highlight === "function" });
+          global.byMDviewer(preview, source, {
+            toolbar: false,
+            animations: options.animations,
+            codeHighlighting: options.codeHighlighting && typeof global.byCODEviewer?.highlight === "function"
+          });
           measure("preview", started);
           announce("readOnlyPreview");
         } else {
@@ -3308,7 +3432,9 @@
         }
       }
     };
-    // --- MOUNT ---
+    // ==========
+    // MOUNT
+    // ==========
     instances.set(element, api);
     translateControls();
     syncRawBreaks();
@@ -3331,7 +3457,9 @@
     updateToolbar();
     return api;
   }
-  // --- EXPORT ---
+  // ==========
+  // EXPORT
+  // ==========
   global.byMDeditor = byMDeditor;
   byMDeditor.initialized = true;
 })(typeof window !== "undefined" ? window : this);

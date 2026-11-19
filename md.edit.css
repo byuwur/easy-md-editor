@@ -1,9 +1,13 @@
 /* byuwur was here */
 
-/* --- ICONS --- */
+/* ==========
+ * ICONS
+ * ========== */
 @import url("https://cdn.jsdelivr.net/gh/byuwur/spa.js@v20.14/css/fontawesome.min.css");
 
-/* --- EDITOR --- */
+/* ==========
+ * EDITOR
+ * ========== */
 /* Keep host layout transitions out; component rules below opt in to motion. */
 .byMDeditor,
 .byMDeditor *,
@@ -34,7 +38,9 @@
   box-sizing: border-box;
 }
 
-/* --- CONTROLS --- */
+/* ==========
+ * CONTROLS
+ * ========== */
 .byMDeditor [hidden] {
   display: none !important;
 }
@@ -184,7 +190,9 @@
   border-top: 0.0625rem solid var(--by-ed-border);
 }
 
-/* --- DOCUMENT --- */
+/* ==========
+ * DOCUMENT
+ * ========== */
 .byEDsurface {
   position: relative;
   padding: 1.5rem;
@@ -388,7 +396,9 @@ fieldset.byEDfield {
   white-space: pre-wrap;
 }
 
-/* --- SYNTAX --- */
+/* ==========
+ * SYNTAX
+ * ========== */
 .byEDsyntax {
   display: none;
 }
@@ -424,7 +434,9 @@ fieldset.byEDfield {
   color: var(--by-ed-muted);
 }
 
-/* --- SOURCE AND PREVIEW --- */
+/* ==================
+ * SOURCE AND PREVIEW
+ * ================== */
 .byEDsource {
   display: block;
   width: 100%;
@@ -447,7 +459,9 @@ fieldset.byEDfield {
   border-radius: 0;
 }
 
-/* --- DIALOGS --- */
+/* ==========
+ * DIALOGS
+ * ========== */
 .byEDdialog {
   position: fixed;
   inset: auto;
@@ -526,7 +540,9 @@ fieldset.byEDfield {
   color: var(--by-ed-cancel);
 }
 
-/* --- ACCESSIBILITY AND PRINT --- */
+/* =======================
+ * ACCESSIBILITY AND PRINT
+ * ======================= */
 @media (forced-colors: active) {
   .byMDeditor,
   .byMDeditor :is(.byEDbar, .byEDtoolbar, .byEDsurface, .byEDsource, .byEDpreview, .byEDstatus) {
@@ -577,7 +593,9 @@ fieldset.byEDfield {
   }
 }
 
-/* --- MOTION --- */
+/* ==========
+ * MOTION
+ * ========== */
 /* Initial content is immediate unless the entrance animation is explicitly enabled. */
 .byMDeditor {
   --by-view-motion-duration: 0s;
@@ -758,9 +776,13 @@ fieldset.byEDfield {
   transition: opacity var(--by-view-motion-duration) ease-out !important;
 }
 
-/* --- THEMES --- */
+/* ==========
+ * THEMES
+ * ========== */
 /* Palette colors come from md.css; keep editor surfaces in sync without copying its tables. */
-/* --- LIGHT --- */
+/* ==========
+ * LIGHT
+ * ========== */
 .byMDeditor {
   --by-view-toggle-position: -100%;
   --by-ed-bg: var(--by-md-bg, #ffffff);
@@ -772,7 +794,9 @@ fieldset.byEDfield {
   --by-ed-cancel: #b42318;
 }
 
-/* --- DARK --- */
+/* ==========
+ * DARK
+ * ========== */
 .byMDeditor.dark:not([data-theme="light"]),
 .byMDeditor[data-theme="dark"] {
   --by-view-toggle-position: 0%;

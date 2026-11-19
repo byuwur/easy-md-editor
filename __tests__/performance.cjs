@@ -7,10 +7,20 @@ const percentile = (values, fraction) => {
   const sorted = values.slice().sort((a, b) => a - b);
   return Number((sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * fraction))] || 0).toFixed(3));
 };
-const summary = (values) => ({ median: percentile(values, 0.5), p95: percentile(values, 0.95), max: percentile(values, 1) });
+const summary = (values) => ({
+  median: percentile(values, 0.5),
+  p95: percentile(values, 0.95),
+  max: percentile(values, 1)
+});
 
+// =================
+// BROWSER BENCHMARK
+// =================
 (async () => {
-  const browser = await chromium.launch({ channel: process.env.BROWSER_CHANNEL || "chrome", executablePath: process.env.CHROMIUM_EXECUTABLE_PATH || undefined });
+  const browser = await chromium.launch({
+    channel: process.env.BROWSER_CHANNEL || "chrome",
+    executablePath: process.env.CHROMIUM_EXECUTABLE_PATH || undefined
+  });
   const results = [];
   try {
     const page = await browser.newPage({ viewport: { width: 1100, height: 800 } });
@@ -29,19 +39,33 @@ const summary = (values) => ({ median: percentile(values, 0.5), p95: percentile(
       name: `${count} lines`,
       source: Array.from({ length: count }, (_, index) => (index === Math.floor(count / 2) ? "Target paragraph **bold**." : `Paragraph ${index} with **bold** and *emphasis*.`)).join("\n")
     }));
-    fixtures.push({ name: "large table", source: "| Name | Value | Notes |\n| --- | --- | --- |\n" + Array.from({ length: 1500 }, (_, index) => `| ${index === 750 ? "Target" : `Row ${index}`} | value | some notes |`).join("\n") });
-    fixtures.push({ name: "nested lists", source: Array.from({ length: 5000 }, (_, index) => (index === 2500 ? "  - Target nested item" : `${"  ".repeat(index % 3)}- Item ${index}`)).join("\n") });
-    fixtures.push({ name: "fenced code", source: "~~~js\n" + Array.from({ length: 5000 }, (_, index) => `const ${index === 2500 ? "Target" : `value${index}`} = ${index};`).join("\n") + "\n~~~" });
+    fixtures.push({
+      name: "large table",
+      source: "| Name | Value | Notes |\n| --- | --- | --- |\n" + Array.from({ length: 1500 }, (_, index) => `| ${index === 750 ? "Target" : `Row ${index}`} | value | some notes |`).join("\n")
+    });
+    fixtures.push({
+      name: "nested lists",
+      source: Array.from({ length: 5000 }, (_, index) => (index === 2500 ? "  - Target nested item" : `${"  ".repeat(index % 3)}- Item ${index}`)).join("\n")
+    });
+    fixtures.push({
+      name: "fenced code",
+      source: "~~~js\n" + Array.from({ length: 5000 }, (_, index) => `const ${index === 2500 ? "Target" : `value${index}`} = ${index};`).join("\n") + "\n~~~"
+    });
     for (const rate of [1, 6]) {
       await cdp.send("Emulation.setCPUThrottlingRate", { rate });
       for (const fixture of fixtures) {
+        // ===============
+        // EDITING LATENCY
+        // ===============
         await page.evaluate((source) => {
           window.samples = [];
           window.longTasks = [];
           window.observer?.disconnect();
           window.observer = new PerformanceObserver((entries) => longTasks.push(...entries.getEntries().map((entry) => ({ start: entry.startTime, duration: entry.duration }))));
           observer.observe({ type: "longtask" });
-          window.editor = byMDeditor(document.getElementById("editor"), source, { onMeasure: (sample) => samples.push(sample) });
+          window.editor = byMDeditor(document.getElementById("editor"), source, {
+            onMeasure: (sample) => samples.push(sample)
+          });
           editor.setSelection(source.indexOf("Target") + 6);
           document.getSelection().focusNode.parentElement.scrollIntoView({ block: "center" });
           window.lastNode = document.querySelector(".byEDsurface").lastElementChild;
@@ -80,6 +104,9 @@ const summary = (values) => ({ median: percentile(values, 0.5), p95: percentile(
         // These are measured engineering targets. Report misses rather than disguising them.
         record.targetMet = record.edit.p95 < 5 && record.selection.p95 < 1 && record.longTasks.length === 0;
         results.push(record);
+        // ======================
+        // FORMATTING AND PREVIEW
+        // ======================
         await page.evaluate(() => {
           samples.length = 0;
           editor.setSelection(editor.getMarkdown().indexOf("Target"), editor.getMarkdown().indexOf("Target") + 6);
@@ -106,7 +133,14 @@ const summary = (values) => ({ median: percentile(values, 0.5), p95: percentile(
     const before = await heap();
     await page.evaluate(async () => {
       for (let i = 0; i < 200; i++) {
-        document.querySelector(".byEDsurface").dispatchEvent(new InputEvent("beforeinput", { bubbles: true, cancelable: true, inputType: "insertText", data: "x" }));
+        document.querySelector(".byEDsurface").dispatchEvent(
+          new InputEvent("beforeinput", {
+            bubbles: true,
+            cancelable: true,
+            inputType: "insertText",
+            data: "x"
+          })
+        );
         if (i % 10 === 0) await new Promise(requestAnimationFrame);
       }
       samples.length = 0;

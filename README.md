@@ -61,14 +61,65 @@ Run `node __tests__/serve.cjs` and open [the local playground](http://127.0.0.1:
 
 ## API and options
 
-1. [Options](#options)
-2. [API](#api)
+1. [API](#api)
+2. [Options](#options)
 3. [Languages](#languages)
 4. [Supported Markdown and limits](#supported-markdown-and-limits)
 
 The second argument accepts a string or an `HTMLElement` containing Markdown. Omit it to use the target's text. Each container owns its own state, history, and selection; initializing it again destroys its previous editor.
 
 No database, network requests, autosave, or browser storage are built in.
+
+### API
+
+```javascript
+editor.getMarkdown();
+editor.setMarkdown("# Another document"); // Replaces the source and clears undo history.
+editor.setSyntaxMode("assisted");
+editor.setToolbar(false);
+editor.setControls({ syntaxSelect: false, previewToggle: false, themeToggle: false });
+editor.setAnimations(false);
+editor.setAppearAnimation(true); // Requires animations to be enabled.
+editor.setPreview(true);
+editor.setTheme("dark");
+editor.setPalette("github");
+editor.getLanguage(); // Resolved language tag.
+editor.setLanguage("es");
+editor.focus();
+editor.destroy();
+```
+
+`getMarkdown()` returns the last committed source. During IME composition, the browser owns the composing text until `compositionend`; reading the source does not interrupt it.
+
+`onChange` is synchronous. Debounce expensive application work such as storage or remote requests outside the editor. Mode, theme, and selection changes do not call it.
+
+`setControls(options)` also accepts `controlsCompact: true` for icon-only buttons; `false` restores their labels. It changes the visibility of `toolbarToggle`, `syntaxSelect`, `previewToggle`, `themeToggle`, `paletteSelect`, and `statusBar` without rebuilding the document or resetting selection/history. Omitted keys retain their current values; `false` hides a control. Use `setToolbar()` for the formatting tools themselves. An empty control bar is hidden automatically.
+
+`getSelection()` returns `{ anchor, focus }`. `setSelection(anchor, focus = anchor)` accepts UTF-16 source offsets, like JavaScript string indexes; reverse ranges preserve their direction. No-code projects positions inside hidden syntax onto visible text; read-only blocks expose their source boundaries. Select All still includes the complete Markdown.
+
+`command(name, value?)` exposes the same formatting actions:
+
+| Commands                                                                              | Value                                                                                                                                        |
+| ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bold`, `italic`, `strikethrough`, `inlineCode`                                       | None                                                                                                                                         |
+| `heading`                                                                             | Level 1-6; `0` means paragraph                                                                                                               |
+| `paragraph`, `bulletList`, `orderedList`, `checklist`, `blockquote`, `horizontalRule` | None                                                                                                                                         |
+| `link`, `image`                                                                       | `{ url, label }`; images also accept optional `size`; omit to open the insertion dialog                                                      |
+| `imageSize`                                                                           | `"default"`, `"original"`, `"xs"`, `"small"`, `"regular"`, `"large"`, or `"xl"`; resize the selected image or the image containing the caret |
+| `table`                                                                               | `{ rows, columns }`; omit for the size dialog; rows exclude the header                                                                       |
+| `tableRowAbove`, `tableRowBelow`, `tableRowRemove`                                    | None; insert/remove a data row at the current cell in a visual editing mode                                                                  |
+| `tableColumnLeft`, `tableColumnRight`, `tableColumnRemove`                            | None; insert/remove a column at the current cell in a visual editing mode                                                                    |
+| `codeBlock`                                                                           | Language string, or `""` for plain code; omit for the language dialog                                                                        |
+| `codeLanguage`                                                                        | Language string, or `"plain"` for plain code; change the hovered or current fenced block in a visual editing mode                            |
+| `undo`, `redo`                                                                        | None                                                                                                                                         |
+
+`destroy()` removes owned DOM and listeners and releases history. Keep the source before destroying if your application needs it. Read the library version with `byMDeditor.VERSION`.
+
+Initialization and `setMarkdown()` throw `TypeError` for unsupported source types and `RangeError` above the document-size limit. `setSyntaxMode()`, `setTheme()`, and `setPalette()` throw `RangeError` for invalid names. `command()` returns `false` when an operation is unavailable, including in Preview; a command that opens a dialog may return before insertion. There is no asynchronous `ready` controller.
+
+`language` and `setLanguage()` reject malformed language tags with `RangeError`. `translations` must be an object of string values; invalid overrides throw `TypeError` before replacing an existing editor.
+
+Destroying an editor commits any active composition before cleanup, so `onChange` may run during teardown. Dispose the editor before removing its host, and keep application callbacks valid through that step. Duplicate script imports preserve the installed API.
 
 ### Options
 
@@ -150,57 +201,6 @@ Explicit sizes preserve proportions and shrink to fit the document. Resizing cha
 Each resize is one undo step in the shared history. Source mode edits this same Markdown, and Preview uses the viewer's matching image sizes while remaining read-only. Default removes the size comment. Images without metadata keep the editor's existing display behavior, including its height limit.
 
 Image sizing requires MD viewer 2.8 or newer in both JavaScript and CSS. The playground and CI pin that companion release. Other Markdown engines supporting HTML comments show the image normally and ignore the sizing; engines that escape raw HTML may expose the comment.
-
-### API
-
-```javascript
-editor.getMarkdown();
-editor.setMarkdown("# Another document"); // Replaces the source and clears undo history.
-editor.setSyntaxMode("assisted");
-editor.setToolbar(false);
-editor.setControls({ syntaxSelect: false, previewToggle: false, themeToggle: false });
-editor.setAnimations(false);
-editor.setAppearAnimation(true); // Requires animations to be enabled.
-editor.setPreview(true);
-editor.setTheme("dark");
-editor.setPalette("github");
-editor.getLanguage(); // Resolved language tag.
-editor.setLanguage("es");
-editor.focus();
-editor.destroy();
-```
-
-`getMarkdown()` returns the last committed source. During IME composition, the browser owns the composing text until `compositionend`; reading the source does not interrupt it.
-
-`onChange` is synchronous. Debounce expensive application work such as storage or remote requests outside the editor. Mode, theme, and selection changes do not call it.
-
-`setControls(options)` also accepts `controlsCompact: true` for icon-only buttons; `false` restores their labels. It changes the visibility of `toolbarToggle`, `syntaxSelect`, `previewToggle`, `themeToggle`, `paletteSelect`, and `statusBar` without rebuilding the document or resetting selection/history. Omitted keys retain their current values; `false` hides a control. Use `setToolbar()` for the formatting tools themselves. An empty control bar is hidden automatically.
-
-`getSelection()` returns `{ anchor, focus }`. `setSelection(anchor, focus = anchor)` accepts UTF-16 source offsets, like JavaScript string indexes; reverse ranges preserve their direction. No-code projects positions inside hidden syntax onto visible text; read-only blocks expose their source boundaries. Select All still includes the complete Markdown.
-
-`command(name, value?)` exposes the same formatting actions:
-
-| Commands                                                                              | Value                                                                                                                                        |
-| ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `bold`, `italic`, `strikethrough`, `inlineCode`                                       | None                                                                                                                                         |
-| `heading`                                                                             | Level 1-6; `0` means paragraph                                                                                                               |
-| `paragraph`, `bulletList`, `orderedList`, `checklist`, `blockquote`, `horizontalRule` | None                                                                                                                                         |
-| `link`, `image`                                                                       | `{ url, label }`; images also accept optional `size`; omit to open the insertion dialog                                                      |
-| `imageSize`                                                                           | `"default"`, `"original"`, `"xs"`, `"small"`, `"regular"`, `"large"`, or `"xl"`; resize the selected image or the image containing the caret |
-| `table`                                                                               | `{ rows, columns }`; omit for the size dialog; rows exclude the header                                                                       |
-| `tableRowAbove`, `tableRowBelow`, `tableRowRemove`                                    | None; insert/remove a data row at the current cell in a visual editing mode                                                                  |
-| `tableColumnLeft`, `tableColumnRight`, `tableColumnRemove`                            | None; insert/remove a column at the current cell in a visual editing mode                                                                    |
-| `codeBlock`                                                                           | Language string, or `""` for plain code; omit for the language dialog                                                                        |
-| `codeLanguage`                                                                        | Language string, or `"plain"` for plain code; change the hovered or current fenced block in a visual editing mode                            |
-| `undo`, `redo`                                                                        | None                                                                                                                                         |
-
-`destroy()` removes owned DOM and listeners and releases history. Keep the source before destroying if your application needs it. Read the library version with `byMDeditor.VERSION`.
-
-Initialization and `setMarkdown()` throw `TypeError` for unsupported source types and `RangeError` above the document-size limit. `setSyntaxMode()`, `setTheme()`, and `setPalette()` throw `RangeError` for invalid names. `command()` returns `false` when an operation is unavailable, including in Preview; a command that opens a dialog may return before insertion. There is no asynchronous `ready` controller.
-
-`language` and `setLanguage()` reject malformed language tags with `RangeError`. `translations` must be an object of string values; invalid overrides throw `TypeError` before replacing an existing editor.
-
-Destroying an editor commits any active composition before cleanup, so `onChange` may run during teardown. Dispose the editor before removing its host, and keep application callbacks valid through that step. Duplicate script imports preserve the installed API.
 
 ### Languages
 

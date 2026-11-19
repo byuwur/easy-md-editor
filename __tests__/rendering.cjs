@@ -22,6 +22,9 @@ test("MD editor library", { timeout: 30000 }, async (t) => {
   // Load authored files directly; CDN availability is not part of this contract.
   // Optional icon glyphs do not participate in source/history checks.
   await page.route("**/*", (route) => (route.request().url().endsWith("fontawesome.min.css") ? route.fulfill({ body: "", contentType: "text/css" }) : route.abort()));
+  // ===============
+  // BROWSER FIXTURE
+  // ===============
   await page.setContent('<!doctype html><meta charset="UTF-8"><div id="viewer"></div>');
   // Exercise the real published companion APIs, checked out beside the editor in CI.
   await page.addStyleTag({ path: path.join(__dirname, "../../md.view/md.css") });
@@ -34,11 +37,18 @@ test("MD editor library", { timeout: 30000 }, async (t) => {
     window.root = document.getElementById("viewer");
   });
 
+  // ==================
+  // RENDERING BEHAVIOR
+  // ==================
   await t.test("editing commits exact source and undo/redo restores it", async () => {
     const source = "# Core\r\n\r\nOriginal";
     await page.evaluate((source) => {
       window.changes = [];
-      window.editor = byMDeditor(root, source, { syntax: "source", animations: false, onChange: (value) => changes.push(value) });
+      window.editor = byMDeditor(root, source, {
+        syntax: "source",
+        animations: false,
+        onChange: (value) => changes.push(value)
+      });
     }, source);
     assert.equal(await page.evaluate(() => editor.getMarkdown()), source);
     await page.locator(".byEDsource").fill("# Changed\n\nText");
@@ -79,7 +89,10 @@ test("MD editor library", { timeout: 30000 }, async (t) => {
     await picker.selectOption("python");
     const expected = source.replace("~~~~js", "~~~~python");
     assert.equal(await page.evaluate(() => editor.getMarkdown()), expected);
-    assert.deepEqual(await page.evaluate(() => editor.getSelection()), { anchor: anchor + 4, focus: focus + 4 });
+    assert.deepEqual(await page.evaluate(() => editor.getSelection()), {
+      anchor: anchor + 4,
+      focus: focus + 4
+    });
     await page.evaluate(() => editor.command("undo"));
     assert.equal(await page.evaluate(() => editor.getMarkdown()), source);
     assert.deepEqual(await page.evaluate(() => editor.getSelection()), { anchor, focus });
@@ -106,7 +119,12 @@ test("MD editor library", { timeout: 30000 }, async (t) => {
   });
 
   await t.test("image and code controls share their popup without losing sizing or translations", async () => {
-    await page.route("https://image.test/logo.svg", (route) => route.fulfill({ contentType: "image/svg+xml", body: '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><rect width="40" height="40" fill="#777"/></svg>' }));
+    await page.route("https://image.test/logo.svg", (route) =>
+      route.fulfill({
+        contentType: "image/svg+xml",
+        body: '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><rect width="40" height="40" fill="#777"/></svg>'
+      })
+    );
     const source = "![Sample](https://image.test/logo.svg)\r\n\r\n~~~js\r\nlet n = 1;\r\n~~~";
     await page.evaluate((source) => {
       window.editor = byMDeditor(root, source, { animations: false });
@@ -152,7 +170,12 @@ test("MD editor library", { timeout: 30000 }, async (t) => {
         await page.evaluate(
           ({ source, syntax, anchor, focus }) => {
             window.changes = [];
-            window.editor = byMDeditor(root, source, { syntax, language: "en", animations: false, onChange: (value) => changes.push(value) });
+            window.editor = byMDeditor(root, source, {
+              syntax,
+              language: "en",
+              animations: false,
+              onChange: (value) => changes.push(value)
+            });
             editor.setSelection(anchor, focus);
           },
           { source, syntax, anchor, focus }
@@ -231,7 +254,12 @@ test("MD editor library", { timeout: 30000 }, async (t) => {
     for (const syntax of ["no-code", "clean", "assisted"]) {
       await page.evaluate(
         ({ source, syntax }) => {
-          window.editor = byMDeditor(root, source, { syntax, language: "en", animations: false, toolbar: false });
+          window.editor = byMDeditor(root, source, {
+            syntax,
+            language: "en",
+            animations: false,
+            toolbar: false
+          });
         },
         { source, syntax }
       );
@@ -243,7 +271,13 @@ test("MD editor library", { timeout: 30000 }, async (t) => {
       assert.equal(await page.evaluate(() => editor.getSelection().focus), source.indexOf("|   |   | last |") + 8);
       const middle = await popup.boundingBox();
       assert.ok(middle.x > left.x + 100, `${syntax}: popup follows columns within one row`);
-      const grid = await popup.locator("button").evaluateAll((buttons) => buttons.map((button) => ({ label: button.getAttribute("aria-label"), x: button.offsetLeft, y: button.offsetTop })));
+      const grid = await popup.locator("button").evaluateAll((buttons) =>
+        buttons.map((button) => ({
+          label: button.getAttribute("aria-label"),
+          x: button.offsetLeft,
+          y: button.offsetTop
+        }))
+      );
       assert.deepEqual(
         grid.map((button) => button.label),
         ["Row above", "Column left", "Row below", "Column right", "Remove Row", "Remove Column"]
@@ -342,7 +376,15 @@ test("MD editor library", { timeout: 30000 }, async (t) => {
       const closing = await sample();
       editor.setAnimations(false);
       editor.setSelection(source.indexOf("const"));
-      return { supported: CSS.supports("interpolate-size", "allow-keywords"), collapsed, opening, closing, immediate: group.getBoundingClientRect().height, source: editor.getMarkdown(), expected: source };
+      return {
+        supported: CSS.supports("interpolate-size", "allow-keywords"),
+        collapsed,
+        opening,
+        closing,
+        immediate: group.getBoundingClientRect().height,
+        source: editor.getMarkdown(),
+        expected: source
+      };
     });
     assert.equal(result.source, result.expected);
     assert.ok(result.opening.end > result.collapsed, JSON.stringify(result));
