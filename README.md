@@ -53,6 +53,8 @@ Allow the script and style origins in your CSP. Authorize inline initialization 
 
 [Playground](https://mdedit.byuwur.co/)
 
+The library contains no tracking. The [privacy policy](https://byuwur.co/privacy/dotview) and [cookie policy](https://byuwur.co/cookies/dotview) apply only to the hosted landing page and playground.
+
 Run `node __tests__/serve.cjs` and open [the local playground](http://127.0.0.1:4173) to try editing, file import, starter export and Print / PDF.
 
 ## Downloads
