@@ -41,13 +41,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: byuwur/code.view
-          ref: v2.2
+          ref: v2.3
           path: code.view
           persist-credentials: false
       - uses: actions/checkout@v4
         with:
           repository: byuwur/md.view
-          ref: v3.2
+          ref: v3.3
           path: md.view
           persist-credentials: false
       - uses: actions/setup-node@v4
