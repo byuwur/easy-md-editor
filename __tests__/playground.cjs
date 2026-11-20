@@ -76,6 +76,39 @@ test("MD editor playground loads, updates, and copies a starter", { timeout: 300
   assert.equal(await page.locator("#download-release").getAttribute("href"), "https://github.com/byuwur/md.edit/releases/latest/download/md.edit.zip");
   assert.equal(await page.locator("#download-minified").getAttribute("href"), "https://github.com/byuwur/md.edit/releases/latest/download/md.edit.minified.zip");
   await page.locator("#editor.byMDeditor").waitFor();
+  const editor = page.locator("#editor.byVIEWready");
+  const colors = await editor.evaluate((viewer) => {
+    const surface = viewer.querySelector(".byEDsurface");
+    const background = () => getComputedStyle(surface).backgroundColor;
+    const toggle = viewer.querySelector(".byVIEWthemeToggle");
+    const light = background();
+    toggle.click();
+    const fades = viewer.getAnimations();
+    for (const fade of fades) {
+      fade.pause();
+      fade.currentTime = fade.effect.getTiming().duration / 2;
+    }
+    const middle = background();
+    for (const fade of fades) fade.finish();
+    const dark = background();
+    toggle.click();
+    for (const fade of viewer.getAnimations()) fade.finish();
+    return { light, middle, dark, restored: background() };
+  });
+  assert.notEqual(colors.light, colors.dark);
+  assert.notEqual(colors.middle, colors.light);
+  assert.notEqual(colors.middle, colors.dark);
+  assert.equal(colors.restored, colors.light);
+  await page.evaluate(() => playgroundEditor.setPreview(true));
+  const sameHeading = await editor.evaluate((root) => {
+    const heading = root.querySelector(".byEDpreview h1");
+    playgroundEditor.setTheme("dark");
+    playgroundEditor.setPalette("monokai");
+    const preview = root.querySelector(".byEDpreview");
+    return heading && heading === preview.querySelector("h1") && preview.matches('.dark[data-theme="monokai"]');
+  });
+  assert.equal(sameHeading, true);
+  await page.evaluate(() => playgroundEditor.setPreview(false));
   await page.selectOption("#document-source", "custom");
   await page.evaluate(() => {
     File.prototype.text = () =>

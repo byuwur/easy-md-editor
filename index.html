@@ -280,7 +280,7 @@
             <label class="visually-hidden" for="markdown-output">Markdown returned by the editor</label>
             <textarea id="markdown-output" class="form-control font-monospace d-block w-100 border-0 px-4 py-3 bg-body" readonly spellcheck="false"></textarea>
           </details>
-          <button id="copy-markdown" class="btn btn-sm px-3 btn-outline-secondary fw-semibold position-absolute" type="button" aria-label="Copy Markdown" aria-describedby="markdown-copy-feedback">
+          <button id="copy-markdown" class="copy-button btn btn-sm px-3 btn-outline-secondary fw-semibold position-absolute" type="button" aria-label="Copy Markdown" aria-describedby="markdown-copy-feedback">
             <i class="fa-solid fa-copy me-1" aria-hidden="true"></i> <span aria-live="polite">Copy</span>
           </button>
           <span id="markdown-copy-feedback" class="visually-hidden" role="status"></span>
@@ -686,7 +686,7 @@
         updateOutput(sample);
         window.playgroundEditor = editor;
         // ===== EDITOR CONFIGURATION =====
-        const visibilityOptions = ["toolbarToggle", "syntaxSelect", "previewToggle", "themeToggle", "paletteSelect", "controlsCompact", "statusBar"];
+        const visibilityOptions = [ "toolbarToggle", "syntaxSelect", "previewToggle", "themeToggle", "paletteSelect", "controlsCompact", "statusBar"];
         const modeSelect = document.getElementById("syntax-mode");
         const paletteSelect = document.getElementById("playground-palette");
         const languageSelect = document.getElementById("editor-language");
@@ -704,7 +704,10 @@
           }
         };
         updateSampleLanguage();
-        const updateConfiguration = () => {
+        function syncOptions() {
+          const animations = document.getElementById("animations").checked;
+          document.documentElement.classList.toggle("no-motion", !animations);
+          document.getElementById("appearAnimation").disabled = !animations;
           modeSelect.value = document.getElementById("editor").dataset.syntax;
           document.getElementById("options-json").value = JSON.stringify(
             {
@@ -713,59 +716,57 @@
               language: languageSelect.value,
               toolbar: document.getElementById("toolbar").checked,
               ...Object.fromEntries(visibilityOptions.map((name) => [name, document.getElementById(name).checked])),
-              animations: document.getElementById("animations").checked,
+              animations,
               appearAnimation: document.getElementById("appearAnimation").checked
             },
             null,
             2
           );
-        };
+        }
         for (const name of visibilityOptions)
           document.getElementById(name).addEventListener("change", (event) => {
             editor.setControls({ [name]: event.target.checked });
-            updateConfiguration();
+            syncOptions();
           });
         document.getElementById("toolbar").addEventListener("change", (event) => {
           editor.setToolbar(event.target.checked);
-          updateConfiguration();
+          syncOptions();
         });
         paletteSelect.addEventListener("change", () => {
           editor.setPalette(paletteSelect.value);
-          updateConfiguration();
+          syncOptions();
         });
         modeSelect.addEventListener("change", () => {
           editor.setSyntaxMode(modeSelect.value);
-          updateConfiguration();
+          syncOptions();
         });
         for (const picker of languageSelects)
           picker.addEventListener("change", () => {
             editor.setLanguage(picker.value);
             for (const select of languageSelects) select.value = picker.value;
             updateSampleLanguage();
-            updateConfiguration();
+            syncOptions();
           });
         document.getElementById("editor").addEventListener("change", (event) => {
           if (event.target.matches('[data-control="syntax"]')) modeSelect.value = event.target.value;
           if (event.target.matches(".byEDcontrols select")) paletteSelect.value = event.target.value;
-          updateConfiguration();
+          syncOptions();
         });
         document.getElementById("editor").addEventListener("click", (event) => {
           const toggle = event.target.closest('[data-control="toolbar"]');
           if (toggle) {
             document.getElementById("toolbar").checked = toggle.getAttribute("aria-expanded") === "true";
-            updateConfiguration();
+            syncOptions();
           }
         });
-        updateConfiguration();
+        syncOptions();
         document.getElementById("animations").addEventListener("change", (event) => {
           editor.setAnimations(event.target.checked);
-          document.getElementById("appearAnimation").disabled = !event.target.checked;
-          document.documentElement.classList.toggle("no-motion", !event.target.checked);
-          updateConfiguration();
+          syncOptions();
         });
         document.getElementById("appearAnimation").addEventListener("change", (event) => {
           editor.setAppearAnimation(event.target.checked);
-          updateConfiguration();
+          syncOptions();
         });
         const copyMarkdown = document.getElementById("copy-markdown");
         copyMarkdown.addEventListener("click", async () => {
@@ -775,9 +776,7 @@
           document.getElementById("markdown-copy-feedback").textContent = "";
           copyMarkdown.disabled = true;
           try {
-            const copied = window.bySiteAnalytics?.begin("resource_copied");
-            await navigator.clipboard.writeText(markdown);
-            copied?.();
+            await writeClipboard(markdown);
             caption.textContent = "Copied!";
             copyMarkdown.removeAttribute("title");
           } catch {
@@ -794,11 +793,6 @@
             copyMarkdown.disabled = false;
           }
         });
-        const resetMarkdownCopy = () => {
-          if (copyMarkdown.querySelector("span").textContent !== "Failed") copyMarkdown.querySelector("span").textContent = "Copy";
-        };
-        copyMarkdown.addEventListener("mouseleave", resetMarkdownCopy);
-        copyMarkdown.addEventListener("focusout", resetMarkdownCopy);
         sourceSelect.addEventListener("change", () => {
           fileRequest++;
           activeSource = sourceSelect.value;
@@ -820,104 +814,8 @@
         });
 
         // ===== INTEGRATION =====
+        const integrationCode = document.getElementById("integration-code");
         let integrationHTML = "";
-        function renderIntegration(html) {
-          if (html === integrationHTML) return;
-          integrationHTML = html;
-          const code = document.getElementById("integration-code");
-          if (typeof window.byCODEviewer === "function") {
-            byCODEviewer(code, html, {
-              language: "html",
-              theme: document.documentElement.dataset.bsTheme,
-              fontSize: 1,
-              toolbar: false,
-              displayContainer: false
-            });
-          } else code.textContent = html;
-        }
-
-        function generateIntegration() {
-          const cdn = document.getElementById("integration-cdn").checked;
-          const min = cdn ? ".min" : "";
-          const mdPath = cdn ? "https://cdn.jsdelivr.net/gh/byuwur/md.view@latest/" : "";
-          const codePath = cdn ? "https://cdn.jsdelivr.net/gh/byuwur/code.view@latest/" : "";
-          const editorPath = cdn ? "https://cdn.jsdelivr.net/gh/byuwur/md.edit@latest/" : "";
-          // Keep a literal closing script tag out of this inline page script.
-          const endScript = "</" + "script>";
-          const html = [
-            "<!doctype html>",
-            '<html lang="en">',
-            "  <head>",
-            '    <meta charset="UTF-8" />',
-            '    <meta name="viewport" content="width=device-width, initial-scale=1" />',
-            "    <title>MD.edit</title>",
-            `    <link rel="stylesheet" href="${mdPath}md${min}.css" />`,
-            `    <link rel="stylesheet" href="${codePath}code${min}.css" />`,
-            `    <link rel="stylesheet" href="${editorPath}md.edit${min}.css" />`,
-            `    <script src="${codePath}code${min}.js" defer>${endScript}`,
-            `    <script src="${mdPath}md${min}.js" defer>${endScript}`,
-            `    <script src="${editorPath}md.edit${min}.js" defer>${endScript}`,
-            "  </head>",
-            "  <body>",
-            '    <div id="document" class="light" data-theme="github"></div>',
-            "    <script>",
-            '      document.addEventListener("DOMContentLoaded", () => {',
-            '        const editor = byMDeditor(document.getElementById("document"), "# Hello\\n\\nStart writing.");',
-            "        // Read editor.getMarkdown() when your application saves.",
-            "      });",
-            `    ${endScript}`,
-            "  </body>",
-            "</html>"
-          ].join("\n");
-          renderIntegration(html);
-          document.getElementById("integration-note").textContent = cdn
-            ? "CDN follows the latest release; updates may take time to reach caches."
-            : "Place the HTML beside md.edit.js, md.edit.css, md.js, md.css, code.js, and code.css. Toolbar icons load from the CDN; text labels work offline.";
-          return html;
-        }
-        document.querySelectorAll('[name="integrationMode"]').forEach((input) =>
-          input.addEventListener("change", () => {
-            generateIntegration();
-            document.getElementById("integration-feedback").textContent = "";
-            copyButton.querySelector("span").textContent = "Copy HTML";
-            copyButton.removeAttribute("title");
-          })
-        );
-        const copyButton = document.getElementById("copy-integration");
-        copyButton.addEventListener("click", async () => {
-          const code = document.getElementById("integration-code"),
-            caption = copyButton.querySelector("span");
-          const html = generateIntegration();
-          copyButton.disabled = true;
-          try {
-            const copied = window.bySiteAnalytics?.begin("resource_copied");
-            await navigator.clipboard.writeText(html);
-            copied?.();
-            if (integrationHTML !== html) return;
-            caption.textContent = "Copied!";
-            copyButton.removeAttribute("title");
-          } catch {
-            if (integrationHTML !== html) return;
-            code.focus();
-            document.getSelection()?.selectAllChildren(code);
-            caption.textContent = "Failed";
-            copyButton.title = "Clipboard unavailable. Press Ctrl+C or ⌘C to copy the selected text.";
-          } finally {
-            copyButton.disabled = false;
-          }
-        });
-        const resetCopy = () => {
-          const caption = copyButton.querySelector("span");
-          if (caption.textContent !== "Failed") caption.textContent = "Copy HTML";
-        };
-        copyButton.addEventListener("mouseleave", resetCopy);
-        copyButton.addEventListener("focusout", resetCopy);
-        document.getElementById("download-html").addEventListener("click", () => {
-          downloadText(generateIntegration(), "md.edit.html", "text/html;charset=UTF-8");
-          document.getElementById("integration-feedback").textContent = "Downloaded. The starter uses default editor settings.";
-        });
-
-        // ===== FILE ACTIONS =====
         function downloadText(text, filename, type) {
           const url = URL.createObjectURL(new Blob([text], { type }));
           const link = document.createElement("a");
@@ -929,6 +827,112 @@
           link.remove();
           setTimeout(() => URL.revokeObjectURL(url), 1000);
         }
+
+        function renderIntegration(title, assets, body) {
+          const html = [
+            "<!doctype html>",
+            '<html lang="en">',
+            "  <head>",
+            '    <meta charset="UTF-8">',
+            '    <meta name="viewport" content="width=device-width, initial-scale=1">',
+            `    <title>${title}</title>`,
+            ...assets,
+            "  </head>",
+            "  <body>",
+            ...body,
+            "  </body>",
+            "</html>"
+          ].join("\n");
+          if (html === integrationHTML) return;
+          integrationHTML = html;
+          if (typeof window.byCODEviewer === "function") {
+            byCODEviewer(integrationCode, html, {
+              language: "html",
+              theme: document.documentElement.dataset.bsTheme,
+              fontSize: 1,
+              toolbar: false,
+              displayContainer: false
+            });
+          } else integrationCode.textContent = html;
+        }
+
+        function updateIntegration(mode = "cdn") {
+          const cdn = mode === "cdn";
+          const min = cdn ? ".min" : "";
+          const mdPath = cdn ? "https://cdn.jsdelivr.net/gh/byuwur/md.view@latest/" : "";
+          const codePath = cdn ? "https://cdn.jsdelivr.net/gh/byuwur/code.view@latest/" : "";
+          const editorPath = cdn ? "https://cdn.jsdelivr.net/gh/byuwur/md.edit@latest/" : "";
+          const endScript = "</" + "script>";
+          renderIntegration(
+            "MD.edit",
+            [
+              `    <link rel="stylesheet" href="${mdPath}md${min}.css" />`,
+              `    <link rel="stylesheet" href="${codePath}code${min}.css" />`,
+              `    <link rel="stylesheet" href="${editorPath}md.edit${min}.css" />`,
+              `    <script src="${codePath}code${min}.js" defer>${endScript}`,
+              `    <script src="${mdPath}md${min}.js" defer>${endScript}`,
+              `    <script src="${editorPath}md.edit${min}.js" defer>${endScript}`
+            ],
+            [
+              '    <div id="document" class="light" data-theme="github"></div>',
+              "    <script>",
+              '      document.addEventListener("DOMContentLoaded", () => {',
+              '        const editor = byMDeditor(document.getElementById("document"), "# Hello\\n\\nStart writing.");',
+              "        // Read editor.getMarkdown() when your application saves.",
+              "      });",
+              `    ${endScript}`
+            ]
+          );
+          document.getElementById("integration-note").textContent = cdn
+            ? "CDN follows the latest release; updates may take time to reach caches."
+            : "Place the HTML beside md.edit.js, md.edit.css, md.js, md.css, code.js, and code.css. Toolbar icons load from the CDN; text labels work offline.";
+          document.getElementById("integration-feedback").textContent = "";
+          copyButton.querySelector("span").textContent = "Copy HTML";
+          copyButton.removeAttribute("title");
+        }
+        document.querySelectorAll('[name="integrationMode"]').forEach((input) => input.addEventListener("change", () => updateIntegration(input.value)));
+        const copyButton = document.getElementById("copy-integration");
+        copyButton.addEventListener("click", () => copyText(integrationHTML, integrationCode, copyButton));
+
+        async function copyText(text, selectable, button) {
+          const caption = button.querySelector("span");
+          const starter = selectable.id === "integration-code";
+          if (starter) button.disabled = true;
+          try {
+            await writeClipboard(text);
+            if (starter && text !== integrationHTML) return;
+            caption.textContent = "Copied!";
+            button.removeAttribute("title");
+          } catch {
+            if (starter && text !== integrationHTML) return;
+            selectable.focus();
+            if (typeof selectable.select === "function") selectable.select();
+            else document.getSelection()?.selectAllChildren(selectable);
+            caption.textContent = "Failed";
+            button.title = "Clipboard unavailable. Press Ctrl+C or ⌘C to copy the selected text.";
+          } finally {
+            if (starter) button.disabled = false;
+          }
+        }
+
+        document.querySelectorAll(".copy-button").forEach((button) => {
+          const caption = button.querySelector("span");
+          const label = caption.textContent;
+          const reset = () => {
+            // Keep the manual-copy hint visible until the next successful copy.
+            if (caption.textContent === "Failed") return;
+            caption.textContent = label;
+            button.removeAttribute("title");
+          };
+          button.addEventListener("mouseleave", reset);
+          button.addEventListener("focusout", reset);
+        });
+        document.getElementById("download-html").addEventListener("click", () => {
+          downloadText(integrationHTML, "md.edit.html", "text/html;charset=UTF-8");
+          document.getElementById("integration-feedback").textContent = "Downloaded. The starter uses default editor settings.";
+        });
+
+        // ===== FILE ACTIONS =====
         const file = document.getElementById("file");
         document.getElementById("open-file").addEventListener("click", () => file.click());
         file.addEventListener("change", async () => {
@@ -968,8 +972,14 @@
         });
 
         document.getElementById("year-txt").textContent = new Date().getFullYear();
-        generateIntegration();
+        updateIntegration(document.querySelector('[name="integrationMode"]:checked').value);
       });
+
+      async function writeClipboard(text) {
+        const copied = window.bySiteAnalytics?.begin("resource_copied");
+        await navigator.clipboard.writeText(text);
+        copied?.();
+      }
 
       (function initColorPickers() {
         document.addEventListener("DOMContentLoaded", async () => {
@@ -1061,9 +1071,7 @@
             .filter(Boolean)
             .join("\n");
           try {
-            const copied = window.bySiteAnalytics?.begin("resource_copied");
-            await navigator.clipboard.writeText(`.byMDeditor {\n${rules}\n}`);
-            copied?.();
+            await writeClipboard(`.byMDeditor {\n${rules}\n}`);
             document.getElementById("appearance-status").textContent = "CSS copied.";
           } catch {
             document.getElementById("appearance-status").textContent = "Copy failed. Check clipboard access.";
