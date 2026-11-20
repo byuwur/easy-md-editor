@@ -38,35 +38,16 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/byuwur/md.view@v3.3/md.themes.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/byuwur/code.view@v2.3/code.min.css" />
     <link rel="stylesheet" href="md.edit.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/byuwur/spa.js@v20.17/css/shards.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/byuwur/spa.js@v20.17/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/byuwur/spa.js@v20.17/_fonts.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/byuwur/spa.js@v20.17/_transitions.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/byuwur/spa.js@v20.17/css/pickr.min.css" />
     <script src="https://cdn.jsdelivr.net/gh/byuwur/code.view@v2.3/code.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/gh/byuwur/md.view@v3.3/md.min.js" defer></script>
     <script src="md.edit.js" defer></script>
-    <script id="spa-loader" src="https://cdn.jsdelivr.net/gh/byuwur/spa.js@v20.17/_load.min.js"></script>
-    <script>
-      "use strict";
-
-      const SPA_VERSION = "v20.17";
-      const HOST = `https://cdn.jsdelivr.net/gh/byuwur/spa.js@${SPA_VERSION}`;
-      const SPA_STYLES = [
-        { path: "/css/shards.min.css", optional: false },
-        { path: "/css/bootstrap.min.css", optional: false },
-        { path: "/_fonts.min.css", optional: false },
-        { path: "/_transitions.min.css", optional: true },
-        { path: "/css/pickr.min.css", optional: false }
-      ];
-      const SPA_SCRIPTS = [
-        { path: "/js/pickr.min.js", optional: false },
-        { path: "/js/bootstrap.min.js", optional: false }
-      ];
-      const spaReady = (async () => {
-        await byLoad(SPA_STYLES, {
-          host: HOST,
-          before: document.getElementById("spa-loader"),
-          defer: false
-        });
-        await byLoad(SPA_SCRIPTS, { host: HOST, before: document.getElementById("spa-loader") });
-      })().catch(console.error);
-    </script>
+    <script src="https://cdn.jsdelivr.net/gh/byuwur/spa.js@v20.17/js/pickr.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/gh/byuwur/spa.js@v20.17/js/bootstrap.min.js" defer></script>
   </head>
   <body>
     <template id="site-analytics-frame">
@@ -631,9 +612,7 @@
     <script>
       "use strict";
 
-      document.addEventListener("DOMContentLoaded", async () => {
-        // DOMContentLoaded does not wait for dynamically loaded SPA styles and scripts.
-        await spaReady;
+      document.addEventListener("DOMContentLoaded", () => {
         // prettier-ignore
         const samples = {
           en: { name: "English", source: "# A little writing. A real document.\n\nWrite something useful. Let **MD.edit** handle the Markdown.\n\n## Start small\n\nUse the toolbar, or type *a little emphasis*, **bold text**, ***both together***,\n~~cross something out~~, and `keep a little code inline`.\n\n## Lists that work for you\n\n- A bullet for the first idea\n- Another idea, with **formatting inside**\n\n1. Write a first draft\n2. Read it once more\n3. Make it yours\n\n- [x] Write a document\n- [ ] Try a table from the toolbar\n- [ ] Switch to Preview\n\n## Links and an image\n\nVisit [BONYUR's portfolio](https://byuwur.co), or paste https://example.com.\nAutolinks work too: \u003chttps://byuwur.co> and \u003chello@example.com>.\n\n![BONYUR's mark](https://byuwur.github.io/img/logo.png \"BONYUR\")\n\n## A table worth editing\n\n| Name | Role |\n| --- | --- |\n| Andres | Developer |\n| Sam | Designer |\n\n## A thought to keep\n\n> Simple is complicated enough.\n> A quote can have **emphasis**, too.\n\nA hard break keeps these lines together.\\\nThis is the next line, inside the same paragraph in Preview.\n\n---\n\n## Code stays code\n\n~~~javascript\nconst markdown = editor.getMarkdown();\n/* Store Markdown as text.\n   Render it when reading. */\nconst document = { title: \"A little writing\", published: true, revision: 1 };\nconsole.log(markdown, document);\n~~~\n\n## Every heading has its place\n\n### Make room for an idea\n\n#### Give it some detail\n\n##### Add a small note\n\n###### Even the smallest heading is editable\n\nEdit any example above. No-code, Clean, Assisted, Source, and Preview all use this same Markdown.\n" },
@@ -986,9 +965,7 @@
       }
 
       (function initColorPickers() {
-        document.addEventListener("DOMContentLoaded", async () => {
-          // DOMContentLoaded does not wait for dynamically loaded SPA styles and scripts.
-          await spaReady;
+        document.addEventListener("DOMContentLoaded", () => {
           const pickers = [];
           for (const button of document.querySelectorAll("[data-color-picker]")) {
             const field = document.getElementById(button.dataset.colorPicker);
@@ -1047,9 +1024,7 @@
         });
       })();
 
-      document.addEventListener("DOMContentLoaded", async () => {
-        // DOMContentLoaded does not wait for dynamically loaded SPA styles and scripts.
-        await spaReady;
+      document.addEventListener("DOMContentLoaded", () => {
         const target = document.getElementById("editor");
         const fields = [document.getElementById("preview-bg"), document.getElementById("preview-container-bg")];
         const properties = ["--by-view-document-bg", "--by-view-container-bg"];
