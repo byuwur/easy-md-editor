@@ -33,12 +33,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: byuwur/code.view
-          ref: v2
+          ref: v2.2
           path: code.view
       - uses: actions/checkout@v4
         with:
           repository: byuwur/md.view
-          ref: v3
+          ref: v3.2
           path: md.view
       - uses: actions/setup-node@v4
         with:
