@@ -978,13 +978,14 @@
     let language = resolveLanguage(element, options.language ?? "auto");
     const translations = options.translations ?? {};
     if (typeof translations !== "object" || Array.isArray(translations) || Object.values(translations).some((value) => typeof value !== "string")) throw new TypeError("Translations must be an object of text labels.");
-    const contentSize = applyAppearance(element, options) || element.querySelector(":scope > .byEDsurface")?.style.fontSize || "";
+    const contentSize = applyAppearance(element, options) || element.querySelector(":scope > .byEDdocument > .byEDsurface")?.style.fontSize || "";
     const painted = element.classList.contains("byVIEWready");
     instances.get(element)?.destroy();
     const {
       animations = true,
       appearAnimation = false,
       toolbar: showToolbar = true,
+      credits = true,
       toolbarToggle = true,
       controlsCompact = false,
       syntaxSelect = true,
@@ -1006,6 +1007,7 @@
       animations,
       appearAnimation,
       toolbar: showToolbar,
+      credits,
       toolbarToggle,
       controlsCompact,
       syntaxSelect,
@@ -1148,11 +1150,24 @@
     if (!element.dataset.theme && !element.classList.contains("dark")) element.dataset.theme = "light";
     const bar = node("div", "byEDbar"),
       toolbar = node("div", "byEDtoolbar"),
+      documentArea = node("div", "byEDdocument"),
+      info = node("small", "byEDcredits"),
       surface = node("div", "byEDsurface"),
       raw = node("textarea", "byEDsource"),
       preview = node("div", "byEDpreview");
     const status = node("p", "byEDstatus"),
       controls = node("div", "byEDcontrols");
+    for (const [text, href] of [
+      ["MD.edit", "https://github.com/byuwur/md.edit"],
+      ["@byUwUr", "https://byuwur.co"]
+    ]) {
+      const link = node("a", "", text);
+      link.href = href;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      if (info.childNodes.length) info.append(` · v${byMDeditor.VERSION} · `);
+      info.appendChild(link);
+    }
     status.setAttribute("role", "status");
     status.setAttribute("aria-live", "polite");
     surface.style.fontSize = contentSize;
@@ -1261,8 +1276,10 @@
       commandButtons.set(name, control);
       if (wraps[name]) control.setAttribute("aria-pressed", "false");
     }
-    element.append(bar, toolbar, surface, raw, preview, status);
+    documentArea.append(info, surface, raw, preview);
+    element.append(bar, toolbar, documentArea, status);
     const controlVisibility = {
+      credits: info,
       toolbarToggle: toggle,
       syntaxSelect: picker,
       previewToggle: previewButton,

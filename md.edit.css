@@ -205,6 +205,38 @@
 }
 
 /* ===== DOCUMENT ===== */
+.byEDdocument {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+.byEDdocument > * {
+  grid-area: 1 / 1;
+}
+.byEDcredits {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  place-self: start end;
+  margin-inline: 1.5rem;
+  padding-block: 0.4375rem;
+  background: #0000;
+  color: var(--by-ed-muted);
+  opacity: 0.25;
+  font: 0.765625rem/1.25 var(--by-view-controls-font, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace);
+  text-align: right;
+}
+.byEDcredits:hover,
+.byEDcredits:focus-within,
+.byMDeditor[data-theme="high-contrast"] .byEDcredits {
+  opacity: 1;
+}
+.byEDcredits a {
+  color: inherit;
+  text-decoration: none;
+}
+.byEDcredits a:is(:hover, :focus-visible) {
+  text-decoration: underline;
+}
 .byEDsurface {
   position: relative;
   padding: 1.5rem;
@@ -565,16 +597,21 @@ fieldset.byEDfield {
     --by-ed-text: CanvasText;
     --by-ed-muted: CanvasText;
   }
+  .byEDcredits,
   .byEDsyntax {
     opacity: 1;
   }
 }
 @media print {
+  .byEDdocument {
+    display: block;
+  }
   .byEDgroup {
     content-visibility: visible;
   }
   .byEDbar,
   .byEDtoolbar,
+  .byEDcredits,
   .byEDstatus,
   .byEDsource,
   .byEDsurface,
@@ -607,6 +644,9 @@ fieldset.byEDfield {
 }
 .byMDeditor.byVIEWmotion {
   --by-view-motion-duration: 0.2s;
+}
+.byMDeditor .byEDcredits {
+  transition: opacity var(--by-view-motion-duration) ease-out !important;
 }
 /* Apply the initial palette immediately, including under host-page transitions. */
 .byMDeditor:not(.byVIEWready) {

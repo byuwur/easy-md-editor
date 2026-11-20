@@ -77,6 +77,15 @@ test("MD editor playground loads, updates, and copies a starter", { timeout: 300
   assert.equal(await page.locator("#download-minified").getAttribute("href"), "https://github.com/byuwur/md.edit/releases/latest/download/md.edit.minified.zip");
   await page.locator("#editor.byMDeditor").waitFor();
   const editor = page.locator("#editor.byVIEWready");
+  const credits = editor.locator(".byEDcredits");
+  assert.equal(await credits.innerText(), `MD.edit · v${await page.evaluate(() => byMDeditor.VERSION)} · @byUwUr`);
+  await page.locator("#viewer-settings > summary").click();
+  const creditsToggle = page.getByRole("switch", { name: "Credits", exact: true });
+  assert.equal(await creditsToggle.isChecked(), true);
+  await creditsToggle.uncheck();
+  assert.equal(await credits.isVisible(), false);
+  await creditsToggle.check();
+  assert.equal(await credits.isVisible(), true);
   const colors = await editor.evaluate((viewer) => {
     const surface = viewer.querySelector(".byEDsurface");
     const background = () => getComputedStyle(surface).backgroundColor;

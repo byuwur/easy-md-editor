@@ -222,6 +222,10 @@
               <label class="form-check-label flex-grow-1 py-2" for="toolbarToggle">Formatting toolbar toggle</label>
             </div>
             <div class="form-switch d-flex align-items-center gap-3 ps-0 m-0">
+              <input class="form-check-input order-2 float-none flex-shrink-0 ms-0 my-0" id="credits" type="checkbox" role="switch" checked />
+              <label class="form-check-label flex-grow-1 py-2" for="credits">Credits</label>
+            </div>
+            <div class="form-switch d-flex align-items-center gap-3 ps-0 m-0">
               <input class="form-check-input order-2 float-none flex-shrink-0 ms-0 my-0" id="syntaxSelect" type="checkbox" role="switch" checked />
               <label class="form-check-label flex-grow-1 py-2" for="syntaxSelect">Mode selector</label>
             </div>
@@ -686,7 +690,7 @@
         updateOutput(sample);
         window.playgroundEditor = editor;
         // ===== EDITOR CONFIGURATION =====
-        const visibilityOptions = [ "toolbarToggle", "syntaxSelect", "previewToggle", "themeToggle", "paletteSelect", "controlsCompact", "statusBar"];
+        const visibilityOptions = ["credits", "toolbarToggle", "syntaxSelect", "previewToggle", "themeToggle", "paletteSelect", "controlsCompact", "statusBar"];
         const modeSelect = document.getElementById("syntax-mode");
         const paletteSelect = document.getElementById("playground-palette");
         const languageSelect = document.getElementById("editor-language");
@@ -965,7 +969,7 @@
         });
         document.getElementById("download").addEventListener("click", () => downloadText(editor.getMarkdown(), "document.md", "text/markdown;charset=UTF-8"));
         document.getElementById("print").addEventListener("click", () => {
-          const wasPreview = !document.querySelector("#editor > .byEDpreview").hidden;
+          const wasPreview = !document.querySelector("#editor .byEDpreview").hidden;
           editor.setPreview(true);
           window.print();
           if (!wasPreview) editor.setPreview(false);
@@ -1347,6 +1351,7 @@
           "syntax-mode",
           "toolbar",
           "toolbarToggle",
+          "credits",
           "syntaxSelect",
           "previewToggle",
           "themeToggle",
