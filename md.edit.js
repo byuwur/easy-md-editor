@@ -2622,7 +2622,7 @@
           return false;
         }
         const label = source.slice(from, to) || value.label || languageText[name === "image" ? "imageDescription" : "linkText"];
-        const url = value.url.replace(/\(/g, "%28").replace(/\)/g, "%29").replace(/\s/g, "%20");
+        const url = value.url.replaceAll("(", "%28").replaceAll(")", "%29").replace(/\s/g, "%20");
         const opening = name === "image" ? "![" : "[";
         const metadata = name === "image" && imageSizes.includes(value.size) && value.size !== "default" ? `<!-- bymd:size=${value.size} -->` : "";
         return change(from, to, `${opening}${label}](${url})${metadata}`, { anchor: from + opening.length, focus: from + opening.length + label.length }, name);
@@ -2955,12 +2955,12 @@
       } else if (type.startsWith("delete")) {
         inserted = "";
         if (from === to) {
-          const backward = /Backward$/.test(type);
-          if (/Word/.test(type)) {
+          const backward = type.endsWith("Backward");
+          if (type.includes("Word")) {
             if (backward) from = source.slice(0, from).search(/\S+\s*$/);
             else to += source.slice(to).match(/^\s*\S*/)[0].length;
             from = Math.max(0, from);
-          } else if (/Line/.test(type)) {
+          } else if (type.includes("Line")) {
             if (backward) from = Math.max(source.lastIndexOf("\n", from - 1) + 1, 0);
             else {
               const next = source.indexOf("\n", to);
