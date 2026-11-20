@@ -13,9 +13,7 @@ const summary = (values) => ({
   max: percentile(values, 1)
 });
 
-// =================
-// BROWSER BENCHMARK
-// =================
+// ===== BROWSER BENCHMARK =====
 (async () => {
   const browser = await chromium.launch({
     channel: process.env.BROWSER_CHANNEL || "chrome",
@@ -54,9 +52,7 @@ const summary = (values) => ({
     for (const rate of [1, 6]) {
       await cdp.send("Emulation.setCPUThrottlingRate", { rate });
       for (const fixture of fixtures) {
-        // ===============
-        // EDITING LATENCY
-        // ===============
+        // ===== EDITING LATENCY =====
         await page.evaluate((source) => {
           window.samples = [];
           window.longTasks = [];
@@ -104,9 +100,7 @@ const summary = (values) => ({
         // These are measured engineering targets. Report misses rather than disguising them.
         record.targetMet = record.edit.p95 < 5 && record.selection.p95 < 1 && record.longTasks.length === 0;
         results.push(record);
-        // ======================
-        // FORMATTING AND PREVIEW
-        // ======================
+        // ===== FORMATTING AND PREVIEW =====
         await page.evaluate(() => {
           samples.length = 0;
           editor.setSelection(editor.getMarkdown().indexOf("Target"), editor.getMarkdown().indexOf("Target") + 6);

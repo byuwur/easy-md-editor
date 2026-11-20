@@ -22,9 +22,7 @@ test("MD editor library", { timeout: 30000 }, async (t) => {
   // Load authored files directly; CDN availability is not part of this contract.
   // Optional icon glyphs do not participate in source/history checks.
   await page.route("**/*", (route) => (route.request().url().endsWith("fontawesome.min.css") ? route.fulfill({ body: "", contentType: "text/css" }) : route.abort()));
-  // ===============
-  // BROWSER FIXTURE
-  // ===============
+  // ===== BROWSER FIXTURE =====
   await page.setContent('<!doctype html><meta charset="UTF-8"><div id="viewer"></div>');
   // Exercise the real published companion APIs, checked out beside the editor in CI.
   await page.addStyleTag({ path: path.join(__dirname, "../../md.view/md.css") });
@@ -37,9 +35,7 @@ test("MD editor library", { timeout: 30000 }, async (t) => {
     window.root = document.getElementById("viewer");
   });
 
-  // ==================
-  // RENDERING BEHAVIOR
-  // ==================
+  // ===== RENDERING BEHAVIOR =====
   await t.test("editing commits exact source and undo/redo restores it", async () => {
     const source = "# Core\r\n\r\nOriginal";
     await page.evaluate((source) => {

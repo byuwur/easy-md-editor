@@ -6,19 +6,13 @@
  * MIT License (see LICENSE).
  */
 (function (global) {
-  // ==============
-  // INITIALIZATION
-  // ==============
+  // ===== INITIALIZATION =====
   if (global.byMDeditor?.initialized) return;
 
-  // ==========
-  // METADATA
-  // ==========
+  // ===== METADATA =====
   byMDeditor.VERSION = "2.2"; // 2026-11-18
 
-  // ==========
-  // CONSTANTS
-  // ==========
+  // ===== CONSTANTS =====
   const tools = [
     ["undo", "rotate-left"],
     ["redo", "rotate-right"],
@@ -115,17 +109,13 @@
     }
   };
 
-  // ==========
-  // STATE
-  // ==========
+  // ===== STATE =====
   const instances = new WeakMap();
   const warnedLanguages = new Set();
   const warnedPalettes = new Set();
   let segmenter;
 
-  // ==========
-  // HELPERS
-  // ==========
+  // ===== HELPERS =====
   const node = (tag, className = "", text) => {
     const element = document.createElement(tag);
     element.className = className;
@@ -156,9 +146,7 @@
     return Math.max(0, Math.min(text.length, next));
   };
 
-  // ==========
-  // APPEARANCE
-  // ==========
+  // ===== APPEARANCE =====
   const warnMissingThemes = (element, palette = element.dataset.theme) => {
     if (!Object.values(palettes).some((choices) => Object.hasOwn(choices, palette)) || ["monokai", "github", "solarized", "high-contrast"].includes(palette) || warnedPalettes.has(palette)) return;
     const document = element.ownerDocument;
@@ -190,9 +178,7 @@
     }
   };
 
-  // ============
-  // LOCALIZATION
-  // ============
+  // ===== LOCALIZATION =====
   byMDeditor.locales = {
     en: {
       document: "Document",
@@ -952,14 +938,10 @@
     return "en";
   };
 
-  // ==========
-  // PUBLIC API
-  // ==========
+  // ===== PUBLIC API =====
   // Mount an editor with caller-owned persistence; all selections use UTF-16 source offsets.
   function byMDeditor(element, markdown, options = {}) {
-    // ==========================
-    // OPTIONS AND INSTANCE STATE
-    // ==========================
+    // ===== OPTIONS AND INSTANCE STATE =====
     if (!(element instanceof HTMLElement)) throw new TypeError("byMDeditor: element must be an HTMLElement.");
     // Markdown owns the document. Editable DOM, line records, and Preview are derived views.
     let source = markdown instanceof HTMLElement ? markdown.textContent : (markdown ?? element.textContent);
@@ -1060,9 +1042,7 @@
     const measure = (operation, started, extra = {}) => metrics?.({ operation, duration: performance.now() - started, ...extra });
     const listen = (target, type, handler, extra = {}) => target.addEventListener(type, handler, { signal, ...extra });
 
-    // ============
-    // LOCALIZATION
-    // ============
+    // ===== LOCALIZATION =====
     const languageText = {};
     for (const [key, englishText] of Object.entries(byMDeditor.locales.en)) {
       languageText[key] = String(translations[key] ?? byMDeditor.locales[language]?.[key] ?? englishText);
@@ -1123,9 +1103,7 @@
       }
     };
 
-    // ==========
-    // CONTROLS
-    // ==========
+    // ===== CONTROLS =====
     element.replaceChildren();
     element.classList.add("byMDeditor", "byMDdocument");
     element.classList.toggle("byVIEWmotion", options.animations);
@@ -1295,9 +1273,7 @@
       if (!toolbarFrame) toolbarFrame = requestAnimationFrame(updateToolbar);
     };
 
-    // ==============
-    // SOURCE MAPPING
-    // ==============
+    // ===== SOURCE MAPPING =====
     const split = (text, from = 0) => {
       const result = [];
       // Retain each physical separator so edits can preserve mixed source line endings.
@@ -1402,9 +1378,7 @@
       }
       return null;
     };
-    // ==========
-    // SELECTION
-    // ==========
+    // ===== SELECTION =====
     // Read the active mode's selection as directed UTF-16 source offsets; toolbar focus retains the last range.
     const selection = () => {
       if (syntax === "source")
@@ -1504,9 +1478,7 @@
       }
     };
 
-    // ================
-    // CONTEXT CONTROLS
-    // ================
+    // ===== CONTEXT CONTROLS =====
     const markImageSize = (row, value) => {
       row.dataset.size = value;
       for (const button of row.querySelectorAll("button")) {
@@ -1724,9 +1696,7 @@
       contextObserver.observe(element);
     };
 
-    // =====================
-    // INCREMENTAL RENDERING
-    // =====================
+    // ===== INCREMENTAL RENDERING =====
     const renderInline = (target, record, from, to) => {
       const value = record.text.slice(from, to);
       if (value.length > 8192 || record.meta.type === "source") {
@@ -2052,9 +2022,7 @@
       measure("patch", started, { lines: replacement.length });
     };
 
-    // =================
-    // CODE HIGHLIGHTING
-    // =================
+    // ===== CODE HIGHLIGHTING =====
     const paintCodeLine = (record, parts) => {
       if (!record?.text.length) return false;
       const children = [...record.view.childNodes];
@@ -2161,9 +2129,7 @@
       }, 80);
     };
 
-    // ========================
-    // TRANSACTIONS AND HISTORY
-    // ========================
+    // ===== TRANSACTIONS AND HISTORY =====
     // Accept an unchanged native text node after input while updating its source offsets and history data.
     const acceptNativeText = (edit) => {
       const { record, point, from, to, inserted } = edit,
@@ -2368,9 +2334,7 @@
       }
     };
 
-    // ==========
-    // FORMATTING
-    // ==========
+    // ===== FORMATTING =====
     const formattingAt = (offset) => {
       if (syntax !== "source" && !dirty) return lines[lineAt(offset)];
       if (!rich) return null;
@@ -2805,9 +2769,7 @@
       return true;
     };
 
-    // ==========
-    // INPUT
-    // ==========
+    // ===== INPUT =====
     const beforeInput = (event) => {
       if (composing || event.isComposing || !event.cancelable) return;
       const started = metrics ? performance.now() : 0;
@@ -3086,9 +3048,7 @@
     listen(element, "keyup", (event) => {
       if (event.key === "Enter") shiftEnter = false;
     });
-    // ============================
-    // SELECTION AND TOOLBAR EVENTS
-    // ============================
+    // ===== SELECTION AND TOOLBAR EVENTS =====
     listen(
       document,
       "pointerdown",
@@ -3220,9 +3180,7 @@
       buttons[index]?.focus();
     });
 
-    // ===================
-    // MODES AND LIFECYCLE
-    // ===================
+    // ===== MODES AND LIFECYCLE =====
     const api = {
       // Return the last committed Markdown; active IME text commits on compositionend.
       getMarkdown() {
@@ -3432,9 +3390,7 @@
         }
       }
     };
-    // ==========
-    // MOUNT
-    // ==========
+    // ===== MOUNT =====
     instances.set(element, api);
     translateControls();
     syncRawBreaks();
@@ -3457,9 +3413,7 @@
     updateToolbar();
     return api;
   }
-  // ==========
-  // EXPORT
-  // ==========
+  // ===== EXPORT =====
   global.byMDeditor = byMDeditor;
   byMDeditor.initialized = true;
 })(typeof window !== "undefined" ? window : this);
