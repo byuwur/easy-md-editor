@@ -130,7 +130,7 @@ Destroying an editor commits any active composition before cleanup, so `onChange
 | `syntax`           | `"clean"`                               | `"no-code"`, `"clean"`, `"assisted"`, or `"source"`.                                                                        |
 | `language`         | `"auto"`                                | Controls language; a language tag such as `"es"`, or automatic detection.                                                   |
 | `translations`     | `{}`                                    | Per-instance text overrides, using the keys in `byMDeditor.locales.en`.                                                     |
-| `animations`       | `true`                                  | Brief interaction motion and shared-surface background fades; overrides the system motion preference.                       |
+| `animations`       | `true`                                  | Animate editor interactions and theme backgrounds. Overrides the system motion preference.                                  |
 | `appearAnimation`  | `false`                                 | Fade the editor in on each mount when `animations` is enabled.                                                              |
 | `toolbar`          | `true`                                  | Show formatting tools; users can collapse them.                                                                             |
 | `toolbarToggle`    | `true`                                  | Show the Formatting button that opens or closes the toolbar.                                                                |
@@ -255,7 +255,7 @@ Keyboard access, labeled controls, native dialogs, focus indicators, reduced mot
 
 The editor shares MD.view’s themes. Use `theme` for light or dark mode and `palette` for the color scheme. Monokai, GitHub, Solarized and High Contrast are built in. Load [md.themes.css](https://github.com/byuwur/md.view/blob/main/md.themes.css) after the base stylesheet for the other palettes.
 
-Options override container settings. Omit an option or pass `null` to keep its current value. Numeric `fontSize` uses rem. CSS sizes such as `20px` also work within the `0.5rem` to `3rem` range. Invalid appearance values throw `RangeError` before replacing the document.
+Options override container settings. Omit an option or pass `null` to keep its current value. The `fontSize` option scales the editing surface, source, and preview. Numeric values use rem. CSS sizes such as `20px` also work within the `0.5rem` to `3rem` range. Invalid appearance values throw `RangeError` before replacing the document.
 
 ```html
 <div id="viewer" class="dark" data-theme="github"></div>

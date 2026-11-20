@@ -4,6 +4,22 @@
 @import url("https://cdn.jsdelivr.net/gh/byuwur/spa.js@v20.16/css/fontawesome.min.css");
 
 /* ===== EDITOR ===== */
+@property --_view-paper {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+@property --_view-surface {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+@property --by-ed-alt {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #eff;
+}
+
 /* Keep host layout transitions out; component rules below opt in to motion. */
 .byMDeditor,
 .byMDeditor *,
@@ -12,6 +28,8 @@
   transition: none !important;
 }
 .byMDeditor {
+  --_view-paper: var(--by-view-document-bg, var(--by-ed-bg));
+  --_view-surface: var(--by-view-container-bg, var(--by-ed-bg));
   position: relative;
   box-sizing: border-box;
   display: flex;
@@ -21,7 +39,7 @@
   padding: 0;
   border: 0.0625rem solid var(--by-ed-border);
   border-radius: 0.75rem;
-  background: var(--by-view-document-bg, var(--by-ed-bg));
+  background: var(--_view-paper);
   color: var(--by-ed-text);
   font:
     1rem/1.5 system-ui,
@@ -47,18 +65,20 @@
   border: 0.0625em solid var(--by-ed-border);
   border-radius: 0.5em;
   padding: 0.25em 0.5em;
-  background: var(--by-view-container-bg, var(--by-ed-bg));
+  background: var(--_view-surface);
 }
 .byMDeditor button {
   cursor: pointer;
   touch-action: manipulation;
 }
-.byMDeditor button:hover {
+.byMDeditor button:not(:disabled):hover {
   background: var(--by-view-container-bg, var(--by-ed-alt));
 }
 .byMDeditor button:disabled {
-  opacity: 0.5;
-  cursor: default;
+  opacity: 0.45;
+  outline: 0.0625rem dashed currentColor;
+  outline-offset: -0.25em;
+  cursor: not-allowed;
 }
 .byMDeditor button[aria-pressed="true"],
 .byMDeditor button[aria-expanded="true"] {
@@ -138,7 +158,7 @@
   padding: 0.5em 0.75em;
   background: var(--by-ed-alt);
   border-bottom: 0.0625em solid var(--by-ed-border);
-  font-size: 0.75em;
+  font-size: 0.75rem;
 }
 .byEDtoolbar .byEDselect {
   max-width: 11em;
@@ -157,7 +177,7 @@
     border: 0.0625em solid var(--by-ed-border);
     border-radius: 0.5em;
     padding: 0.25em;
-    background: var(--by-view-container-bg, var(--by-ed-bg));
+    background: var(--_view-surface);
     color: var(--by-ed-text);
   }
   .byEDheading option {
@@ -192,7 +212,7 @@
   outline: none;
   white-space: pre-wrap;
   caret-color: var(--by-ed-text);
-  background: var(--by-view-container-bg, var(--by-ed-bg));
+  background: var(--_view-surface);
 }
 .byEDsurface[data-empty="true"]::before {
   content: attr(data-placeholder);
@@ -207,7 +227,7 @@
 .byEDgroup {
   margin: 0;
   content-visibility: auto;
-  contain-intrinsic-size: auto 1.5rem;
+  contain-intrinsic-size: auto 1.5em;
 }
 .byEDline {
   margin: 0;
@@ -218,7 +238,7 @@
   line-height: 0.75;
 }
 .byEDline[data-type="heading"] {
-  margin: 0.625rem 0 0.375rem;
+  margin: 0.625em 0 0.375em;
 }
 .byEDline[data-type="heading"]:first-child {
   margin-top: 0;
@@ -240,9 +260,9 @@
 .byEDtask {
   position: absolute;
   inset-inline-start: -1.625rem;
-  inset-block-start: calc((1lh - 1rem) / 2);
-  width: 1rem;
-  height: 1rem;
+  inset-block-start: calc((1lh - min(1em, 1rem)) / 2);
+  width: min(1em, 1rem);
+  height: min(1em, 1rem);
   margin: 0;
   accent-color: var(--by-ed-accent);
 }
@@ -279,14 +299,14 @@
 .byEDline[data-type="rule"] hr {
   border: 0;
   border-top: 0.0625rem solid var(--by-ed-border);
-  margin: 0.75rem 0;
+  margin: 0.75em 0;
 }
 .byEDimage {
   display: block;
   max-width: 100%;
   max-height: 25rem;
   object-fit: contain;
-  margin: 0.5rem 0;
+  margin: 0.5em 0;
   border-radius: 0.375rem;
 }
 .byEDimage[data-size] {
@@ -304,7 +324,7 @@
   padding: 0.375rem;
   border: 0.0625rem solid var(--by-ed-border);
   border-radius: 0.5rem;
-  background: var(--by-view-container-bg, var(--by-ed-bg));
+  background: var(--_view-surface);
   color: var(--by-ed-text);
   box-shadow: 0 0.25rem 0.625rem #0003;
   font-size: 0.75rem;
@@ -370,7 +390,7 @@ fieldset.byEDfield {
   border: 0;
   border-inline-end: 0.0625rem solid var(--by-ed-border);
   padding: 0.375rem 0.625rem;
-  min-width: 5rem;
+  min-width: 5em;
   vertical-align: top;
   white-space: pre-wrap;
 }
@@ -425,18 +445,18 @@ fieldset.byEDfield {
 }
 
 /* ===== SOURCE AND PREVIEW ===== */
-.byEDsource {
+.byMDeditor .byEDsource {
   display: block;
   width: 100%;
   min-height: 24rem;
   resize: vertical;
   margin: 0;
   border: 0;
-  background: var(--by-view-container-bg, var(--by-ed-bg));
+  background: var(--_view-surface);
   padding: 1.5rem;
   font:
-    0.875rem/1.6 ui-monospace,
-    monospace !important;
+    0.875em/1.6 ui-monospace,
+    monospace;
   tab-size: 2;
 }
 .byEDpreview.byMDdocument {
@@ -445,6 +465,9 @@ fieldset.byEDfield {
   padding: 0 1rem 1.5rem;
   border: 0;
   border-radius: 0;
+}
+.byEDpreview > .byMDcontent {
+  font-size: var(--by-ed-preview-size, inherit);
 }
 
 /* ===== DIALOGS ===== */
@@ -497,7 +520,7 @@ fieldset.byEDfield {
   border: 0.0625em solid var(--by-ed-border);
   border-radius: 0.375em;
   padding: 0.375em 0.5em;
-  background: var(--by-view-container-bg, var(--by-ed-bg));
+  background: var(--_view-surface);
 }
 .byEDdialogActions {
   display: flex;
@@ -589,23 +612,20 @@ fieldset.byEDfield {
 .byMDeditor:not(.byVIEWready) {
   transition: none !important;
 }
-/* Background fades stay on shared surfaces, never individual rows or syntax tokens. */
+/* Interpolate the shared surfaces once, including inside scrolling content. */
 .byMDeditor.byVIEWready {
   transition:
-    background-color var(--by-view-motion-duration, 0s) ease,
-    opacity var(--by-view-motion-duration, 0s) ease !important;
-}
-.byMDeditor :is(.byEDbar, .byEDtoolbar, .byEDsurface, .byEDsource, .byEDpreview, .byEDstatus) {
-  transition: background-color var(--by-view-motion-duration, 0s) ease !important;
+    --_view-paper var(--by-view-motion-duration) linear,
+    --_view-surface var(--by-view-motion-duration) linear,
+    --by-ed-alt var(--by-view-motion-duration) linear,
+    color var(--by-view-motion-duration) steps(2, jump-none),
+    opacity var(--by-view-motion-duration) ease !important;
 }
 .byMDeditor.byVIEWmotion.byVIEWappear:not(.byVIEWready) {
   opacity: 0;
 }
 .byMDeditor :is(button, input, select, textarea, summary, a) {
   transition:
-    background-color var(--by-view-motion-duration) ease,
-    color var(--by-view-motion-duration) ease,
-    border-color var(--by-view-motion-duration) ease,
     box-shadow var(--by-view-motion-duration) ease,
     opacity var(--by-view-motion-duration) ease,
     translate var(--by-view-motion-duration) ease-out !important;
@@ -645,9 +665,6 @@ fieldset.byEDfield {
     opacity: 0;
     translate: 0 0.25rem;
   }
-}
-.byMDeditor .byEDsyntax {
-  transition: color var(--by-view-motion-duration) ease-out !important;
 }
 @supports (interpolate-size: allow-keywords) {
   /* Visited fence rows resize their block as the delimiters appear and disappear. */
@@ -736,6 +753,9 @@ fieldset.byEDfield {
   transition-property: opacity, translate !important;
 }
 @media (forced-colors: active) {
+  .byMDeditor.byVIEWready {
+    transition: none !important;
+  }
   .byMDeditor :is(button, input, select, textarea, summary, a) {
     transition-property: opacity, translate !important;
   }

@@ -36,6 +36,53 @@ test("MD editor library", { timeout: 30000 }, async (t) => {
   });
 
   // ===== RENDERING BEHAVIOR =====
+  await t.test("live motion settings and preview theme follow the editor", async () => {
+    const result = await page.evaluate(() => {
+      const host = document.body.appendChild(document.createElement("div"));
+      const editor = byMDeditor(host, "# Preview", { animations: false });
+      editor.setAppearAnimation(true);
+      const disabled = host.matches(".byVIEWappear, .byVIEWmotion");
+      editor.setAnimations(true);
+      const enabled = host.matches(".byVIEWmotion.byVIEWappear");
+      editor.setPreview(true);
+      const preview = host.querySelector(".byEDpreview");
+      const heading = preview.querySelector("h1");
+      editor.setTheme("dark");
+      const dark = preview.matches(".dark:not(.light)");
+      editor.setTheme("light");
+      const light = preview.matches(".light:not(.dark)");
+      const retained = heading === preview.querySelector("h1");
+      editor.destroy();
+      host.remove();
+      return { disabled, enabled, dark, light, retained };
+    });
+    assert.deepEqual(result, { disabled: false, enabled: true, dark: true, light: true, retained: true });
+  });
+
+  await t.test("visual, source and preview modes follow the editor's configured text size", async () => {
+    for (const fontSize of [0.5, 3]) {
+      const sizes = await page.evaluate((fontSize) => {
+        const host = document.body.appendChild(document.createElement("div"));
+        const editor = byMDeditor(host, "- example", { fontSize, animations: false });
+        const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+        const measure = (selector, property) => parseFloat(getComputedStyle(host.querySelector(selector))[property]) / rem;
+        const visual = measure(".byEDline", "fontSize");
+        const indent = measure(".byEDgroup-bullet", "paddingLeft");
+        const visualPadding = measure(".byEDsurface", "paddingLeft");
+        editor.setSyntaxMode("source");
+        const source = measure(".byEDsource", "fontSize");
+        const sourcePadding = measure(".byEDsource", "paddingLeft");
+        editor.setPreview(true);
+        const preview = measure(".byEDpreview li", "fontSize");
+        const frame = measure(".byEDpreview", "fontSize");
+        editor.destroy();
+        host.remove();
+        return { visual, indent, source, preview, frame, visualPadding, sourcePadding };
+      }, fontSize);
+      assert.deepEqual(sizes, { visual: fontSize, indent: 1.75, source: 0.875 * fontSize, preview: fontSize, frame: 1, visualPadding: 1.5, sourcePadding: 1.5 });
+    }
+  });
+
   await t.test("editing commits exact source and undo/redo restores it", async () => {
     const source = "# Core\r\n\r\nOriginal";
     await page.evaluate((source) => {

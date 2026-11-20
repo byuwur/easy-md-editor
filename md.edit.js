@@ -11,6 +11,9 @@
 
   // ===== METADATA =====
   byMDeditor.VERSION = "2.3"; // 2026-11-20
+  // Mirrored helpers are checked by code.view/.github/scripts/check-family.mjs.
+  const componentName = "MD.edit";
+  const themeFile = "md";
 
   // ===== CONSTANTS =====
   const tools = [
@@ -112,6 +115,11 @@
   // ===== STATE =====
   const instances = new WeakMap();
   const warnedLanguages = new Set();
+  const extraPalettes = new Set(
+    Object.values(palettes)
+      .flatMap(Object.keys)
+      .filter((name) => !Object.hasOwn(palettes.paletteEssentials, name))
+  );
   const warnedPalettes = new Set();
   let segmenter;
 
@@ -119,7 +127,7 @@
   const node = (tag, className = "", text) => {
     const element = document.createElement(tag);
     element.className = className;
-    if (text !== undefined) element.textContent = text;
+    if (text !== undefined) element.textContent = String(text);
     return element;
   };
   const stateKey = (state) => `${state?.fence?.marker || ""}${state?.fence?.length || 0}:${state?.table || 0}`;
@@ -148,12 +156,25 @@
 
   // ===== APPEARANCE =====
   const warnMissingThemes = (element, palette = element.dataset.theme) => {
-    if (!Object.values(palettes).some((choices) => Object.hasOwn(choices, palette)) || ["monokai", "github", "solarized", "high-contrast"].includes(palette) || warnedPalettes.has(palette)) return;
+    if (!extraPalettes.has(palette) || warnedPalettes.has(palette)) return;
     const document = element.ownerDocument;
-    if (document.defaultView.getComputedStyle(document.documentElement).getPropertyValue("--by-md-themes-loaded").trim() === "1") return;
+    if (document.defaultView.getComputedStyle(document.documentElement).getPropertyValue(`--by-${themeFile}-themes-loaded`).trim() === "1") return;
     warnedPalettes.add(palette);
-    // console.warn(`MD.edit: Palette "${palette}" requires md.themes.css. Import it after md.css. https://byuwur.github.io/md.view/`);
-    console.warn(`MD.edit: Palette "${palette}" requires md.themes.css. Import it after md.css. https://md.byuwur.co/`);
+    console.warn(`${componentName}: Palette "${palette}" requires ${themeFile}.themes.css. Import it after ${themeFile}.css. https://${themeFile}.byuwur.co/`);
+  };
+
+  const getLocalTheme = (target) => {
+    if (["light", "dark"].includes(target.dataset.theme)) return target.dataset.theme;
+    if (target.classList.contains("dark")) return "dark";
+    if (target.classList.contains("light")) return "light";
+    return target.dataset.theme ? "light" : null;
+  };
+
+  const setLocalTheme = (element, mode, palette) => {
+    element.classList.toggle("light", mode === "light");
+    element.classList.toggle("dark", mode === "dark");
+    if (palette != null) element.dataset.theme = palette;
+    else if (["light", "dark"].includes(element.dataset.theme)) element.dataset.theme = mode;
   };
 
   // Explicit appearance options override markup; omitted values preserve the container's state.
@@ -165,17 +186,24 @@
     const size = typeof fontSize === "number" ? `${Math.max(0.5, Math.min(3, fontSize))}rem` : typeof fontSize === "string" ? `clamp(0.5rem, ${fontSize}, 3rem)` : "";
     if (fontSize != null && (typeof fontSize === "number" ? !Number.isFinite(fontSize) : typeof fontSize !== "string" || !CSS.supports("font-size", size))) throw new RangeError("Font size must be a finite multiplier or a CSS size.");
     // Keep palette identity in data-theme while light/dark classes select its mode.
-    if (theme != null || palette != null) {
-      const mode = theme ?? (["light", "dark"].includes(element.dataset.theme) ? element.dataset.theme : element.classList.contains("dark") ? "dark" : "light");
-      element.classList.toggle("light", mode === "light");
-      element.classList.toggle("dark", mode === "dark");
-      if (palette != null) element.dataset.theme = palette;
-      else if (["light", "dark"].includes(element.dataset.theme)) element.dataset.theme = mode;
-    }
-    if (fontSize != null) {
-      element.style.fontSize = size;
-      element.dataset.byViewDefaultFontSize = element.style.fontSize;
-    }
+    if (theme != null || palette != null) setLocalTheme(element, theme ?? getLocalTheme(element) ?? "light", palette);
+    return size;
+  };
+
+  const syncMotion = (element, options) => {
+    const enabled = options.animations !== false;
+    const appear = enabled && Boolean(options.appearAnimation);
+    element.classList.toggle("byVIEWmotion", enabled);
+    element.classList.toggle("byVIEWappear", appear);
+    return appear;
+  };
+
+  const createThemeButton = () => {
+    const button = node("button", "byVIEWthemeToggle");
+    button.type = "button";
+    button.innerHTML =
+      '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M21 12.8A9 9 0 0 1 11.2 3 9 9 0 1 0 21 12.8Z"/></svg><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4m0-14.2-1.4 1.4M6.3 17.7l-1.4 1.4"/></svg>';
+    return button;
   };
 
   // ===== LOCALIZATION =====
@@ -950,7 +978,7 @@
     let language = resolveLanguage(element, options.language ?? "auto");
     const translations = options.translations ?? {};
     if (typeof translations !== "object" || Array.isArray(translations) || Object.values(translations).some((value) => typeof value !== "string")) throw new TypeError("Translations must be an object of text labels.");
-    applyAppearance(element, options);
+    const contentSize = applyAppearance(element, options) || element.querySelector(":scope > .byEDsurface")?.style.fontSize || "";
     const painted = element.classList.contains("byVIEWready");
     instances.get(element)?.destroy();
     const {
@@ -1088,7 +1116,7 @@
       heading.setAttribute("aria-label", languageText.paragraphStyle);
       imageOptions?.setAttribute("aria-label", languageText.imageSize);
       if (contextToolbar) contextToolbar.setAttribute("aria-label", languageText[selectedTable ? "table" : selectedCode ? "codeLanguage" : "imageSize"]);
-      themeButton.title = languageText[isDark() ? "lightTheme" : "darkTheme"];
+      themeButton.title = languageText[getLocalTheme(element) === "dark" ? "lightTheme" : "darkTheme"];
       themeButton.setAttribute("aria-label", themeButton.title);
       for (const record of lines) {
         if (record.meta.type === "task")
@@ -1106,9 +1134,7 @@
     // ===== CONTROLS =====
     element.replaceChildren();
     element.classList.add("byMDeditor", "byMDdocument");
-    element.classList.toggle("byVIEWmotion", options.animations);
-    const appear = options.animations && options.appearAnimation;
-    element.classList.toggle("byVIEWappear", appear);
+    const appear = syncMotion(element, options);
     if (painted && !appear) element.classList.add("byVIEWready");
     else {
       // Paint opacity 0 before starting each requested fade.
@@ -1129,6 +1155,11 @@
       controls = node("div", "byEDcontrols");
     status.setAttribute("role", "status");
     status.setAttribute("aria-live", "polite");
+    surface.style.fontSize = contentSize;
+    if (contentSize) {
+      raw.style.fontSize = `calc(0.875 * ${contentSize})`;
+      preview.style.setProperty("--by-ed-preview-size", contentSize);
+    }
     surface.contentEditable = "true";
     surface.setAttribute("role", "textbox");
     surface.setAttribute("aria-multiline", "true");
@@ -1203,11 +1234,8 @@
     controls.append(palettePicker);
     const previewButton = button("preview", "eye", () => api.setPreview(!previewing), controls);
     previewButton.setAttribute("aria-pressed", "false");
-    const themeButton = node("button", "byVIEWthemeToggle");
-    themeButton.type = "button";
-    themeButton.innerHTML =
-      '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M21 12.8A9 9 0 0 1 11.2 3 9 9 0 1 0 21 12.8Z"/></svg><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4m0-14.2-1.4 1.4M6.3 17.7l-1.4 1.4"/></svg>';
-    listen(themeButton, "click", () => api.setTheme(isDark() ? "light" : "dark"));
+    const themeButton = createThemeButton();
+    listen(themeButton, "click", () => api.setTheme(getLocalTheme(element) === "dark" ? "light" : "dark"));
     controls.append(themeButton);
     bar.append(picker, controls);
     const heading = node("select", "byEDselect byEDheading");
@@ -1242,7 +1270,9 @@
       paletteSelect: palettePicker,
       statusBar: status
     };
-    const isDark = () => element.dataset.theme === "dark" || (element.dataset.theme !== "light" && element.classList.contains("dark"));
+    const syncPreviewTheme = () => {
+      setLocalTheme(preview, getLocalTheme(element) ?? "light", element.dataset.theme || "github");
+    };
 
     const updateToolbar = () => {
       toolbarFrame = 0;
@@ -3283,8 +3313,7 @@
         toggle.setAttribute("aria-expanded", String(!toolbar.hidden));
         if (previewing) {
           const started = metrics ? performance.now() : 0;
-          preview.dataset.theme = element.dataset.theme || "github";
-          preview.classList.toggle("dark", isDark());
+          syncPreviewTheme();
           global.byMDviewer(preview, source, {
             toolbar: false,
             animations: options.animations,
@@ -3303,13 +3332,13 @@
       setAnimations(enabled) {
         if (!alive) return;
         options.animations = Boolean(enabled);
-        element.classList.toggle("byVIEWmotion", options.animations);
+        syncMotion(element, options);
         preview.classList.toggle("byVIEWmotion", options.animations);
       },
       setAppearAnimation(enabled) {
         if (!alive) return;
         options.appearAnimation = Boolean(enabled);
-        element.classList.toggle("byVIEWappear", options.appearAnimation);
+        syncMotion(element, options);
       },
       getLanguage() {
         return language;
@@ -3327,18 +3356,16 @@
       setTheme(mode) {
         if (!alive) return;
         if (!["light", "dark"].includes(mode)) throw new RangeError("Theme must be light or dark.");
-        if (["light", "dark"].includes(element.dataset.theme || "")) element.dataset.theme = mode;
-        element.classList.toggle("dark", mode === "dark");
-        element.classList.toggle("light", mode === "light");
+        setLocalTheme(element, mode);
         themeButton.title = languageText[mode === "dark" ? "lightTheme" : "darkTheme"];
         themeButton.setAttribute("aria-label", themeButton.title);
-        if (previewing) api.setPreview(true);
+        if (previewing) syncPreviewTheme();
       },
       setPalette(palette) {
         if (!alive) return;
         if (typeof palette !== "string" || !/^[a-z][\w-]*$/i.test(palette) || ["light", "dark"].includes(palette)) throw new RangeError("Palette must be a CSS theme name; use setTheme() for light or dark.");
         warnMissingThemes(element, palette);
-        const mode = isDark() ? "dark" : "light";
+        const mode = getLocalTheme(element) ?? "light";
         element.dataset.theme = palette;
         selectPalette(palette);
         api.setTheme(mode);
